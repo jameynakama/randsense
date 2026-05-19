@@ -35,3 +35,7 @@ migrate-down num="1":
 generate:
     rm -f internal/store/*.sql.go
     sqlc generate
+
+# Ingest OEW lexicon into the database
+ingest:
+    go run ./cmd/ingest
