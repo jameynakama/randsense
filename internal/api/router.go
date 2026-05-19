@@ -30,6 +30,10 @@ func NewRouter(cfg RouterConfig) http.Handler {
 
 	r.Get("/health", h.healthCheck)
 
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Get("/words/random", h.randomWord)
+	})
+
 	return r
 }
 
