@@ -1,0 +1,35 @@
+[[rule]]
+symbol = "S"
+expansion = ["NP", "VP"]
+
+[[rule]]
+symbol = "NP"
+expansion = ["Det", "ADJ", "N"]
+weight = 0.5
+
+[[rule]]
+symbol = "NP"
+expansion = ["Det", "N"]
+weight = 0.5
+
+[[rule]]
+symbol = "ADJ"
+expansion = ["ADJ", "Adj"]
+
+#-- terminal symbols
+
+[[rule]]
+symbol = "Adj"
+expansion = ["Adjective"]
+
+[[rule]]
+symbol = "Det"
+expansion = ["Determiner"]
+
+[[rule]]
+symbol = "N"
+expansion = ["Noun"]
+
+[[rule]]
+symbol = "V"
+expansion = ["Verb"]
