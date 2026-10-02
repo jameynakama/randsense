@@ -25,6 +25,7 @@ type Querier interface {
 	GetRandomPreposition(ctx context.Context) (Preposition, error)
 	GetRandomPronoun(ctx context.Context) (Pronoun, error)
 	GetRandomVerb(ctx context.Context) (Verb, error)
+	GetRandomVerbWithFrame(ctx context.Context, frame string) (Verb, error)
 	GetVerbByLemma(ctx context.Context, lemma string) (Verb, error)
 	InsertAdjective(ctx context.Context, arg InsertAdjectiveParams) error
 	InsertAdverb(ctx context.Context, arg InsertAdverbParams) error

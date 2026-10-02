@@ -27,8 +27,8 @@ const (
 )
 
 // particles end phrasal verbs, whose first word carries the inflection
-// ("culls out", "takes care of"). Other multi-word verbs inflect their last
-// word ("test drives").
+// ("culls out", "takes care of"). They also mark where a multi-word noun's
+// head ends ("talks of the town").
 var particles = []string{
 	"about", "across", "after", "along", "apart", "around", "aside", "away", "back",
 	"by", "down", "for", "forth", "in", "into", "of", "off", "on", "out", "over",
@@ -69,11 +69,14 @@ func LoadVerbs(r io.Reader) (*Verbs, error) {
 }
 
 // Conjugate inflects a verb lemma for tense and subject number. In a
-// multi-word lemma only the head word changes.
+// multi-word lemma only the head word changes: the first word of a phrasal
+// verb or of an idiom led by a verb in the data ("went ballistic", "stops
+// dead"), otherwise the last ("test drives").
 func (v *Verbs) Conjugate(lemma string, t Tense, n Number) string {
 	words := strings.Fields(lemma)
 	head := len(words) - 1
-	if slices.Contains(particles, words[head]) {
+	_, irregular := v.irregular[words[0]]
+	if irregular || v.doubled[words[0]] || slices.Contains(particles, words[head]) {
 		head = 0
 	}
 	words[head] = v.conjugateWord(words[head], t, n)
@@ -125,13 +128,22 @@ func (v *Verbs) conjugateWord(w string, t Tense, n Number) string {
 }
 
 // Pluralize returns a noun's plural: irregular when given (OEWN supplies these),
-// otherwise by spelling rule on the last word.
+// otherwise by spelling rule on the head word, which is the last word or the
+// one before the first particle ("talks of the town").
 func Pluralize(lemma, irregular string) string {
 	if irregular != "" {
 		return irregular
 	}
-	i := strings.LastIndex(lemma, " ") + 1
-	return lemma[:i] + addS(lemma[i:])
+	words := strings.Fields(lemma)
+	head := len(words) - 1
+	for i := 1; i < len(words); i++ {
+		if slices.Contains(particles, words[i]) {
+			head = i - 1
+			break
+		}
+	}
+	words[head] = addS(words[head])
+	return strings.Join(words, " ")
 }
 
 // Article picks "a" or "an" by the next word's first letter. Words like

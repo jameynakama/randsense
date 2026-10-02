@@ -29,6 +29,9 @@ type fakeQuerier struct {
 	// numbers it was asked for.
 	numberDet store.Determiner
 	numbers   []string
+
+	// frame records what GetRandomVerbWithFrame was asked for.
+	frame string
 }
 
 func newFake(dets ...store.Determiner) *fakeQuerier {
@@ -47,6 +50,11 @@ func (f *fakeQuerier) GetRandomNoun(context.Context) (store.Noun, error) {
 
 func (f *fakeQuerier) GetRandomVerb(context.Context) (store.Verb, error) {
 	return store.Verb{Lemma: "devour"}, f.err
+}
+
+func (f *fakeQuerier) GetRandomVerbWithFrame(_ context.Context, frame string) (store.Verb, error) {
+	f.frame = frame
+	return store.Verb{Lemma: "give"}, f.err
 }
 
 func (f *fakeQuerier) GetRandomAdjective(context.Context) (store.Adjective, error) {
@@ -330,5 +338,34 @@ func TestGenerateKeepsPluralLemmaPluralWithFittingDeterminer(t *testing.T) {
 	assertExactly(t, seen, "The Rastas devour.", "The Rastas devoured.")
 	if !slices.Equal(q.numbers, []string{"plural", "either"}) {
 		t.Errorf("expected determiner numbers [plural either]; got %v", q.numbers)
+	}
+}
+
+func TestGeneratePicksVerbWithRequiredFrame(t *testing.T) {
+	g := mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["NP", "VP"]
+
+	[[rule]]
+	symbol = "NP"
+	expansion = ["Determiner", "Noun"]
+
+	[[rule]]
+	symbol = "VP"
+	expansion = ["Verb:ditransitive", "NP", "NP"]
+	`)
+	q := newFake(store.Determiner{Lemma: "this", Number: "singular"})
+
+	s, err := sentence.Generate(context.Background(), q, g, loadVerbs(t), newRNG())
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+
+	if q.frame != "ditransitive" {
+		t.Errorf("expected a verb lookup for frame ditransitive; got %q", q.frame)
+	}
+	if s.Text != "This goose gives this goose this goose." && s.Text != "This goose gave this goose this goose." {
+		t.Errorf("expected This goose gives/gave this goose this goose.; got %q", s.Text)
 	}
 }

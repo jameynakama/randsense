@@ -84,7 +84,7 @@
     <!-- intransitive verb, single subcat code -->
     <LexicalEntry id="oewn-sleep-v">
       <Lemma writtenForm="sleep" partOfSpeech="v"/>
-      <Sense id="oewn-sleep__2.29.00.." subcat="vita" synset="oewn-00018651-v"/>
+      <Sense id="oewn-sleep__2.29.00.." subcat="via via-pp vtai-to" synset="oewn-00018651-v"/>
     </LexicalEntry>
 
     <!-- verb with multiple senses and overlapping subcat codes

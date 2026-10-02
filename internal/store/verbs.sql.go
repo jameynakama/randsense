@@ -47,6 +47,33 @@ func (q *Queries) GetRandomVerb(ctx context.Context) (Verb, error) {
 	return i, err
 }
 
+const getRandomVerbWithFrame = `-- name: GetRandomVerbWithFrame :one
+SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM verbs
+WHERE active AND frames ? $1::text
+ORDER BY random()
+LIMIT 1
+`
+
+func (q *Queries) GetRandomVerbWithFrame(ctx context.Context, frame string) (Verb, error) {
+	row := q.db.QueryRow(ctx, getRandomVerbWithFrame, frame)
+	var i Verb
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Inflections,
+		&i.Frames,
+		&i.Source,
+		&i.SourceID,
+		&i.Register,
+		&i.Frequency,
+		&i.Active,
+		&i.VoteCount,
+		&i.CreateTime,
+		&i.UpdateTime,
+	)
+	return i, err
+}
+
 const getVerbByLemma = `-- name: GetVerbByLemma :one
 SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM verbs
 WHERE lemma = $1

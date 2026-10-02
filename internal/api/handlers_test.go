@@ -59,7 +59,7 @@ func seedWords(t *testing.T) {
 	if err := q.InsertVerb(ctx, store.InsertVerbParams{
 		Lemma:       "devour",
 		Inflections: []byte(`{}`),
-		Frames:      []byte(`["vtaa","vtai"]`),
+		Frames:      []byte(`["transitive"]`),
 		Source:      "test",
 	}); err != nil {
 		t.Fatalf("seed verb: %v", err)

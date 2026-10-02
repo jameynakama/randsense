@@ -85,6 +85,24 @@ func TestLoadRejectsInvalidGrammar(t *testing.T) {
 			`"Noun"`,
 		},
 		{
+			"frame on a non-verb",
+			`
+			[[rule]]
+			symbol = "S"
+			expansion = ["Noun:transitive"]
+			`,
+			`"Noun:transitive"`,
+		},
+		{
+			"unknown frame",
+			`
+			[[rule]]
+			symbol = "S"
+			expansion = ["Verb:sideways"]
+			`,
+			`"Verb:sideways"`,
+		},
+		{
 			"symbol that can never reach terminals",
 			`
 			[[rule]]
@@ -234,5 +252,30 @@ func TestProjectGrammarLoadsAndExpands(t *testing.T) {
 		if _, err := g.Expand(rng); err != nil {
 			t.Fatalf("Expand: %v", err)
 		}
+	}
+}
+
+func TestLeafWithFrame(t *testing.T) {
+	g := mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["Noun", "Verb:transitive", "Noun"]
+	`)
+
+	tree, err := g.Expand(rand.New(rand.NewPCG(1, 2)))
+	if err != nil {
+		t.Fatalf("Expand: %v", err)
+	}
+
+	verb := tree.Children[1]
+	if verb.Symbol != "Verb:transitive" || verb.POS() != grammar.Verb || verb.Frame() != grammar.Transitive {
+		t.Errorf("expected Verb:transitive leaf; got symbol %q, POS %q, frame %q", verb.Symbol, verb.POS(), verb.Frame())
+	}
+	if noun := tree.Children[0]; noun.POS() != grammar.Noun || noun.Frame() != "" {
+		t.Errorf("expected plain Noun leaf; got POS %q, frame %q", noun.POS(), noun.Frame())
+	}
+	want := []grammar.POS{grammar.Noun, grammar.Verb, grammar.Noun}
+	if got := tree.Leaves(); !slices.Equal(got, want) {
+		t.Errorf("expected leaves %v; got %v", want, got)
 	}
 }

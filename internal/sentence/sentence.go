@@ -79,7 +79,7 @@ func Generate(ctx context.Context, q store.Querier, g *grammar.Grammar, verbs *m
 	leaves := leafNodes(tree)
 	words := make([]string, len(leaves))
 	for i, l := range leaves {
-		if l.Lemma == "a" && grammar.POS(l.Symbol) == grammar.Determiner && i+1 < len(leaves) {
+		if l.Lemma == "a" && l.POS() == grammar.Determiner && i+1 < len(leaves) {
 			l.Word = morph.Article(leaves[i+1].Word)
 		}
 		words[i] = l.Word
@@ -94,7 +94,7 @@ func (gen *generator) fill(n *grammar.Node) error {
 	pluralNoun := false
 	if n.Symbol == nounPhrase {
 		for _, c := range n.Children {
-			if grammar.POS(c.Symbol) == grammar.Noun {
+			if c.POS() == grammar.Noun {
 				if err := gen.fillLeaf(c, false); err != nil {
 					return err
 				}
@@ -120,7 +120,7 @@ func (gen *generator) fill(n *grammar.Node) error {
 }
 
 func (gen *generator) fillLeaf(n *grammar.Node, pluralNoun bool) error {
-	lemma, info, err := gen.randomWord(grammar.POS(n.Symbol), pluralNoun)
+	lemma, info, err := gen.randomWord(n.POS(), n.Frame(), pluralNoun)
 	if err != nil {
 		return fmt.Errorf("%s: %w", n.Symbol, err)
 	}
@@ -129,9 +129,9 @@ func (gen *generator) fillLeaf(n *grammar.Node, pluralNoun bool) error {
 	return nil
 }
 
-// randomWord picks a word for pos. pluralNoun restricts a determiner to ones
-// that can go with a plural noun.
-func (gen *generator) randomWord(pos grammar.POS, pluralNoun bool) (string, leafInfo, error) {
+// randomWord picks a word for pos. A verb must have frame, if one is given;
+// pluralNoun restricts a determiner to ones that can go with a plural noun.
+func (gen *generator) randomWord(pos grammar.POS, frame grammar.Frame, pluralNoun bool) (string, leafInfo, error) {
 	ctx, q := gen.ctx, gen.q
 	switch pos {
 	case grammar.Noun:
@@ -147,6 +147,10 @@ func (gen *generator) randomWord(pos grammar.POS, pluralNoun bool) (string, leaf
 		}
 		return w.Lemma, leafInfo{plural: infl.Plural, pluralLemma: w.Plural}, nil
 	case grammar.Verb:
+		if frame != "" {
+			w, err := q.GetRandomVerbWithFrame(ctx, string(frame))
+			return w.Lemma, leafInfo{}, err
+		}
 		w, err := q.GetRandomVerb(ctx)
 		return w.Lemma, leafInfo{}, err
 	case grammar.Adjective:
@@ -186,7 +190,7 @@ func (gen *generator) agreeNouns(n *grammar.Node) {
 			}
 		}
 		for _, c := range n.Children {
-			if grammar.POS(c.Symbol) != grammar.Determiner || number == morph.Plural {
+			if c.POS() != grammar.Determiner || number == morph.Plural {
 				continue
 			}
 			switch gen.leaves[c].number {
@@ -201,7 +205,7 @@ func (gen *generator) agreeNouns(n *grammar.Node) {
 		gen.number[n] = number
 		if number == morph.Plural {
 			for _, c := range n.Children {
-				if grammar.POS(c.Symbol) == grammar.Noun && !gen.leaves[c].pluralLemma {
+				if c.POS() == grammar.Noun && !gen.leaves[c].pluralLemma {
 					c.Word = morph.Pluralize(c.Lemma, gen.leaves[c].plural)
 				}
 			}
@@ -217,10 +221,10 @@ func (gen *generator) agreeNouns(n *grammar.Node) {
 // A VP passes its subject's number down to the verbs inside it.
 func (gen *generator) agreeVerbs(n *grammar.Node, number morph.Number) {
 	for _, c := range n.Children {
-		switch c.Symbol {
-		case nounPhrase:
+		if c.Symbol == nounPhrase {
 			number = gen.number[c]
-		case string(grammar.Verb):
+		}
+		if len(c.Children) == 0 && c.POS() == grammar.Verb {
 			c.Word = gen.verbs.Conjugate(c.Lemma, gen.tense, number)
 		}
 		if c.Symbol == verbPhrase {

@@ -160,9 +160,6 @@ func nounInflectionsJSON(forms []string) ([]byte, error) {
 	return json.Marshal(map[string]string{"plural": forms[0]})
 }
 
-func verbFramesJSON(frames []string) ([]byte, error) {
-	if len(frames) == 0 {
-		return []byte("[]"), nil
-	}
-	return json.Marshal(frames)
+func verbFramesJSON(codes []string) ([]byte, error) {
+	return json.Marshal(MapFrames(codes))
 }

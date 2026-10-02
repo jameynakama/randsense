@@ -1,6 +1,8 @@
 # Weighted grammar for sentence generation. Weights are relative among a
 # symbol's rules and default to 1. Terminals are the POS names in
 # grammar.POS (Noun, Verb, Determiner, ...); any other symbol needs rules.
+# A Verb slot can require a frame ("Verb:transitive"); see grammar.Frame for
+# the list. A plain Verb takes any verb.
 #
 # Agreement depends on two symbol names: an NP's Determiner sets the number
 # of its Nouns, and the Verbs in a VP agree with the nearest NP before that VP
@@ -22,11 +24,30 @@ weight = 0.5
 
 [[rule]]
 symbol = "VP"
-expansion = ["Verb"]
+expansion = ["Verb:transitive", "NP"]
+weight = 4
 
 [[rule]]
 symbol = "VP"
-expansion = ["Verb", "NP"]
+expansion = ["Verb:intransitive"]
+weight = 2
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:intransitive-pp", "PP"]
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:transitive-pp", "NP", "PP"]
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:ditransitive", "NP", "NP"]
+weight = 0.5
+
+[[rule]]
+symbol = "PP"
+expansion = ["Preposition", "NP"]
 
 [[rule]]
 symbol = "ADJ"

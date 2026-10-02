@@ -8,6 +8,7 @@ import (
 	"maps"
 	"math/rand/v2"
 	"slices"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -31,8 +32,42 @@ const (
 
 var allPOS = []POS{Noun, Verb, Adjective, Adverb, Determiner, Preposition, Pronoun, Conjunction}
 
+// Frame is a verb's complement structure. A grammar can require one on a
+// verb slot: "Verb:transitive".
+type Frame string
+
+const (
+	Intransitive   Frame = "intransitive"
+	Transitive     Frame = "transitive"
+	Ditransitive   Frame = "ditransitive"
+	IntransitivePP Frame = "intransitive-pp"
+	TransitivePP   Frame = "transitive-pp"
+)
+
+var allFrames = []Frame{Intransitive, Transitive, Ditransitive, IntransitivePP, TransitivePP}
+
 func isPOS(symbol string) bool {
 	return slices.Contains(allPOS, POS(symbol))
+}
+
+// splitSymbol separates a terminal like "Verb:transitive" into its POS and
+// frame. The frame is empty when there's no qualifier.
+func splitSymbol(symbol string) (POS, Frame) {
+	pos, frame, _ := strings.Cut(symbol, ":")
+	return POS(pos), Frame(frame)
+}
+
+// checkTerminal reports whether symbol is a POS, optionally qualified with a
+// frame, and errors on a qualifier that isn't a Verb frame.
+func checkTerminal(symbol string) (bool, error) {
+	pos, frame := splitSymbol(symbol)
+	if !isPOS(string(pos)) {
+		return false, nil
+	}
+	if frame != "" && (pos != Verb || !slices.Contains(allFrames, frame)) {
+		return false, fmt.Errorf("grammar: %q: only Verb takes a frame, one of %v", symbol, allFrames)
+	}
+	return true, nil
 }
 
 // rule is one weighted expansion of a symbol. Weights are relative among a
@@ -77,7 +112,7 @@ func Load(r io.Reader) (*Grammar, error) {
 		if w <= 0 {
 			return nil, fmt.Errorf("grammar: rule for %q has non-positive weight %v", fr.Symbol, w)
 		}
-		if isPOS(fr.Symbol) {
+		if pos, _ := splitSymbol(fr.Symbol); isPOS(string(pos)) {
 			return nil, fmt.Errorf("grammar: %q is a part of speech and cannot have rules", fr.Symbol)
 		}
 		rules[fr.Symbol] = append(rules[fr.Symbol], rule{Expansion: fr.Expansion, Weight: w})
@@ -99,7 +134,14 @@ func (g *Grammar) validate() error {
 	for _, sym := range symbols {
 		for _, rule := range g.rules[sym] {
 			for _, s := range rule.Expansion {
-				if _, ok := g.rules[s]; !ok && !isPOS(s) {
+				if _, ok := g.rules[s]; ok {
+					continue
+				}
+				terminal, err := checkTerminal(s)
+				if err != nil {
+					return err
+				}
+				if !terminal {
 					return fmt.Errorf("grammar: rule for %q uses undefined symbol %q", sym, s)
 				}
 			}
@@ -127,7 +169,8 @@ func (g *Grammar) productiveSymbols() map[string]bool {
 			}
 			for _, rule := range rules {
 				if !slices.ContainsFunc(rule.Expansion, func(s string) bool {
-					return !isPOS(s) && !productive[s]
+					terminal, _ := checkTerminal(s)
+					return !terminal && !productive[s]
 				}) {
 					productive[sym] = true
 					changed = true
@@ -139,9 +182,9 @@ func (g *Grammar) productiveSymbols() map[string]bool {
 	return productive
 }
 
-// Node is one constituent of a parse tree. A leaf's Symbol is a POS. Once the
-// leaf is filled from the lexicon, Lemma is the dictionary form and Word the
-// inflected one.
+// Node is one constituent of a parse tree. A leaf's Symbol is a POS,
+// optionally with a frame ("Verb:transitive"). Once the leaf is filled from
+// the lexicon, Lemma is the dictionary form and Word the inflected one.
 type Node struct {
 	Symbol   string  `json:"symbol"`
 	Lemma    string  `json:"lemma,omitempty"`
@@ -149,10 +192,22 @@ type Node struct {
 	Children []*Node `json:"children,omitempty"`
 }
 
+// POS is a leaf's part of speech, without any frame qualifier.
+func (n *Node) POS() POS {
+	pos, _ := splitSymbol(n.Symbol)
+	return pos
+}
+
+// Frame is a verb leaf's required frame, or empty.
+func (n *Node) Frame() Frame {
+	_, frame := splitSymbol(n.Symbol)
+	return frame
+}
+
 // Leaves returns the tree's POS slots in sentence order.
 func (n *Node) Leaves() []POS {
 	if len(n.Children) == 0 {
-		return []POS{POS(n.Symbol)}
+		return []POS{n.POS()}
 	}
 	var leaves []POS
 	for _, c := range n.Children {

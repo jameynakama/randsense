@@ -34,6 +34,13 @@ past_participle = "given"
 present_participle = "giving"
 
 [[irregular]]
+base = "go"
+third = "goes"
+past = "went"
+past_participle = "gone"
+present_participle = "going"
+
+[[irregular]]
 base = "feed"
 third = "feeds"
 past = "fed"
@@ -87,6 +94,9 @@ func TestConjugate(t *testing.T) {
 		{"give up", morph.Past, morph.Singular, "gave up"},
 		{"take care of", morph.Present, morph.Singular, "takes care of"},
 		{"test drive", morph.Present, morph.Singular, "test drives"},
+		{"go ballistic", morph.Past, morph.Singular, "went ballistic"},
+		{"go ballistic", morph.Present, morph.Singular, "goes ballistic"},
+		{"stop dead", morph.Present, morph.Singular, "stops dead"},
 		{"spoon-feed", morph.Past, morph.Singular, "spoon-fed"},
 		{"double-check", morph.Present, morph.Singular, "double-checks"},
 	}
@@ -117,6 +127,8 @@ func TestPluralize(t *testing.T) {
 		{"goose", "geese", "geese"},
 		{"male sibling", "", "male siblings"},
 		{"crown jewel", "", "crown jewels"},
+		{"talk of the town", "", "talks of the town"},
+		{"jack in the box", "", "jacks in the box"},
 	}
 
 	for _, tc := range tests {

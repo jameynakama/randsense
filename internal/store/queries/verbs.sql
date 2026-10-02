@@ -18,3 +18,9 @@ SELECT * FROM verbs
 WHERE active
 ORDER BY random()
 LIMIT 1;
+
+-- name: GetRandomVerbWithFrame :one
+SELECT * FROM verbs
+WHERE active AND frames ? @frame::text
+ORDER BY random()
+LIMIT 1;

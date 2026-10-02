@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/jameynakama/randsense/internal/lexicon/oewn"
@@ -101,7 +102,7 @@ func TestIngest(t *testing.T) {
 			t.Errorf("CountVerbs: got %d, want 4", count)
 		}
 
-		// two subcat codes, deduped across senses
+		// subcat codes mapped to frame names
 		verb, err := q.GetVerbByLemma(ctx, "devour")
 		if err != nil {
 			t.Fatalf("GetVerbByLemma(devour): %v", err)
@@ -110,7 +111,7 @@ func TestIngest(t *testing.T) {
 		if err := json.Unmarshal(verb.Frames, &frames); err != nil {
 			t.Fatalf("json.Unmarshal(devour.Frames): %v", err)
 		}
-		wantFrames := []string{"vtaa", "vtai"}
+		wantFrames := []string{"transitive"}
 		if len(frames) != len(wantFrames) {
 			t.Errorf("devour frames: got %v, want %v", frames, wantFrames)
 		} else {
@@ -119,6 +120,18 @@ func TestIngest(t *testing.T) {
 					t.Errorf("devour frames[%d]: got %q, want %q", i, frames[i], f)
 				}
 			}
+		}
+
+		verb, err = q.GetVerbByLemma(ctx, "sleep")
+		if err != nil {
+			t.Fatalf("GetVerbByLemma(sleep): %v", err)
+		}
+		var sleepFrames []string
+		if err := json.Unmarshal(verb.Frames, &sleepFrames); err != nil {
+			t.Fatalf("json.Unmarshal(sleep.Frames): %v", err)
+		}
+		if !slices.Equal(sleepFrames, []string{"intransitive", "intransitive-pp"}) {
+			t.Errorf("sleep frames: got %v, want [intransitive intransitive-pp]", sleepFrames)
 		}
 
 		// no subcat attribute: frames must be empty array, not null
