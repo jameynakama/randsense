@@ -8,23 +8,27 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/jameynakama/randsense/internal/grammar"
+	"github.com/jameynakama/randsense/internal/morph"
 	"github.com/jameynakama/randsense/internal/store"
 )
 
 type RouterConfig struct {
 	Queries *store.Queries
 	Grammar *grammar.Grammar
+	Verbs   *morph.Verbs
 }
 
 type Handler struct {
 	queries *store.Queries
 	grammar *grammar.Grammar
+	verbs   *morph.Verbs
 }
 
 func NewRouter(cfg RouterConfig) http.Handler {
 	h := &Handler{
 		queries: cfg.Queries,
 		grammar: cfg.Grammar,
+		verbs:   cfg.Verbs,
 	}
 
 	r := chi.NewRouter()

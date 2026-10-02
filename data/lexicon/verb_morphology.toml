@@ -1,0 +1,3290 @@
+# Verb morphology the -s/-ed rules get wrong, extracted from the NLM SPECIALIST
+# Lexicon. Where SPECIALIST lists several paradigms for a verb, a regular one
+# wins over an irregular one (dreamed, not dreamt). A doubled one wins over a
+# regular one (referred), except after -l or -s, where US spelling keeps one
+# consonant (traveled). "be" is handled in code.
+
+# Verbs whose final consonant doubles before -ed and -ing (stop -> stopped).
+doubled = [
+  "abet",
+  "abhor",
+  "abut",
+  "ad-lib",
+  "admit",
+  "air-drop",
+  "allot",
+  "annul",
+  "autocontrol",
+  "aver",
+  "backdrop",
+  "backlog",
+  "backslap",
+  "backstab",
+  "backstop",
+  "bag",
+  "bam",
+  "ban",
+  "bar",
+  "barhop",
+  "bat",
+  "bayonet",
+  "bebop",
+  "bed",
+  "befit",
+  "beg",
+  "benefit",
+  "bestir",
+  "bet",
+  "bib",
+  "bin",
+  "biopan",
+  "blab",
+  "blackleg",
+  "blacktop",
+  "blat",
+  "blob",
+  "blot",
+  "blur",
+  "bob",
+  "bobsled",
+  "bog",
+  "bootleg",
+  "bootstrap",
+  "bop",
+  "brad",
+  "brag",
+  "brevet",
+  "brim",
+  "brod",
+  "bud",
+  "bug",
+  "bulldog",
+  "bullshit",
+  "bum",
+  "cabal",
+  "can",
+  "cap",
+  "caravan",
+  "cat",
+  "catnap",
+  "chairman",
+  "chap",
+  "char",
+  "chat",
+  "chin",
+  "chip",
+  "chitchat",
+  "chop",
+  "chug",
+  "chum",
+  "clad",
+  "clam",
+  "clap",
+  "clip",
+  "clog",
+  "clot",
+  "club",
+  "cobweb",
+  "cog",
+  "coif",
+  "combat",
+  "commit",
+  "compel",
+  "con",
+  "concur",
+  "confab",
+  "confer",
+  "cooccur",
+  "cop",
+  "costar",
+  "cotransfer",
+  "cotransmit",
+  "counterplot",
+  "crab",
+  "cram",
+  "crap",
+  "crib",
+  "crop",
+  "cross-transmit",
+  "crossrefer",
+  "cryomap",
+  "cub",
+  "cup",
+  "curvet",
+  "dab",
+  "dag",
+  "dam",
+  "dap",
+  "debar",
+  "deblur",
+  "debug",
+  "declot",
+  "decontrol",
+  "defat",
+  "defer",
+  "defog",
+  "degas",
+  "degum",
+  "demur",
+  "den",
+  "deprogram",
+  "deter",
+  "dewet",
+  "diagram",
+  "dib",
+  "dim",
+  "dimit",
+  "din",
+  "dip",
+  "dis",
+  "disbar",
+  "disbud",
+  "disinter",
+  "dispel",
+  "dog",
+  "dogsled",
+  "don",
+  "dot",
+  "drag",
+  "drat",
+  "drip",
+  "drop",
+  "drub",
+  "drug",
+  "drum",
+  "dub",
+  "dun",
+  "earwig",
+  "eavesdrop",
+  "electroblot",
+  "electrotransfer",
+  "electrowet",
+  "embed",
+  "emit",
+  "entrap",
+  "envelop",
+  "enwrap",
+  "excel",
+  "expel",
+  "extol",
+  "facet",
+  "fag",
+  "fan",
+  "fat",
+  "featherbed",
+  "fib",
+  "fin",
+  "fit",
+  "flag",
+  "flap",
+  "flip",
+  "flit",
+  "floc",
+  "flog",
+  "flop",
+  "fob",
+  "fog",
+  "footslog",
+  "fop",
+  "format",
+  "frap",
+  "fret",
+  "frog",
+  "fur",
+  "gab",
+  "gad",
+  "gag",
+  "gam",
+  "gap",
+  "gas",
+  "gen",
+  "gin",
+  "globe-trot",
+  "glom",
+  "glug",
+  "glut",
+  "gossip",
+  "grab",
+  "grin",
+  "grip",
+  "grit",
+  "grub",
+  "gum",
+  "gun",
+  "gut",
+  "ham",
+  "handicap",
+  "hap",
+  "hem",
+  "hemoclip",
+  "hog",
+  "hop",
+  "hot",
+  "hotdog",
+  "hug",
+  "hum",
+  "imbed",
+  "immunoblot",
+  "impel",
+  "incur",
+  "infer",
+  "input",
+  "inset",
+  "inter",
+  "intercrop",
+  "intercut",
+  "intermit",
+  "intromit",
+  "jab",
+  "jag",
+  "jam",
+  "jar",
+  "jet",
+  "jib",
+  "jig",
+  "job",
+  "jog",
+  "jot",
+  "jug",
+  "jury-rig",
+  "jut",
+  "ken",
+  "kid",
+  "kidnap",
+  "knit",
+  "knob",
+  "knot",
+  "lag",
+  "lam",
+  "lap",
+  "leaflet",
+  "leapfrog",
+  "lid",
+  "lin",
+  "lip",
+  "lob",
+  "log",
+  "lop",
+  "lug",
+  "man",
+  "manumit",
+  "map",
+  "mar",
+  "mat",
+  "micropan",
+  "misfit",
+  "mismap",
+  "misset",
+  "mob",
+  "mop",
+  "mug",
+  "nab",
+  "nag",
+  "name-drop",
+  "nap",
+  "nep",
+  "net",
+  "nib",
+  "nim",
+  "nip",
+  "nod",
+  "nonconcur",
+  "nonplus",
+  "nub",
+  "nut",
+  "occur",
+  "omit",
+  "outfit",
+  "outgas",
+  "output",
+  "outrival",
+  "outspan",
+  "outstrip",
+  "outwit",
+  "overcrop",
+  "overfit",
+  "overlap",
+  "overman",
+  "overstep",
+  "overtop",
+  "overwrap",
+  "pad",
+  "pan",
+  "panel",
+  "pat",
+  "patrol",
+  "peg",
+  "pen",
+  "pep",
+  "permit",
+  "pet",
+  "photoscan",
+  "photostat",
+  "pin",
+  "pip",
+  "pit",
+  "plan",
+  "plod",
+  "plop",
+  "plot",
+  "plug",
+  "pod",
+  "pom",
+  "pop",
+  "pot",
+  "preadmit",
+  "prebag",
+  "preclot",
+  "precommit",
+  "precut",
+  "predip",
+  "preembed",
+  "prefer",
+  "prefit",
+  "prep",
+  "preplan",
+  "prerub",
+  "prescan",
+  "presubmit",
+  "pretermit",
+  "prod",
+  "prop",
+  "propel",
+  "pun",
+  "pup",
+  "quadrat",
+  "rabbit",
+  "rag",
+  "ram",
+  "rap",
+  "rappel",
+  "rat",
+  "ratchet",
+  "readmit",
+  "rebel",
+  "rebut",
+  "recap",
+  "reclad",
+  "recommit",
+  "recontrol",
+  "recur",
+  "redevelop",
+  "redon",
+  "redub",
+  "reembed",
+  "reemit",
+  "ref",
+  "refer",
+  "refit",
+  "reformat",
+  "regret",
+  "reinter",
+  "rejig",
+  "reknit",
+  "remap",
+  "remit",
+  "reoccur",
+  "reoutfit",
+  "repeg",
+  "repel",
+  "replan",
+  "replot",
+  "repot",
+  "reprep",
+  "rerefer",
+  "rerig",
+  "rescan",
+  "rescrub",
+  "resod",
+  "respot",
+  "resubmit",
+  "resum",
+  "ret",
+  "retag",
+  "retap",
+  "retarget",
+  "retransfer",
+  "retransmit",
+  "retrofit",
+  "rev",
+  "rewet",
+  "rewrap",
+  "rib",
+  "ricochet",
+  "rig",
+  "rim",
+  "rip",
+  "rit",
+  "roadmap",
+  "rob",
+  "rod",
+  "rot",
+  "rub",
+  "rut",
+  "sag",
+  "sandbag",
+  "sap",
+  "scab",
+  "scam",
+  "scan",
+  "scar",
+  "scat",
+  "scintiscan",
+  "scrab",
+  "scrag",
+  "scram",
+  "scrap",
+  "scrub",
+  "scud",
+  "self-cut",
+  "self-propel",
+  "self-scan",
+  "servocontrol",
+  "sham",
+  "sharecrop",
+  "shim",
+  "shin",
+  "ship",
+  "shit",
+  "shop",
+  "shred",
+  "shrug",
+  "shun",
+  "sic",
+  "sideslip",
+  "sidestep",
+  "sin",
+  "sip",
+  "skid",
+  "skim",
+  "skin",
+  "skip",
+  "slam",
+  "slap",
+  "slat",
+  "sled",
+  "slim",
+  "slip",
+  "slog",
+  "slop",
+  "slot",
+  "slug",
+  "slum",
+  "slur",
+  "smut",
+  "snag",
+  "snap",
+  "snip",
+  "snub",
+  "snug",
+  "sob",
+  "sod",
+  "sop",
+  "spam",
+  "span",
+  "spar",
+  "spit",
+  "spot",
+  "spud",
+  "spur",
+  "stab",
+  "stag",
+  "star",
+  "stem",
+  "step",
+  "stereocontrol",
+  "stereoplot",
+  "stir",
+  "stop",
+  "strap",
+  "strip",
+  "strop",
+  "strum",
+  "strut",
+  "stub",
+  "stud",
+  "stun",
+  "sub",
+  "sublet",
+  "submit",
+  "sulfuret",
+  "sum",
+  "sun",
+  "sup",
+  "swab",
+  "swan",
+  "swap",
+  "swat",
+  "swig",
+  "swot",
+  "tablet",
+  "tag",
+  "tan",
+  "tap",
+  "target",
+  "teletransmit",
+  "thermostat",
+  "thin",
+  "throb",
+  "thrum",
+  "thud",
+  "tin",
+  "tip",
+  "tog",
+  "top",
+  "transfer",
+  "transmit",
+  "trap",
+  "trek",
+  "trepan",
+  "trim",
+  "trip",
+  "trot",
+  "tug",
+  "tum",
+  "twin",
+  "twit",
+  "unbar",
+  "uncap",
+  "unclip",
+  "unclog",
+  "underpin",
+  "underrefer",
+  "unfit",
+  "unknot",
+  "unman",
+  "unpin",
+  "unplug",
+  "unstrap",
+  "untrap",
+  "unwrap",
+  "unzip",
+  "vet",
+  "wad",
+  "wag",
+  "wan",
+  "wap",
+  "war",
+  "waterlog",
+  "weather-strip",
+  "web",
+  "wed",
+  "wet",
+  "whet",
+  "whip",
+  "whop",
+  "wig",
+  "window-shop",
+  "worship",
+  "wrap",
+  "yak",
+  "yap",
+  "yip",
+  "zag",
+  "zap",
+  "zig",
+  "zigzag",
+  "zip",
+]
+
+[[irregular]]
+base = "acquit"
+third = "acquits"
+past = "acquitted"
+past_participle = "acquitted"
+present_participle = "acquitting"
+
+[[irregular]]
+base = "antic"
+third = "antics"
+past = "anticked"
+past_participle = "anticked"
+present_participle = "anticking"
+
+[[irregular]]
+base = "applique"
+third = "appliques"
+past = "appliqued"
+past_participle = "appliqued"
+present_participle = "appliqueing"
+
+[[irregular]]
+base = "arc"
+third = "arcs"
+past = "arcked"
+past_participle = "arcked"
+present_participle = "arcking"
+
+[[irregular]]
+base = "arise"
+third = "arises"
+past = "arose"
+past_participle = "arisen"
+present_participle = "arising"
+
+[[irregular]]
+base = "awake"
+third = "awakes"
+past = "awoke"
+past_participle = "awoken"
+present_participle = "awaking"
+
+[[irregular]]
+base = "awe"
+third = "awes"
+past = "awed"
+past_participle = "awed"
+present_participle = "aweing"
+
+[[irregular]]
+base = "babysit"
+third = "babysits"
+past = "babysat"
+past_participle = "babysat"
+present_participle = "babysitting"
+
+[[irregular]]
+base = "backbite"
+third = "backbites"
+past = "backbit"
+past_participle = "backbitten"
+present_participle = "backbiting"
+
+[[irregular]]
+base = "backbleed"
+third = "backbleeds"
+past = "backbled"
+past_participle = "backbled"
+present_participle = "backbleeding"
+
+[[irregular]]
+base = "backslide"
+third = "backslides"
+past = "backslid"
+past_participle = "backslid"
+present_participle = "backsliding"
+
+[[irregular]]
+base = "bear"
+third = "bears"
+past = "bore"
+past_participle = "borne"
+present_participle = "bearing"
+
+[[irregular]]
+base = "beat"
+third = "beats"
+past = "beat"
+past_participle = "beaten"
+present_participle = "beating"
+
+[[irregular]]
+base = "become"
+third = "becomes"
+past = "became"
+past_participle = "become"
+present_participle = "becoming"
+
+[[irregular]]
+base = "befall"
+third = "befalls"
+past = "befell"
+past_participle = "befallen"
+present_participle = "befalling"
+
+[[irregular]]
+base = "beget"
+third = "begets"
+past = "begot"
+past_participle = "begotten"
+present_participle = "begetting"
+
+[[irregular]]
+base = "begin"
+third = "begins"
+past = "began"
+past_participle = "begun"
+present_participle = "beginning"
+
+[[irregular]]
+base = "behold"
+third = "beholds"
+past = "beheld"
+past_participle = "beheld"
+present_participle = "beholding"
+
+[[irregular]]
+base = "beset"
+third = "besets"
+past = "beset"
+past_participle = "beset"
+present_participle = "besetting"
+
+[[irregular]]
+base = "bespeak"
+third = "bespeaks"
+past = "bespoke"
+past_participle = "bespoken"
+present_participle = "bespeaking"
+
+[[irregular]]
+base = "bestride"
+third = "bestrides"
+past = "betrode"
+past_participle = "bestridden"
+present_participle = "bestriding"
+
+[[irregular]]
+base = "bid"
+third = "bids"
+past = "bade"
+past_participle = "bade"
+present_participle = "bidding"
+
+[[irregular]]
+base = "bind"
+third = "binds"
+past = "bound"
+past_participle = "bound"
+present_participle = "binding"
+
+[[irregular]]
+base = "bite"
+third = "bites"
+past = "bit"
+past_participle = "bitten"
+present_participle = "biting"
+
+[[irregular]]
+base = "bivouac"
+third = "bivouacs"
+past = "bivouacked"
+past_participle = "bivouacked"
+present_participle = "bivouacking"
+
+[[irregular]]
+base = "blanco"
+third = "blancoes"
+past = "blancoed"
+past_participle = "blancoed"
+present_participle = "blancoing"
+
+[[irregular]]
+base = "bleed"
+third = "bleeds"
+past = "bled"
+past_participle = "bled"
+present_participle = "bleeding"
+
+[[irregular]]
+base = "blow"
+third = "blows"
+past = "blew"
+past_participle = "blown"
+present_participle = "blowing"
+
+[[irregular]]
+base = "bottlefeed"
+third = "bottlefeeds"
+past = "bottlefed"
+past_participle = "bottlefed"
+present_participle = "bottlefeeding"
+
+[[irregular]]
+base = "break"
+third = "breaks"
+past = "broke"
+past_participle = "broken"
+present_participle = "breaking"
+
+[[irregular]]
+base = "breastfeed"
+third = "breastfeeds"
+past = "breastfed"
+past_participle = "breastfed"
+present_participle = "breastfeeding"
+
+[[irregular]]
+base = "breed"
+third = "breeds"
+past = "bred"
+past_participle = "bred"
+present_participle = "breeding"
+
+[[irregular]]
+base = "bring"
+third = "brings"
+past = "brought"
+past_participle = "brought"
+present_participle = "bringing"
+
+[[irregular]]
+base = "browbeat"
+third = "browbeats"
+past = "browbeat"
+past_participle = "browbeaten"
+present_participle = "browbeating"
+
+[[irregular]]
+base = "build"
+third = "builds"
+past = "built"
+past_participle = "built"
+present_participle = "building"
+
+[[irregular]]
+base = "burst"
+third = "bursts"
+past = "burst"
+past_participle = "burst"
+present_participle = "bursting"
+
+[[irregular]]
+base = "buy"
+third = "buys"
+past = "bought"
+past_participle = "bought"
+present_participle = "buying"
+
+[[irregular]]
+base = "cast"
+third = "casts"
+past = "cast"
+past_participle = "cast"
+present_participle = "casting"
+
+[[irregular]]
+base = "catch"
+third = "catches"
+past = "caught"
+past_participle = "caught"
+present_participle = "catching"
+
+[[irregular]]
+base = "cha-cha"
+third = "cha-chas"
+past = "cha-cha-ed"
+past_participle = "cha-cha-ed"
+present_participle = "cha-cha-ing"
+
+[[irregular]]
+base = "chance"
+third = "chances"
+past = "chanced"
+past_participle = "chanced"
+present_participle = "chancing"
+
+[[irregular]]
+base = "choose"
+third = "chooses"
+past = "chose"
+past_participle = "chosen"
+present_participle = "choosing"
+
+[[irregular]]
+base = "clearcut"
+third = "clearcuts"
+past = "clearcut"
+past_participle = "clearcut"
+present_participle = "clearcutting"
+
+[[irregular]]
+base = "cling"
+third = "clings"
+past = "clung"
+past_participle = "clung"
+present_participle = "clinging"
+
+[[irregular]]
+base = "cobind"
+third = "cobinds"
+past = "cobound"
+past_participle = "cobound"
+present_participle = "cobinding"
+
+[[irregular]]
+base = "come"
+third = "comes"
+past = "came"
+past_participle = "come"
+present_participle = "coming"
+
+[[irregular]]
+base = "cont"
+third = "cont"
+past = "cont"
+past_participle = "cont"
+present_participle = "cont"
+
+[[irregular]]
+base = "coquet"
+third = "coquets"
+past = "coquetted"
+past_participle = "coquetted"
+present_participle = "coquetting"
+
+[[irregular]]
+base = "cosleep"
+third = "cosleeps"
+past = "coslept"
+past_participle = "coslept"
+present_participle = "cosleeping"
+
+[[irregular]]
+base = "countersink"
+third = "countersinks"
+past = "countersank"
+past_participle = "countersunk"
+present_participle = "countersinking"
+
+[[irregular]]
+base = "credential"
+third = "credentials"
+past = "credentialled"
+past_participle = "credentialled"
+present_participle = "credentialing"
+
+[[irregular]]
+base = "creep"
+third = "creeps"
+past = "crept"
+past_participle = "crept"
+present_participle = "creeping"
+
+[[irregular]]
+base = "cross-over"
+third = "crosses-over"
+past = "crossed-over"
+past_participle = "crossed-over"
+present_participle = "crossing-over"
+
+[[irregular]]
+base = "crossbreed"
+third = "crossbreeds"
+past = "crossbred"
+past_participle = "crossbred"
+present_participle = "crossbreeding"
+
+[[irregular]]
+base = "crosscut"
+third = "crosscuts"
+past = "crosscut"
+past_participle = "crosscut"
+present_participle = "crosscutting"
+
+[[irregular]]
+base = "curvefit"
+third = "curvefits"
+past = "curvefit"
+past_participle = "curvefit"
+present_participle = "curvefitting"
+
+[[irregular]]
+base = "cut"
+third = "cuts"
+past = "cut"
+past_participle = "cut"
+present_participle = "cutting"
+
+[[irregular]]
+base = "cytospin"
+third = "cytospins"
+past = "cytospun"
+past_participle = "cytospun"
+present_participle = "cytospinning"
+
+[[irregular]]
+base = "deal"
+third = "deals"
+past = "dealt"
+past_participle = "dealt"
+present_participle = "dealing"
+
+[[irregular]]
+base = "deep-freeze"
+third = "deep-freezes"
+past = "deep-froze"
+past_participle = "deep-frozen"
+present_participle = "deep-freezing"
+
+[[irregular]]
+base = "dig"
+third = "digs"
+past = "dug"
+past_participle = "dug"
+present_participle = "digging"
+
+[[irregular]]
+base = "distil"
+third = "distils"
+past = "distilled"
+past_participle = "distilled"
+present_participle = "distilling"
+
+[[irregular]]
+base = "do"
+third = "does"
+past = "did"
+past_participle = "done"
+present_participle = "doing"
+
+[[irregular]]
+base = "draw"
+third = "draws"
+past = "drew"
+past_participle = "drawn"
+present_participle = "drawing"
+
+[[irregular]]
+base = "drink"
+third = "drinks"
+past = "drank"
+past_participle = "drunk"
+present_participle = "drinking"
+
+[[irregular]]
+base = "drive"
+third = "drives"
+past = "drove"
+past_participle = "driven"
+present_participle = "driving"
+
+[[irregular]]
+base = "eat"
+third = "eats"
+past = "ate"
+past_participle = "eaten"
+present_participle = "eating"
+
+[[irregular]]
+base = "echo"
+third = "echoes"
+past = "echoed"
+past_participle = "echoed"
+present_participle = "echoing"
+
+[[irregular]]
+base = "electrospin"
+third = "electrospins"
+past = "electrospun"
+past_participle = "electrospun"
+present_participle = "electrospinning"
+
+[[irregular]]
+base = "embargo"
+third = "embargoes"
+past = "embargoed"
+past_participle = "embargoed"
+present_participle = "embargoing"
+
+[[irregular]]
+base = "equip"
+third = "equips"
+past = "equipped"
+past_participle = "equipped"
+present_participle = "equipping"
+
+[[irregular]]
+base = "fall"
+third = "falls"
+past = "fell"
+past_participle = "fallen"
+present_participle = "falling"
+
+[[irregular]]
+base = "fee"
+third = "fees"
+past = "feed"
+past_participle = "feed"
+present_participle = "feeing"
+
+[[irregular]]
+base = "feed"
+third = "feeds"
+past = "fed"
+past_participle = "fed"
+present_participle = "feeding"
+
+[[irregular]]
+base = "feel"
+third = "feels"
+past = "felt"
+past_participle = "felt"
+present_participle = "feeling"
+
+[[irregular]]
+base = "fight"
+third = "fights"
+past = "fought"
+past_participle = "fought"
+present_participle = "fighting"
+
+[[irregular]]
+base = "find"
+third = "finds"
+past = "found"
+past_participle = "found"
+present_participle = "finding"
+
+[[irregular]]
+base = "flee"
+third = "flees"
+past = "fled"
+past_participle = "fled"
+present_participle = "fleeing"
+
+[[irregular]]
+base = "fling"
+third = "flings"
+past = "flung"
+past_participle = "flung"
+present_participle = "flinging"
+
+[[irregular]]
+base = "foot"
+third = "foots"
+past = "footed"
+past_participle = "footed"
+present_participle = "footing"
+
+[[irregular]]
+base = "forbear"
+third = "forbears"
+past = "forbore"
+past_participle = "forborne"
+present_participle = "forbearing"
+
+[[irregular]]
+base = "forbid"
+third = "forbids"
+past = "forbade"
+past_participle = "forbidden"
+present_participle = "forbidding"
+
+[[irregular]]
+base = "force-feed"
+third = "force-feeds"
+past = "force-fed"
+past_participle = "force-fed"
+present_participle = "force-feeding"
+
+[[irregular]]
+base = "foreknow"
+third = "foreknows"
+past = "foreknew"
+past_participle = "foreknown"
+present_participle = "foreknowing"
+
+[[irregular]]
+base = "foresee"
+third = "foresees"
+past = "foresaw"
+past_participle = "foreseen"
+present_participle = "foreseeing"
+
+[[irregular]]
+base = "foretell"
+third = "foretells"
+past = "foretold"
+past_participle = "foretold"
+present_participle = "foretelling"
+
+[[irregular]]
+base = "forget"
+third = "forgets"
+past = "forgot"
+past_participle = "forgotten"
+present_participle = "forgetting"
+
+[[irregular]]
+base = "forgive"
+third = "forgives"
+past = "forgave"
+past_participle = "forgiven"
+present_participle = "forgiving"
+
+[[irregular]]
+base = "forsake"
+third = "forsakes"
+past = "forsook"
+past_participle = "forsaken"
+present_participle = "forsaking"
+
+[[irregular]]
+base = "forswear"
+third = "forswears"
+past = "forswore"
+past_participle = "forsworn"
+present_participle = "forswearing"
+
+[[irregular]]
+base = "free"
+third = "frees"
+past = "freed"
+past_participle = "freed"
+present_participle = "freeing"
+
+[[irregular]]
+base = "freeze"
+third = "freezes"
+past = "froze"
+past_participle = "frozen"
+present_participle = "freezing"
+
+[[irregular]]
+base = "fricassee"
+third = "fricassees"
+past = "fricasseed"
+past_participle = "fricasseed"
+present_participle = "fricasseeing"
+
+[[irregular]]
+base = "frolic"
+third = "frolics"
+past = "frolicked"
+past_participle = "frolicked"
+present_participle = "frolicking"
+
+[[irregular]]
+base = "fulfil"
+third = "fulfils"
+past = "fulfilled"
+past_participle = "fulfilled"
+present_participle = "fulfilling"
+
+[[irregular]]
+base = "full-feed"
+third = "full-feeds"
+past = "full-fed"
+past_participle = "full-fed"
+present_participle = "full-feeding"
+
+[[irregular]]
+base = "gainsay"
+third = "gainsays"
+past = "gainsaid"
+past_participle = "gainsaid"
+present_participle = "gainsaying"
+
+[[irregular]]
+base = "gel"
+third = "gels"
+past = "gelled"
+past_participle = "gelled"
+present_participle = "gelling"
+
+[[irregular]]
+base = "get"
+third = "gets"
+past = "got"
+past_participle = "got"
+present_participle = "getting"
+
+[[irregular]]
+base = "ghostwrite"
+third = "ghostwrites"
+past = "ghostwrote"
+past_participle = "ghostwritten"
+present_participle = "ghostwriting"
+
+[[irregular]]
+base = "give"
+third = "gives"
+past = "gave"
+past_participle = "given"
+present_participle = "giving"
+
+[[irregular]]
+base = "go"
+third = "goes"
+past = "went"
+past_participle = "gone"
+present_participle = "going"
+
+[[irregular]]
+base = "grow"
+third = "grows"
+past = "grew"
+past_participle = "grown"
+present_participle = "growing"
+
+[[irregular]]
+base = "gyp"
+third = "gyps"
+past = "gypped"
+past_participle = "gypped"
+present_participle = "gypping"
+
+[[irregular]]
+base = "hamstring"
+third = "hamstrings"
+past = "hamstrung"
+past_participle = "hamstrung"
+present_participle = "hamstringing"
+
+[[irregular]]
+base = "hand-feed"
+third = "hand-feeds"
+past = "hand-fed"
+past_participle = "hand-fed"
+present_participle = "hand-feeding"
+
+[[irregular]]
+base = "have"
+third = "has"
+past = "had"
+past_participle = "had"
+present_participle = "having"
+
+[[irregular]]
+base = "hear"
+third = "hears"
+past = "heard"
+past_participle = "heard"
+present_participle = "hearing"
+
+[[irregular]]
+base = "hide"
+third = "hides"
+past = "hid"
+past_participle = "hidden"
+present_participle = "hiding"
+
+[[irregular]]
+base = "hit"
+third = "hits"
+past = "hit"
+past_participle = "hit"
+present_participle = "hitting"
+
+[[irregular]]
+base = "hold"
+third = "holds"
+past = "held"
+past_participle = "held"
+present_participle = "holding"
+
+[[irregular]]
+base = "hurt"
+third = "hurts"
+past = "hurt"
+past_participle = "hurt"
+present_participle = "hurting"
+
+[[irregular]]
+base = "inbreed"
+third = "inbreeds"
+past = "inbred"
+past_participle = "inbred"
+present_participle = "inbreeding"
+
+[[irregular]]
+base = "instal"
+third = "instals"
+past = "installed"
+past_participle = "installed"
+present_participle = "installing"
+
+[[irregular]]
+base = "instil"
+third = "instils"
+past = "instilled"
+past_participle = "instilled"
+present_participle = "instilling"
+
+[[irregular]]
+base = "interbreed"
+third = "interbreeds"
+past = "interbred"
+past_participle = "interbred"
+present_participle = "interbreeding"
+
+[[irregular]]
+base = "intergrow"
+third = "intergrows"
+past = "intergrew"
+past_participle = "intergrown"
+present_participle = "intergrowing"
+
+[[irregular]]
+base = "interlay"
+third = "interlays"
+past = "interlaid"
+past_participle = "interlaid"
+present_participle = "interlaying"
+
+[[irregular]]
+base = "interweave"
+third = "interweaves"
+past = "interwove"
+past_participle = "interwoven"
+present_participle = "interweaving"
+
+[[irregular]]
+base = "interwind"
+third = "interwinds"
+past = "interwound"
+past_participle = "interwound"
+present_participle = "interwinding"
+
+[[irregular]]
+base = "jerry-build"
+third = "jerry-builds"
+past = "jerry-built"
+past_participle = "jerry-built"
+present_participle = "jerry-building"
+
+[[irregular]]
+base = "keep"
+third = "keeps"
+past = "kept"
+past_participle = "kept"
+present_participle = "keeping"
+
+[[irregular]]
+base = "know"
+third = "knows"
+past = "knew"
+past_participle = "known"
+present_participle = "knowing"
+
+[[irregular]]
+base = "lasso"
+third = "lassoes"
+past = "lassoed"
+past_participle = "lassoed"
+present_participle = "lassoing"
+
+[[irregular]]
+base = "lay"
+third = "lays"
+past = "laid"
+past_participle = "laid"
+present_participle = "laying"
+
+[[irregular]]
+base = "lead"
+third = "leads"
+past = "led"
+past_participle = "led"
+present_participle = "leading"
+
+[[irregular]]
+base = "leave"
+third = "leaves"
+past = "left"
+past_participle = "left"
+present_participle = "leaving"
+
+[[irregular]]
+base = "lend"
+third = "lends"
+past = "lent"
+past_participle = "lent"
+present_participle = "lending"
+
+[[irregular]]
+base = "let"
+third = "lets"
+past = "let"
+past_participle = "let"
+present_participle = "letting"
+
+[[irregular]]
+base = "lightning"
+third = "lightnings"
+past = "lightninged"
+past_participle = "lightninged"
+present_participle = "lightning"
+
+[[irregular]]
+base = "lipread"
+third = "lipreads"
+past = "lipread"
+past_participle = "lipread"
+present_participle = "lipreading"
+
+[[irregular]]
+base = "lose"
+third = "loses"
+past = "lost"
+past_participle = "lost"
+present_participle = "losing"
+
+[[irregular]]
+base = "make"
+third = "makes"
+past = "made"
+past_participle = "made"
+present_participle = "making"
+
+[[irregular]]
+base = "mean"
+third = "means"
+past = "meant"
+past_participle = "meant"
+present_participle = "meaning"
+
+[[irregular]]
+base = "meet"
+third = "meets"
+past = "met"
+past_participle = "met"
+present_participle = "meeting"
+
+[[irregular]]
+base = "miscast"
+third = "miscasts"
+past = "miscast"
+past_participle = "miscast"
+present_participle = "miscasting"
+
+[[irregular]]
+base = "miscleave"
+third = "miscleaves"
+past = "miscleaved"
+past_participle = "miscleaved"
+present_participle = "miscleaving"
+
+[[irregular]]
+base = "miscut"
+third = "miscuts"
+past = "miscut"
+past_participle = "miscut"
+present_participle = "miscutting"
+
+[[irregular]]
+base = "misdeal"
+third = "misdeals"
+past = "misdealt"
+past_participle = "misdealt"
+present_participle = "misdealing"
+
+[[irregular]]
+base = "misdo"
+third = "misdoes"
+past = "misdid"
+past_participle = "misdone"
+present_participle = "misdoing"
+
+[[irregular]]
+base = "mishear"
+third = "mishears"
+past = "misheard"
+past_participle = "misheard"
+present_participle = "mishearing"
+
+[[irregular]]
+base = "mislay"
+third = "mislays"
+past = "mislaid"
+past_participle = "mislaid"
+present_participle = "mislaying"
+
+[[irregular]]
+base = "mislead"
+third = "misleads"
+past = "misled"
+past_participle = "misled"
+present_participle = "misleading"
+
+[[irregular]]
+base = "misread"
+third = "misreads"
+past = "misread"
+past_participle = "misread"
+present_participle = "misreading"
+
+[[irregular]]
+base = "misspend"
+third = "misspends"
+past = "misspent"
+past_participle = "misspent"
+present_participle = "misspending"
+
+[[irregular]]
+base = "mistake"
+third = "mistakes"
+past = "mistook"
+past_participle = "mistaken"
+present_participle = "mistaking"
+
+[[irregular]]
+base = "misunderstand"
+third = "misunderstands"
+past = "misunderstood"
+past_participle = "misunderstood"
+present_participle = "misunderstanding"
+
+[[irregular]]
+base = "moire"
+third = "moires"
+past = "moired"
+past_participle = "moired"
+present_participle = "moireing"
+
+[[irregular]]
+base = "offset"
+third = "offsets"
+past = "offset"
+past_participle = "offset"
+present_participle = "offsetting"
+
+[[irregular]]
+base = "outbid"
+third = "outbids"
+past = "outbid"
+past_participle = "outbid"
+present_participle = "outbidding"
+
+[[irregular]]
+base = "outbreak"
+third = "outbreaks"
+past = "outbroke"
+past_participle = "outbroken"
+present_participle = "outbreaking"
+
+[[irregular]]
+base = "outbreed"
+third = "outbreeds"
+past = "outbred"
+past_participle = "outbred"
+present_participle = "outbreeding"
+
+[[irregular]]
+base = "outdo"
+third = "outdoes"
+past = "outdid"
+past_participle = "outdone"
+present_participle = "outdoing"
+
+[[irregular]]
+base = "outfight"
+third = "outfights"
+past = "outfought"
+past_participle = "outfought"
+present_participle = "outfighting"
+
+[[irregular]]
+base = "outgo"
+third = "outgoes"
+past = "outwent"
+past_participle = "outgone"
+present_participle = "outgoing"
+
+[[irregular]]
+base = "outgrow"
+third = "outgrows"
+past = "outgrew"
+past_participle = "outgrown"
+present_participle = "outgrowing"
+
+[[irregular]]
+base = "outlay"
+third = "outlays"
+past = "outlaid"
+past_participle = "outlaid"
+present_participle = "outlaying"
+
+[[irregular]]
+base = "outride"
+third = "outrides"
+past = "outrode"
+past_participle = "outridden"
+present_participle = "outriding"
+
+[[irregular]]
+base = "outrun"
+third = "outruns"
+past = "outran"
+past_participle = "outrun"
+present_participle = "outrunning"
+
+[[irregular]]
+base = "outshine"
+third = "outshines"
+past = "outshone"
+past_participle = "outshone"
+present_participle = "outshining"
+
+[[irregular]]
+base = "outspend"
+third = "outspends"
+past = "outspent"
+past_participle = "outspent"
+present_participle = "outspending"
+
+[[irregular]]
+base = "outvie"
+third = "outvies"
+past = "outvied"
+past_participle = "outvied"
+present_participle = "outvying"
+
+[[irregular]]
+base = "outwear"
+third = "outwears"
+past = "outwore"
+past_participle = "outworn"
+present_participle = "outwearing"
+
+[[irregular]]
+base = "overbear"
+third = "overbears"
+past = "overbore"
+past_participle = "overborne"
+present_participle = "overbearing"
+
+[[irregular]]
+base = "overbid"
+third = "overbids"
+past = "overbid"
+past_participle = "overbid"
+present_participle = "overbidding"
+
+[[irregular]]
+base = "overbuild"
+third = "overbuilds"
+past = "overbuilt"
+past_participle = "overbuilt"
+present_participle = "overbuilding"
+
+[[irregular]]
+base = "overcome"
+third = "overcomes"
+past = "overcame"
+past_participle = "overcome"
+present_participle = "overcoming"
+
+[[irregular]]
+base = "overcut"
+third = "overcuts"
+past = "overcut"
+past_participle = "overcut"
+present_participle = "overcutting"
+
+[[irregular]]
+base = "overdo"
+third = "overdoes"
+past = "overdid"
+past_participle = "overdone"
+present_participle = "overdoing"
+
+[[irregular]]
+base = "overdraw"
+third = "overdraws"
+past = "overdrew"
+past_participle = "overdrawn"
+present_participle = "overdrawing"
+
+[[irregular]]
+base = "overdrink"
+third = "overdrinks"
+past = "overdrank"
+past_participle = "overdrunk"
+present_participle = "overdrinking"
+
+[[irregular]]
+base = "overdrive"
+third = "overdrives"
+past = "overdrove"
+past_participle = "overdriven"
+present_participle = "overdriving"
+
+[[irregular]]
+base = "overeat"
+third = "overeats"
+past = "overate"
+past_participle = "overeaten"
+present_participle = "overeating"
+
+[[irregular]]
+base = "overfeed"
+third = "overfeeds"
+past = "overfed"
+past_participle = "overfed"
+present_participle = "overfeeding"
+
+[[irregular]]
+base = "overfly"
+third = "overflies"
+past = "overflew"
+past_participle = "overflown"
+present_participle = "overflying"
+
+[[irregular]]
+base = "overgrow"
+third = "overgrows"
+past = "overgrew"
+past_participle = "overgrown"
+present_participle = "overgrowing"
+
+[[irregular]]
+base = "overhang"
+third = "overhangs"
+past = "overhung"
+past_participle = "overhung"
+present_participle = "overhanging"
+
+[[irregular]]
+base = "overhear"
+third = "overhears"
+past = "overheard"
+past_participle = "overheard"
+present_participle = "overhearing"
+
+[[irregular]]
+base = "overlie"
+third = "overlies"
+past = "overlay"
+past_participle = "overlain"
+present_participle = "overlying"
+
+[[irregular]]
+base = "overpay"
+third = "overpays"
+past = "overpaid"
+past_participle = "overpaid"
+present_participle = "overpaying"
+
+[[irregular]]
+base = "overread"
+third = "overreads"
+past = "overread"
+past_participle = "overread"
+present_participle = "overreading"
+
+[[irregular]]
+base = "override"
+third = "overrides"
+past = "overrode"
+past_participle = "overridden"
+present_participle = "overriding"
+
+[[irregular]]
+base = "overrun"
+third = "overruns"
+past = "overran"
+past_participle = "overrun"
+present_participle = "overrunning"
+
+[[irregular]]
+base = "oversee"
+third = "oversees"
+past = "oversaw"
+past_participle = "overseen"
+present_participle = "overseeing"
+
+[[irregular]]
+base = "oversell"
+third = "oversells"
+past = "oversold"
+past_participle = "oversold"
+present_participle = "overselling"
+
+[[irregular]]
+base = "oversew"
+third = "oversews"
+past = "oversewed"
+past_participle = "oversewn"
+present_participle = "oversewing"
+
+[[irregular]]
+base = "overshoot"
+third = "overshoots"
+past = "overshot"
+past_participle = "overshot"
+present_participle = "overshooting"
+
+[[irregular]]
+base = "oversleep"
+third = "oversleeps"
+past = "overslept"
+past_participle = "overslept"
+present_participle = "oversleeping"
+
+[[irregular]]
+base = "overspread"
+third = "overspreads"
+past = "overspread"
+past_participle = "overspread"
+present_participle = "overspreading"
+
+[[irregular]]
+base = "overtake"
+third = "overtakes"
+past = "overtook"
+past_participle = "overtaken"
+present_participle = "overtaking"
+
+[[irregular]]
+base = "overthrow"
+third = "overthrows"
+past = "overthrew"
+past_participle = "overthrown"
+present_participle = "overthrowing"
+
+[[irregular]]
+base = "overwear"
+third = "overwears"
+past = "overwore"
+past_participle = "overworn"
+present_participle = "overwearing"
+
+[[irregular]]
+base = "overwind"
+third = "overwinds"
+past = "overwound"
+past_participle = "overwound"
+present_participle = "overwinding"
+
+[[irregular]]
+base = "overwrite"
+third = "overwrites"
+past = "overwrote"
+past_participle = "overwritten"
+present_participle = "overwriting"
+
+[[irregular]]
+base = "panic"
+third = "panics"
+past = "panicked"
+past_participle = "panicked"
+present_participle = "panicking"
+
+[[irregular]]
+base = "partake"
+third = "partakes"
+past = "partook"
+past_participle = "partaken"
+present_participle = "partaking"
+
+[[irregular]]
+base = "physic"
+third = "physics"
+past = "physicked"
+past_participle = "physicked"
+present_participle = "physicking"
+
+[[irregular]]
+base = "picnic"
+third = "picnics"
+past = "picnicked"
+past_participle = "picnicked"
+present_participle = "picnicking"
+
+[[irregular]]
+base = "pinch-hit"
+third = "pinch-hits"
+past = "pinch-hit"
+past_participle = "pinch-hit"
+present_participle = "pinch-hitting"
+
+[[irregular]]
+base = "prebend"
+third = "prebends"
+past = "prebent"
+past_participle = "prebent"
+present_participle = "prebending"
+
+[[irregular]]
+base = "prebind"
+third = "prebinds"
+past = "prebound"
+past_participle = "prebound"
+present_participle = "prebinding"
+
+[[irregular]]
+base = "prebleed"
+third = "prebleeds"
+past = "prebled"
+past_participle = "prebled"
+present_participle = "prebleeding"
+
+[[irregular]]
+base = "premake"
+third = "premakes"
+past = "premade"
+past_participle = "premade"
+present_participle = "premaking"
+
+[[irregular]]
+base = "prepay"
+third = "prepays"
+past = "prepaid"
+past_participle = "prepaid"
+present_participle = "prepaying"
+
+[[irregular]]
+base = "prerun"
+third = "preruns"
+past = "preran"
+past_participle = "prerun"
+present_participle = "prerunning"
+
+[[irregular]]
+base = "presell"
+third = "presells"
+past = "presold"
+past_participle = "presold"
+present_participle = "preselling"
+
+[[irregular]]
+base = "preset"
+third = "presets"
+past = "preset"
+past_participle = "preset"
+present_participle = "presetting"
+
+[[irregular]]
+base = "presew"
+third = "presews"
+past = "presewed"
+past_participle = "presewn"
+present_participle = "presewing"
+
+[[irregular]]
+base = "prespread"
+third = "prespreads"
+past = "prespread"
+past_participle = "prespread"
+present_participle = "prespreading"
+
+[[irregular]]
+base = "proofread"
+third = "proofreads"
+past = "proofread"
+past_participle = "proofread"
+present_participle = "proofreading"
+
+[[irregular]]
+base = "put"
+third = "puts"
+past = "put"
+past_participle = "put"
+present_participle = "putting"
+
+[[irregular]]
+base = "quad"
+third = "quads"
+past = "quadded"
+past_participle = "quadded"
+present_participle = "quadding"
+
+[[irregular]]
+base = "quick-freeze"
+third = "quick-freezes"
+past = "quick-froze"
+past_participle = "quick-frozen"
+present_participle = "quick-freezing"
+
+[[irregular]]
+base = "quid"
+third = "quids"
+past = "quidded"
+past_participle = "quidded"
+present_participle = "quidding"
+
+[[irregular]]
+base = "quip"
+third = "quips"
+past = "quipped"
+past_participle = "quipped"
+present_participle = "quipping"
+
+[[irregular]]
+base = "quit"
+third = "quits"
+past = "quitted"
+past_participle = "quitted"
+present_participle = "quitting"
+
+[[irregular]]
+base = "quiz"
+third = "quizzes"
+past = "quizzed"
+past_participle = "quizzed"
+present_participle = "quizzing"
+
+[[irregular]]
+base = "read"
+third = "reads"
+past = "read"
+past_participle = "read"
+present_participle = "reading"
+
+[[irregular]]
+base = "rebegin"
+third = "rebegins"
+past = "rebegan"
+past_participle = "rebegun"
+present_participle = "rebeginning"
+
+[[irregular]]
+base = "rebid"
+third = "rebids"
+past = "rebid"
+past_participle = "rebid"
+present_participle = "rebidding"
+
+[[irregular]]
+base = "rebind"
+third = "rebinds"
+past = "rebound"
+past_participle = "rebound"
+present_participle = "rebinding"
+
+[[irregular]]
+base = "rebleed"
+third = "rebleeds"
+past = "rebled"
+past_participle = "rebled"
+present_participle = "rebleeding"
+
+[[irregular]]
+base = "rebreed"
+third = "rebreeds"
+past = "rebred"
+past_participle = "rebred"
+present_participle = "rebreeding"
+
+[[irregular]]
+base = "rebuild"
+third = "rebuilds"
+past = "rebuilt"
+past_participle = "rebuilt"
+present_participle = "rebuilding"
+
+[[irregular]]
+base = "rebuy"
+third = "rebuys"
+past = "rebought"
+past_participle = "rebought"
+present_participle = "rebuying"
+
+[[irregular]]
+base = "recut"
+third = "recuts"
+past = "recut"
+past_participle = "recut"
+present_participle = "recutting"
+
+[[irregular]]
+base = "redo"
+third = "redoes"
+past = "redid"
+past_participle = "redone"
+present_participle = "redoing"
+
+[[irregular]]
+base = "redraw"
+third = "redraws"
+past = "redrew"
+past_participle = "redrawn"
+present_participle = "redrawing"
+
+[[irregular]]
+base = "reecho"
+third = "reechoes"
+past = "reechoed"
+past_participle = "reechoed"
+present_participle = "reechoing"
+
+[[irregular]]
+base = "reequip"
+third = "reequips"
+past = "reequipped"
+past_participle = "reequipped"
+present_participle = "reequipping"
+
+[[irregular]]
+base = "refeed"
+third = "refeeds"
+past = "refed"
+past_participle = "refed"
+present_participle = "refeeding"
+
+[[irregular]]
+base = "refight"
+third = "refights"
+past = "refought"
+past_participle = "refought"
+present_participle = "refighting"
+
+[[irregular]]
+base = "refind"
+third = "refinds"
+past = "refound"
+past_participle = "refound"
+present_participle = "refinding"
+
+[[irregular]]
+base = "refreeze"
+third = "refreezes"
+past = "refroze"
+past_participle = "refrozen"
+present_participle = "refreezing"
+
+[[irregular]]
+base = "regive"
+third = "regives"
+past = "regave"
+past_participle = "regiven"
+present_participle = "regiving"
+
+[[irregular]]
+base = "regrind"
+third = "regrinds"
+past = "reground"
+past_participle = "reground"
+present_participle = "regrinding"
+
+[[irregular]]
+base = "regrow"
+third = "regrows"
+past = "regrew"
+past_participle = "regrown"
+present_participle = "regrowing"
+
+[[irregular]]
+base = "rehear"
+third = "rehears"
+past = "reheard"
+past_participle = "reheard"
+present_participle = "rehearing"
+
+[[irregular]]
+base = "reinstall"
+third = "reinstalls"
+past = "reinstalled"
+past_participle = "reinstalled"
+present_participle = "reinstalling"
+
+[[irregular]]
+base = "relend"
+third = "relends"
+past = "relent"
+past_participle = "relent"
+present_participle = "relending"
+
+[[irregular]]
+base = "remake"
+third = "remakes"
+past = "remade"
+past_participle = "remade"
+present_participle = "remaking"
+
+[[irregular]]
+base = "remeet"
+third = "remeets"
+past = "remet"
+past_participle = "remet"
+present_participle = "remeeting"
+
+[[irregular]]
+base = "rend"
+third = "rends"
+past = "rent"
+past_participle = "rent"
+present_participle = "rending"
+
+[[irregular]]
+base = "repay"
+third = "repays"
+past = "repaid"
+past_participle = "repaid"
+present_participle = "repaying"
+
+[[irregular]]
+base = "reread"
+third = "rereads"
+past = "reread"
+past_participle = "reread"
+present_participle = "rereading"
+
+[[irregular]]
+base = "rerun"
+third = "reruns"
+past = "reran"
+past_participle = "rerun"
+present_participle = "rerunning"
+
+[[irregular]]
+base = "resee"
+third = "resees"
+past = "resaw"
+past_participle = "reseen"
+present_participle = "reseeing"
+
+[[irregular]]
+base = "resell"
+third = "resells"
+past = "resold"
+past_participle = "resold"
+present_participle = "reselling"
+
+[[irregular]]
+base = "resend"
+third = "resends"
+past = "resent"
+past_participle = "resent"
+present_participle = "resending"
+
+[[irregular]]
+base = "reset"
+third = "resets"
+past = "reset"
+past_participle = "reset"
+present_participle = "resetting"
+
+[[irregular]]
+base = "resew"
+third = "resews"
+past = "resewed"
+past_participle = "resewn"
+present_participle = "resewing"
+
+[[irregular]]
+base = "reshoot"
+third = "reshoots"
+past = "reshot"
+past_participle = "reshot"
+present_participle = "reshooting"
+
+[[irregular]]
+base = "reshow"
+third = "reshows"
+past = "reshowed"
+past_participle = "reshown"
+present_participle = "reshowing"
+
+[[irregular]]
+base = "respread"
+third = "respreads"
+past = "respread"
+past_participle = "respread"
+present_participle = "respreading"
+
+[[irregular]]
+base = "restick"
+third = "resticks"
+past = "restuck"
+past_participle = "restuck"
+present_participle = "resticking"
+
+[[irregular]]
+base = "reswell"
+third = "reswells"
+past = "reswelled"
+past_participle = "reswollen"
+present_participle = "reswelling"
+
+[[irregular]]
+base = "retake"
+third = "retakes"
+past = "retook"
+past_participle = "retaken"
+present_participle = "retaking"
+
+[[irregular]]
+base = "reteach"
+third = "reteaches"
+past = "retaught"
+past_participle = "retaught"
+present_participle = "reteaching"
+
+[[irregular]]
+base = "retear"
+third = "retears"
+past = "retore"
+past_participle = "retorn"
+present_participle = "retearing"
+
+[[irregular]]
+base = "retell"
+third = "retells"
+past = "retold"
+past_participle = "retold"
+present_participle = "retelling"
+
+[[irregular]]
+base = "rethink"
+third = "rethinks"
+past = "rethought"
+past_participle = "rethought"
+present_participle = "rethinking"
+
+[[irregular]]
+base = "revictual"
+third = "revictuals"
+past = "revictualled"
+past_participle = "revictualled"
+present_participle = "revictualling"
+
+[[irregular]]
+base = "rewind"
+third = "rewinds"
+past = "rewound"
+past_participle = "rewound"
+present_participle = "rewinding"
+
+[[irregular]]
+base = "rewrite"
+third = "rewrites"
+past = "rewrote"
+past_participle = "rewritten"
+present_participle = "rewriting"
+
+[[irregular]]
+base = "rid"
+third = "rids"
+past = "rid"
+past_participle = "rid"
+present_participle = "ridding"
+
+[[irregular]]
+base = "ride"
+third = "rides"
+past = "rode"
+past_participle = "ridden"
+present_participle = "riding"
+
+[[irregular]]
+base = "ring"
+third = "rings"
+past = "rang"
+past_participle = "rung"
+present_participle = "ringing"
+
+[[irregular]]
+base = "rise"
+third = "rises"
+past = "rose"
+past_participle = "risen"
+present_participle = "rising"
+
+[[irregular]]
+base = "rive"
+third = "rives"
+past = "rived"
+past_participle = "riven"
+present_participle = "riving"
+
+[[irregular]]
+base = "roughcast"
+third = "roughcasts"
+past = "roughcast"
+past_participle = "roughcast"
+present_participle = "roughcasting"
+
+[[irregular]]
+base = "run"
+third = "runs"
+past = "ran"
+past_participle = "run"
+present_participle = "running"
+
+[[irregular]]
+base = "sandarac"
+third = "sandaracs"
+past = "sandaracked"
+past_participle = "sandaracked"
+present_participle = "sandaracking"
+
+[[irregular]]
+base = "saute"
+third = "sautes"
+past = "sauted"
+past_participle = "sauted"
+present_participle = "sauteing"
+
+[[irregular]]
+base = "say"
+third = "says"
+past = "said"
+past_participle = "said"
+present_participle = "saying"
+
+[[irregular]]
+base = "see"
+third = "sees"
+past = "saw"
+past_participle = "seen"
+present_participle = "seeing"
+
+[[irregular]]
+base = "seek"
+third = "seeks"
+past = "sought"
+past_participle = "sought"
+present_participle = "seeking"
+
+[[irregular]]
+base = "self-bind"
+third = "self-binds"
+past = "self-bound"
+past_participle = "self-bound"
+present_participle = "self-binding"
+
+[[irregular]]
+base = "self-feed"
+third = "self-feeds"
+past = "self-fed"
+past_participle = "self-fed"
+present_participle = "self-feeding"
+
+[[irregular]]
+base = "sell"
+third = "sells"
+past = "sold"
+past_participle = "sold"
+present_participle = "selling"
+
+[[irregular]]
+base = "send"
+third = "sends"
+past = "sent"
+past_participle = "sent"
+present_participle = "sending"
+
+[[irregular]]
+base = "set"
+third = "sets"
+past = "set"
+past_participle = "set"
+present_participle = "setting"
+
+[[irregular]]
+base = "sew"
+third = "sews"
+past = "sewed"
+past_participle = "sewn"
+present_participle = "sewing"
+
+[[irregular]]
+base = "shake"
+third = "shakes"
+past = "shook"
+past_participle = "shaken"
+present_participle = "shaking"
+
+[[irregular]]
+base = "shed"
+third = "sheds"
+past = "shed"
+past_participle = "shed"
+present_participle = "shedding"
+
+[[irregular]]
+base = "shellac"
+third = "shellacs"
+past = "shellacked"
+past_participle = "shellacked"
+present_participle = "shellacking"
+
+[[irregular]]
+base = "shoot"
+third = "shoots"
+past = "shot"
+past_participle = "shot"
+present_participle = "shooting"
+
+[[irregular]]
+base = "show"
+third = "shows"
+past = "showed"
+past_participle = "shown"
+present_participle = "showing"
+
+[[irregular]]
+base = "shrink"
+third = "shrinks"
+past = "shrank"
+past_participle = "shrunk"
+present_participle = "shrinking"
+
+[[irregular]]
+base = "shrive"
+third = "shrives"
+past = "shrove"
+past_participle = "shriven"
+present_participle = "shriving"
+
+[[irregular]]
+base = "shut"
+third = "shuts"
+past = "shut"
+past_participle = "shut"
+present_participle = "shutting"
+
+[[irregular]]
+base = "sing"
+third = "sings"
+past = "sang"
+past_participle = "sung"
+present_participle = "singing"
+
+[[irregular]]
+base = "singe"
+third = "singes"
+past = "singed"
+past_participle = "singed"
+present_participle = "singeing"
+
+[[irregular]]
+base = "sink"
+third = "sinks"
+past = "sank"
+past_participle = "sunk"
+present_participle = "sinking"
+
+[[irregular]]
+base = "sit"
+third = "sits"
+past = "sat"
+past_participle = "sat"
+present_participle = "sitting"
+
+[[irregular]]
+base = "slay"
+third = "slays"
+past = "slew"
+past_participle = "slain"
+present_participle = "slaying"
+
+[[irregular]]
+base = "sleep"
+third = "sleeps"
+past = "slept"
+past_participle = "slept"
+present_participle = "sleeping"
+
+[[irregular]]
+base = "slide"
+third = "slides"
+past = "slid"
+past_participle = "slid"
+present_participle = "sliding"
+
+[[irregular]]
+base = "sling"
+third = "slings"
+past = "slung"
+past_participle = "slung"
+present_participle = "slinging"
+
+[[irregular]]
+base = "slink"
+third = "slinks"
+past = "slunk"
+past_participle = "slunk"
+present_participle = "slinking"
+
+[[irregular]]
+base = "slit"
+third = "slits"
+past = "slit"
+past_participle = "slit"
+present_participle = "slitting"
+
+[[irregular]]
+base = "smite"
+third = "smites"
+past = "smote"
+past_participle = "smitten"
+present_participle = "smiting"
+
+[[irregular]]
+base = "speak"
+third = "speaks"
+past = "spoke"
+past_participle = "spoken"
+present_participle = "speaking"
+
+[[irregular]]
+base = "speechread"
+third = "speechreads"
+past = "speechread"
+past_participle = "speechread"
+present_participle = "speechreading"
+
+[[irregular]]
+base = "spend"
+third = "spends"
+past = "spent"
+past_participle = "spent"
+present_participle = "spending"
+
+[[irregular]]
+base = "spin"
+third = "spins"
+past = "spun"
+past_participle = "spun"
+present_participle = "spinning"
+
+[[irregular]]
+base = "split"
+third = "splits"
+past = "split"
+past_participle = "split"
+present_participle = "splitting"
+
+[[irregular]]
+base = "spoonfeed"
+third = "spoonfeeds"
+past = "spoonfed"
+past_participle = "spoonfed"
+present_participle = "spoonfeeding"
+
+[[irregular]]
+base = "spread"
+third = "spreads"
+past = "spread"
+past_participle = "spread"
+present_participle = "spreading"
+
+[[irregular]]
+base = "spring"
+third = "springs"
+past = "sprang"
+past_participle = "sprung"
+present_participle = "springing"
+
+[[irregular]]
+base = "squat"
+third = "squats"
+past = "squatted"
+past_participle = "squatted"
+present_participle = "squatting"
+
+[[irregular]]
+base = "stand"
+third = "stands"
+past = "stood"
+past_participle = "stood"
+present_participle = "standing"
+
+[[irregular]]
+base = "stave"
+third = "staves"
+past = "stove"
+past_participle = "stove"
+present_participle = "staving"
+
+[[irregular]]
+base = "steal"
+third = "steals"
+past = "stole"
+past_participle = "stolen"
+present_participle = "stealing"
+
+[[irregular]]
+base = "stick"
+third = "sticks"
+past = "stuck"
+past_participle = "stuck"
+present_participle = "sticking"
+
+[[irregular]]
+base = "sting"
+third = "stings"
+past = "stung"
+past_participle = "stung"
+present_participle = "stinging"
+
+[[irregular]]
+base = "stink"
+third = "stinks"
+past = "stank"
+past_participle = "stunk"
+present_participle = "stinking"
+
+[[irregular]]
+base = "stomach"
+third = "stomachs"
+past = "stomached"
+past_participle = "stomached"
+present_participle = "stomaching"
+
+[[irregular]]
+base = "strew"
+third = "strews"
+past = "strewed"
+past_participle = "strewn"
+present_participle = "strewing"
+
+[[irregular]]
+base = "stride"
+third = "strides"
+past = "strode"
+past_participle = "stridden"
+present_participle = "striding"
+
+[[irregular]]
+base = "strike"
+third = "strikes"
+past = "struck"
+past_participle = "struck"
+present_participle = "striking"
+
+[[irregular]]
+base = "string"
+third = "strings"
+past = "strung"
+past_participle = "strung"
+present_participle = "stringing"
+
+[[irregular]]
+base = "stymie"
+third = "stymies"
+past = "stymied"
+past_participle = "stymied"
+present_participle = "stymieing"
+
+[[irregular]]
+base = "swear"
+third = "swears"
+past = "swore"
+past_participle = "sworn"
+present_participle = "swearing"
+
+[[irregular]]
+base = "sweep"
+third = "sweeps"
+past = "swept"
+past_participle = "swept"
+present_participle = "sweeping"
+
+[[irregular]]
+base = "swell"
+third = "swells"
+past = "swelled"
+past_participle = "swollen"
+present_participle = "swelling"
+
+[[irregular]]
+base = "swim"
+third = "swims"
+past = "swam"
+past_participle = "swum"
+present_participle = "swimming"
+
+[[irregular]]
+base = "swing"
+third = "swings"
+past = "swung"
+past_participle = "swung"
+present_participle = "swinging"
+
+[[irregular]]
+base = "take"
+third = "takes"
+past = "took"
+past_participle = "taken"
+present_participle = "taking"
+
+[[irregular]]
+base = "tarmac"
+third = "tarmacs"
+past = "tarmacked"
+past_participle = "tarmacked"
+present_participle = "tarmacking"
+
+[[irregular]]
+base = "taxi"
+third = "taxis"
+past = "taxied"
+past_participle = "taxied"
+present_participle = "taxiing"
+
+[[irregular]]
+base = "teach"
+third = "teaches"
+past = "taught"
+past_participle = "taught"
+present_participle = "teaching"
+
+[[irregular]]
+base = "tell"
+third = "tells"
+past = "told"
+past_participle = "told"
+present_participle = "telling"
+
+[[irregular]]
+base = "test-drive"
+third = "test-drives"
+past = "test-drove"
+past_participle = "test-driven"
+present_participle = "test-driving"
+
+[[irregular]]
+base = "think"
+third = "thinks"
+past = "thought"
+past_participle = "thought"
+present_participle = "thinking"
+
+[[irregular]]
+base = "throw"
+third = "throws"
+past = "threw"
+past_participle = "thrown"
+present_participle = "throwing"
+
+[[irregular]]
+base = "thrust"
+third = "thrusts"
+past = "thrust"
+past_participle = "thrust"
+present_participle = "thrusting"
+
+[[irregular]]
+base = "torpedo"
+third = "torpedoes"
+past = "torpedoed"
+past_participle = "torpedoed"
+present_participle = "torpedoing"
+
+[[irregular]]
+base = "traffic"
+third = "traffics"
+past = "trafficked"
+past_participle = "trafficked"
+present_participle = "trafficking"
+
+[[irregular]]
+base = "tread"
+third = "treads"
+past = "trod"
+past_participle = "trodden"
+present_participle = "treading"
+
+[[irregular]]
+base = "tubefeed"
+third = "tubefeeds"
+past = "tubefed"
+past_participle = "tubefed"
+present_participle = "tubefeeding"
+
+[[irregular]]
+base = "typecast"
+third = "typecasts"
+past = "typecast"
+past_participle = "typecast"
+present_participle = "typecasting"
+
+[[irregular]]
+base = "typeset"
+third = "typesets"
+past = "typeset"
+past_participle = "typeset"
+present_participle = "typeset"
+
+[[irregular]]
+base = "unbind"
+third = "unbinds"
+past = "unbound"
+past_participle = "unbound"
+present_participle = "unbinding"
+
+[[irregular]]
+base = "unbuild"
+third = "unbuilds"
+past = "unbuilt"
+past_participle = "unbuilt"
+present_participle = "unbuilding"
+
+[[irregular]]
+base = "underbid"
+third = "underbids"
+past = "underbid"
+past_participle = "underbid"
+present_participle = "underbidding"
+
+[[irregular]]
+base = "undercut"
+third = "undercuts"
+past = "undercut"
+past_participle = "undercut"
+present_participle = "undercutting"
+
+[[irregular]]
+base = "undereat"
+third = "undereats"
+past = "underate"
+past_participle = "undereaten"
+present_participle = "undereating"
+
+[[irregular]]
+base = "underfeed"
+third = "underfeeds"
+past = "underfed"
+past_participle = "underfed"
+present_participle = "underfeeding"
+
+[[irregular]]
+base = "undergo"
+third = "undergoes"
+past = "underwent"
+past_participle = "undergone"
+present_participle = "undergoing"
+
+[[irregular]]
+base = "underlie"
+third = "underlies"
+past = "underlay"
+past_participle = "underlain"
+present_participle = "underlying"
+
+[[irregular]]
+base = "underpay"
+third = "underpays"
+past = "underpaid"
+past_participle = "underpaid"
+present_participle = "underpaying"
+
+[[irregular]]
+base = "underrun"
+third = "underruns"
+past = "underran"
+past_participle = "underrun"
+present_participle = "underrunning"
+
+[[irregular]]
+base = "undersell"
+third = "undersells"
+past = "undersold"
+past_participle = "undersold"
+present_participle = "underselling"
+
+[[irregular]]
+base = "undersew"
+third = "undersews"
+past = "undersewed"
+past_participle = "undersewn"
+present_participle = "undersewing"
+
+[[irregular]]
+base = "undershoot"
+third = "undershoots"
+past = "undershot"
+past_participle = "undershot"
+present_participle = "undershooting"
+
+[[irregular]]
+base = "underspend"
+third = "underspends"
+past = "underspent"
+past_participle = "underspent"
+present_participle = "underspending"
+
+[[irregular]]
+base = "understand"
+third = "understands"
+past = "understood"
+past_participle = "understood"
+present_participle = "understanding"
+
+[[irregular]]
+base = "undertake"
+third = "undertakes"
+past = "undertook"
+past_participle = "undertaken"
+present_participle = "undertaking"
+
+[[irregular]]
+base = "underwrite"
+third = "underwrites"
+past = "underwrote"
+past_participle = "underwritten"
+present_participle = "underwriting"
+
+[[irregular]]
+base = "undo"
+third = "undoes"
+past = "undid"
+past_participle = "undone"
+present_participle = "undoing"
+
+[[irregular]]
+base = "unfreeze"
+third = "unfreezes"
+past = "unfroze"
+past_participle = "unfrozen"
+present_participle = "unfreezing"
+
+[[irregular]]
+base = "unsay"
+third = "unsays"
+past = "unsaid"
+past_participle = "unsaid"
+present_participle = "unsaying"
+
+[[irregular]]
+base = "unsell"
+third = "unsells"
+past = "unsold"
+past_participle = "unsold"
+present_participle = "unselling"
+
+[[irregular]]
+base = "unstick"
+third = "unsticks"
+past = "unstuck"
+past_participle = "unstuck"
+present_participle = "unsticking"
+
+[[irregular]]
+base = "unweave"
+third = "unweaves"
+past = "unwove"
+past_participle = "unwoven"
+present_participle = "unweaving"
+
+[[irregular]]
+base = "unwind"
+third = "unwinds"
+past = "unwound"
+past_participle = "unwound"
+present_participle = "unwinding"
+
+[[irregular]]
+base = "up"
+third = "ups"
+past = "upped"
+past_participle = "upped"
+present_participle = "upping"
+
+[[irregular]]
+base = "uphold"
+third = "upholds"
+past = "upheld"
+past_participle = "upheld"
+present_participle = "upholding"
+
+[[irregular]]
+base = "uprise"
+third = "uprises"
+past = "uprose"
+past_participle = "uprisen"
+present_participle = "uprising"
+
+[[irregular]]
+base = "upset"
+third = "upsets"
+past = "upset"
+past_participle = "upset"
+present_participle = "upsetting"
+
+[[irregular]]
+base = "upsweep"
+third = "upsweeps"
+past = "upswept"
+past_participle = "upswept"
+present_participle = "upsweeping"
+
+[[irregular]]
+base = "upthrust"
+third = "upthrusts"
+past = "upthrust"
+past_participle = "upthrust"
+present_participle = "upthrusting"
+
+[[irregular]]
+base = "veto"
+third = "vetoes"
+past = "vetoed"
+past_participle = "vetoed"
+present_participle = "vetoing"
+
+[[irregular]]
+base = "vogue"
+third = "vogues"
+past = "vogued"
+past_participle = "vogued"
+present_participle = "voguing"
+
+[[irregular]]
+base = "wake"
+third = "wakes"
+past = "waked"
+past_participle = "waked"
+present_participle = "waking"
+
+[[irregular]]
+base = "waylay"
+third = "waylays"
+past = "waylaid"
+past_participle = "waylaid"
+present_participle = "waylaying"
+
+[[irregular]]
+base = "wear"
+third = "wears"
+past = "wore"
+past_participle = "worn"
+present_participle = "wearing"
+
+[[irregular]]
+base = "weep"
+third = "weeps"
+past = "wept"
+past_participle = "wept"
+present_participle = "weeping"
+
+[[irregular]]
+base = "whir"
+third = "whirs"
+past = "whirred"
+past_participle = "whirred"
+present_participle = "whirring"
+
+[[irregular]]
+base = "win"
+third = "wins"
+past = "won"
+past_participle = "won"
+present_participle = "winning"
+
+[[irregular]]
+base = "winterfeed"
+third = "winterfeeds"
+past = "winterfed"
+past_participle = "winterfed"
+present_participle = "winterfeeding"
+
+[[irregular]]
+base = "withdraw"
+third = "withdraws"
+past = "withdrew"
+past_participle = "withdrawn"
+present_participle = "withdrawing"
+
+[[irregular]]
+base = "withhold"
+third = "withholds"
+past = "withheld"
+past_participle = "withheld"
+present_participle = "withholding"
+
+[[irregular]]
+base = "withstand"
+third = "withstands"
+past = "withstood"
+past_participle = "withstood"
+present_participle = "withstanding"
+
+[[irregular]]
+base = "wring"
+third = "wrings"
+past = "wrung"
+past_participle = "wrung"
+present_participle = "wringing"
+
+[[irregular]]
+base = "write"
+third = "writes"
+past = "wrote"
+past_participle = "written"
+present_participle = "writing"

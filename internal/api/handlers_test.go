@@ -10,6 +10,7 @@ import (
 
 	"github.com/jameynakama/randsense/internal/api"
 	"github.com/jameynakama/randsense/internal/grammar"
+	"github.com/jameynakama/randsense/internal/morph"
 	"github.com/jameynakama/randsense/internal/store"
 )
 
@@ -31,7 +32,11 @@ func newTestServer(t *testing.T) *httptest.Server {
 	if err != nil {
 		t.Fatalf("grammar.Load: %v", err)
 	}
-	return httptest.NewServer(api.NewRouter(api.RouterConfig{Queries: store.New(testPool), Grammar: g}))
+	v, err := morph.LoadVerbs(strings.NewReader(""))
+	if err != nil {
+		t.Fatalf("morph.LoadVerbs: %v", err)
+	}
+	return httptest.NewServer(api.NewRouter(api.RouterConfig{Queries: store.New(testPool), Grammar: g, Verbs: v}))
 }
 
 func seedWords(t *testing.T) {
@@ -74,9 +79,9 @@ func seedWords(t *testing.T) {
 		t.Fatalf("seed adverb: %v", err)
 	}
 	if err := q.InsertDeterminer(ctx, store.InsertDeterminerParams{
-		Lemma:  "the",
-		Type:   "definite",
-		Number: "either",
+		Lemma:  "this",
+		Type:   "demonstrative",
+		Number: "singular",
 	}); err != nil {
 		t.Fatalf("seed determiner: %v", err)
 	}
@@ -103,8 +108,8 @@ func TestRandomSentence(t *testing.T) {
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if body.Text != "The goose devour." {
-		t.Errorf("text: got %q, want %q", body.Text, "The goose devour.")
+	if body.Text != "This goose devours." && body.Text != "This goose devoured." {
+		t.Errorf("text: got %q, want This goose devours/devoured", body.Text)
 	}
 	if body.Tree == nil || body.Tree.Symbol != "S" || len(body.Tree.Children) != 2 {
 		t.Errorf("tree: got %+v, want S with NP and Verb children", body.Tree)

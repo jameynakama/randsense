@@ -9,10 +9,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jameynakama/randsense/internal/api"
 	"github.com/jameynakama/randsense/internal/grammar"
+	"github.com/jameynakama/randsense/internal/morph"
 	"github.com/jameynakama/randsense/internal/store"
 )
 
-const grammarPath = "data/grammar/grammar.toml"
+const (
+	grammarPath = "data/grammar/grammar.toml"
+	verbsPath   = "data/lexicon/verb_morphology.toml"
+)
 
 type config struct {
 	databaseURL string
@@ -68,7 +72,17 @@ func main() {
 		log.Fatalf("load %s: %v", grammarPath, err)
 	}
 
-	routerCfg := api.RouterConfig{Queries: store.New(db), Grammar: g}
+	vf, err := os.Open(verbsPath)
+	if err != nil {
+		log.Fatalf("open %s: %v", verbsPath, err)
+	}
+	v, err := morph.LoadVerbs(vf)
+	vf.Close()
+	if err != nil {
+		log.Fatalf("load %s: %v", verbsPath, err)
+	}
+
+	routerCfg := api.RouterConfig{Queries: store.New(db), Grammar: g, Verbs: v}
 	r := api.NewRouter(routerCfg)
 
 	log.Printf("starting server at http://localhost:%s", cfg.port)
