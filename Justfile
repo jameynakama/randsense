@@ -36,6 +36,6 @@ generate:
     rm -f internal/store/*.sql.go
     sqlc generate
 
-# Ingest OEW lexicon into the database
+# Ingest the OEWN lexicon and the curated closed-class words into the database
 ingest:
     go run ./cmd/ingest

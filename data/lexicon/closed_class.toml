@@ -1,0 +1,611 @@
+# Hand-curated closed-class words. WordNet only covers nouns, verbs,
+# adjectives and adverbs, so these lists are maintained here and loaded by
+# `just ingest`.
+#
+# "a" covers "an" too: the article is chosen when the sentence is inflected.
+
+[[determiner]]
+lemma = "the"
+type = "definite"
+number = "either"
+
+[[determiner]]
+lemma = "a"
+type = "indefinite"
+number = "singular"
+
+[[determiner]]
+lemma = "this"
+type = "demonstrative"
+number = "singular"
+
+[[determiner]]
+lemma = "that"
+type = "demonstrative"
+number = "singular"
+
+[[determiner]]
+lemma = "these"
+type = "demonstrative"
+number = "plural"
+
+[[determiner]]
+lemma = "those"
+type = "demonstrative"
+number = "plural"
+
+[[determiner]]
+lemma = "my"
+type = "possessive"
+number = "either"
+
+[[determiner]]
+lemma = "your"
+type = "possessive"
+number = "either"
+
+[[determiner]]
+lemma = "his"
+type = "possessive"
+number = "either"
+
+[[determiner]]
+lemma = "her"
+type = "possessive"
+number = "either"
+
+[[determiner]]
+lemma = "its"
+type = "possessive"
+number = "either"
+
+[[determiner]]
+lemma = "our"
+type = "possessive"
+number = "either"
+
+[[determiner]]
+lemma = "their"
+type = "possessive"
+number = "either"
+
+[[determiner]]
+lemma = "some"
+type = "quantifier"
+number = "either"
+
+[[determiner]]
+lemma = "any"
+type = "quantifier"
+number = "either"
+
+[[determiner]]
+lemma = "no"
+type = "quantifier"
+number = "either"
+
+[[determiner]]
+lemma = "every"
+type = "quantifier"
+number = "singular"
+
+[[determiner]]
+lemma = "each"
+type = "quantifier"
+number = "singular"
+
+[[determiner]]
+lemma = "either"
+type = "quantifier"
+number = "singular"
+
+[[determiner]]
+lemma = "neither"
+type = "quantifier"
+number = "singular"
+
+[[determiner]]
+lemma = "all"
+type = "quantifier"
+number = "plural"
+
+[[determiner]]
+lemma = "both"
+type = "quantifier"
+number = "plural"
+
+[[determiner]]
+lemma = "many"
+type = "quantifier"
+number = "plural"
+
+[[determiner]]
+lemma = "few"
+type = "quantifier"
+number = "plural"
+
+[[determiner]]
+lemma = "several"
+type = "quantifier"
+number = "plural"
+
+[[preposition]]
+lemma = "aboard"
+
+[[preposition]]
+lemma = "about"
+
+[[preposition]]
+lemma = "above"
+
+[[preposition]]
+lemma = "across"
+
+[[preposition]]
+lemma = "after"
+
+[[preposition]]
+lemma = "against"
+
+[[preposition]]
+lemma = "along"
+
+[[preposition]]
+lemma = "amid"
+
+[[preposition]]
+lemma = "among"
+
+[[preposition]]
+lemma = "around"
+
+[[preposition]]
+lemma = "at"
+
+[[preposition]]
+lemma = "before"
+
+[[preposition]]
+lemma = "behind"
+
+[[preposition]]
+lemma = "below"
+
+[[preposition]]
+lemma = "beneath"
+
+[[preposition]]
+lemma = "beside"
+
+[[preposition]]
+lemma = "besides"
+
+[[preposition]]
+lemma = "between"
+
+[[preposition]]
+lemma = "beyond"
+
+[[preposition]]
+lemma = "by"
+
+[[preposition]]
+lemma = "despite"
+
+[[preposition]]
+lemma = "down"
+
+[[preposition]]
+lemma = "during"
+
+[[preposition]]
+lemma = "except"
+
+[[preposition]]
+lemma = "for"
+
+[[preposition]]
+lemma = "from"
+
+[[preposition]]
+lemma = "in"
+
+[[preposition]]
+lemma = "inside"
+
+[[preposition]]
+lemma = "into"
+
+[[preposition]]
+lemma = "like"
+
+[[preposition]]
+lemma = "near"
+
+[[preposition]]
+lemma = "of"
+
+[[preposition]]
+lemma = "off"
+
+[[preposition]]
+lemma = "on"
+
+[[preposition]]
+lemma = "onto"
+
+[[preposition]]
+lemma = "opposite"
+
+[[preposition]]
+lemma = "outside"
+
+[[preposition]]
+lemma = "over"
+
+[[preposition]]
+lemma = "past"
+
+[[preposition]]
+lemma = "per"
+
+[[preposition]]
+lemma = "since"
+
+[[preposition]]
+lemma = "through"
+
+[[preposition]]
+lemma = "throughout"
+
+[[preposition]]
+lemma = "to"
+
+[[preposition]]
+lemma = "toward"
+
+[[preposition]]
+lemma = "towards"
+
+[[preposition]]
+lemma = "under"
+
+[[preposition]]
+lemma = "underneath"
+
+[[preposition]]
+lemma = "unlike"
+
+[[preposition]]
+lemma = "until"
+
+[[preposition]]
+lemma = "up"
+
+[[preposition]]
+lemma = "upon"
+
+[[preposition]]
+lemma = "via"
+
+[[preposition]]
+lemma = "with"
+
+[[preposition]]
+lemma = "within"
+
+[[preposition]]
+lemma = "without"
+
+[[pronoun]]
+lemma = "I"
+case = "nominative"
+person = 1
+number = "singular"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "me"
+case = "accusative"
+person = 1
+number = "singular"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "mine"
+case = "genitive"
+person = 1
+number = "singular"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "myself"
+case = "reflexive"
+person = 1
+number = "singular"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "we"
+case = "nominative"
+person = 1
+number = "plural"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "us"
+case = "accusative"
+person = 1
+number = "plural"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "ours"
+case = "genitive"
+person = 1
+number = "plural"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "ourselves"
+case = "reflexive"
+person = 1
+number = "plural"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "you"
+case = "nominative"
+person = 2
+number = "singular"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "you"
+case = "accusative"
+person = 2
+number = "singular"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "yours"
+case = "genitive"
+person = 2
+number = "singular"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "yourself"
+case = "reflexive"
+person = 2
+number = "singular"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "you"
+case = "nominative"
+person = 2
+number = "plural"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "you"
+case = "accusative"
+person = 2
+number = "plural"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "yours"
+case = "genitive"
+person = 2
+number = "plural"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "yourselves"
+case = "reflexive"
+person = 2
+number = "plural"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "he"
+case = "nominative"
+person = 3
+number = "singular"
+gender = "masc"
+
+[[pronoun]]
+lemma = "him"
+case = "accusative"
+person = 3
+number = "singular"
+gender = "masc"
+
+[[pronoun]]
+lemma = "his"
+case = "genitive"
+person = 3
+number = "singular"
+gender = "masc"
+
+[[pronoun]]
+lemma = "himself"
+case = "reflexive"
+person = 3
+number = "singular"
+gender = "masc"
+
+[[pronoun]]
+lemma = "she"
+case = "nominative"
+person = 3
+number = "singular"
+gender = "fem"
+
+[[pronoun]]
+lemma = "her"
+case = "accusative"
+person = 3
+number = "singular"
+gender = "fem"
+
+[[pronoun]]
+lemma = "hers"
+case = "genitive"
+person = 3
+number = "singular"
+gender = "fem"
+
+[[pronoun]]
+lemma = "herself"
+case = "reflexive"
+person = 3
+number = "singular"
+gender = "fem"
+
+[[pronoun]]
+lemma = "it"
+case = "nominative"
+person = 3
+number = "singular"
+gender = "neuter"
+
+[[pronoun]]
+lemma = "it"
+case = "accusative"
+person = 3
+number = "singular"
+gender = "neuter"
+
+[[pronoun]]
+lemma = "itself"
+case = "reflexive"
+person = 3
+number = "singular"
+gender = "neuter"
+
+[[pronoun]]
+lemma = "they"
+case = "nominative"
+person = 3
+number = "plural"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "them"
+case = "accusative"
+person = 3
+number = "plural"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "theirs"
+case = "genitive"
+person = 3
+number = "plural"
+gender = "epicene"
+
+[[pronoun]]
+lemma = "themselves"
+case = "reflexive"
+person = 3
+number = "plural"
+gender = "epicene"
+
+[[conjunction]]
+lemma = "for"
+type = "coordinating"
+
+[[conjunction]]
+lemma = "and"
+type = "coordinating"
+
+[[conjunction]]
+lemma = "nor"
+type = "coordinating"
+
+[[conjunction]]
+lemma = "but"
+type = "coordinating"
+
+[[conjunction]]
+lemma = "or"
+type = "coordinating"
+
+[[conjunction]]
+lemma = "yet"
+type = "coordinating"
+
+[[conjunction]]
+lemma = "so"
+type = "coordinating"
+
+[[conjunction]]
+lemma = "after"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "although"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "as"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "because"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "before"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "if"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "once"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "since"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "though"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "unless"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "until"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "when"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "whenever"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "where"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "whereas"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "wherever"
+type = "subordinating"
+
+[[conjunction]]
+lemma = "while"
+type = "subordinating"

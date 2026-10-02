@@ -23,11 +23,23 @@ type Querier interface {
 	GetVerbByLemma(ctx context.Context, lemma string) (Verb, error)
 	InsertAdjective(ctx context.Context, arg InsertAdjectiveParams) error
 	InsertAdverb(ctx context.Context, arg InsertAdverbParams) error
+	InsertConjunction(ctx context.Context, arg InsertConjunctionParams) error
+	InsertDeterminer(ctx context.Context, arg InsertDeterminerParams) error
 	InsertNoun(ctx context.Context, arg InsertNounParams) error
+	InsertPreposition(ctx context.Context, lemma string) error
+	InsertPronoun(ctx context.Context, arg InsertPronounParams) error
 	InsertVerb(ctx context.Context, arg InsertVerbParams) error
+	ListConjunctions(ctx context.Context) ([]Conjunction, error)
+	ListDeterminers(ctx context.Context) ([]Determiner, error)
+	ListPrepositions(ctx context.Context) ([]Preposition, error)
+	ListPronouns(ctx context.Context) ([]Pronoun, error)
 	TruncateAdjectives(ctx context.Context) error
 	TruncateAdverbs(ctx context.Context) error
+	TruncateConjunctions(ctx context.Context) error
+	TruncateDeterminers(ctx context.Context) error
 	TruncateNouns(ctx context.Context) error
+	TruncatePrepositions(ctx context.Context) error
+	TruncatePronouns(ctx context.Context) error
 	TruncateVerbs(ctx context.Context) error
 }
 
