@@ -33,8 +33,9 @@ type Sentence struct {
 
 // leafInfo is what agreement needs from a leaf's lexicon row.
 type leafInfo struct {
-	number string // determiners: "singular", "plural" or "either"
-	plural string // nouns: irregular plural, if any
+	number      string // determiners: "singular", "plural" or "either"
+	plural      string // nouns: irregular plural, if any
+	pluralLemma bool   // nouns: the lemma is already plural ("Rastas")
 }
 
 type generator struct {
@@ -87,17 +88,30 @@ func Generate(ctx context.Context, q store.Querier, g *grammar.Grammar, verbs *m
 	return &Sentence{Text: format(words), Tree: tree}, nil
 }
 
+// fill gives every leaf under n a word. An NP fills its nouns first so that
+// a plural lemma ("Rastas") can rule out singular determiners ("a Rastas").
 func (gen *generator) fill(n *grammar.Node) error {
-	if len(n.Children) == 0 {
-		lemma, info, err := gen.randomWord(grammar.POS(n.Symbol))
-		if err != nil {
-			return fmt.Errorf("%s: %w", n.Symbol, err)
+	pluralNoun := false
+	if n.Symbol == nounPhrase {
+		for _, c := range n.Children {
+			if grammar.POS(c.Symbol) == grammar.Noun {
+				if err := gen.fillLeaf(c, false); err != nil {
+					return err
+				}
+				pluralNoun = pluralNoun || gen.leaves[c].pluralLemma
+			}
 		}
-		n.Lemma, n.Word = lemma, lemma
-		gen.leaves[n] = info
-		return nil
 	}
 	for _, c := range n.Children {
+		if c.Lemma != "" {
+			continue
+		}
+		if len(c.Children) == 0 {
+			if err := gen.fillLeaf(c, pluralNoun); err != nil {
+				return err
+			}
+			continue
+		}
 		if err := gen.fill(c); err != nil {
 			return err
 		}
@@ -105,7 +119,19 @@ func (gen *generator) fill(n *grammar.Node) error {
 	return nil
 }
 
-func (gen *generator) randomWord(pos grammar.POS) (string, leafInfo, error) {
+func (gen *generator) fillLeaf(n *grammar.Node, pluralNoun bool) error {
+	lemma, info, err := gen.randomWord(grammar.POS(n.Symbol), pluralNoun)
+	if err != nil {
+		return fmt.Errorf("%s: %w", n.Symbol, err)
+	}
+	n.Lemma, n.Word = lemma, lemma
+	gen.leaves[n] = info
+	return nil
+}
+
+// randomWord picks a word for pos. pluralNoun restricts a determiner to ones
+// that can go with a plural noun.
+func (gen *generator) randomWord(pos grammar.POS, pluralNoun bool) (string, leafInfo, error) {
 	ctx, q := gen.ctx, gen.q
 	switch pos {
 	case grammar.Noun:
@@ -119,7 +145,7 @@ func (gen *generator) randomWord(pos grammar.POS) (string, leafInfo, error) {
 		if err := json.Unmarshal(w.Inflections, &infl); err != nil {
 			return "", leafInfo{}, fmt.Errorf("noun %q inflections: %w", w.Lemma, err)
 		}
-		return w.Lemma, leafInfo{plural: infl.Plural}, nil
+		return w.Lemma, leafInfo{plural: infl.Plural, pluralLemma: w.Plural}, nil
 	case grammar.Verb:
 		w, err := q.GetRandomVerb(ctx)
 		return w.Lemma, leafInfo{}, err
@@ -130,6 +156,10 @@ func (gen *generator) randomWord(pos grammar.POS) (string, leafInfo, error) {
 		w, err := q.GetRandomAdverb(ctx)
 		return w.Lemma, leafInfo{}, err
 	case grammar.Determiner:
+		if pluralNoun {
+			w, err := q.GetRandomDeterminerWithNumber(ctx, []string{"plural", "either"})
+			return w.Lemma, leafInfo{number: w.Number}, err
+		}
 		w, err := q.GetRandomDeterminer(ctx)
 		return w.Lemma, leafInfo{number: w.Number}, err
 	case grammar.Preposition:
@@ -144,13 +174,19 @@ func (gen *generator) randomWord(pos grammar.POS) (string, leafInfo, error) {
 	}
 }
 
-// agreeNouns gives every NP a number from its determiner (a coin flip for
-// "either", singular without one) and pluralizes its nouns to match.
+// agreeNouns gives every NP a number: plural if a noun's lemma is already
+// plural, otherwise from its determiner (a coin flip for "either", singular
+// without one). Its nouns are pluralized to match.
 func (gen *generator) agreeNouns(n *grammar.Node) {
 	if n.Symbol == nounPhrase {
 		number := morph.Singular
 		for _, c := range n.Children {
-			if grammar.POS(c.Symbol) != grammar.Determiner {
+			if gen.leaves[c].pluralLemma {
+				number = morph.Plural
+			}
+		}
+		for _, c := range n.Children {
+			if grammar.POS(c.Symbol) != grammar.Determiner || number == morph.Plural {
 				continue
 			}
 			switch gen.leaves[c].number {
@@ -165,7 +201,7 @@ func (gen *generator) agreeNouns(n *grammar.Node) {
 		gen.number[n] = number
 		if number == morph.Plural {
 			for _, c := range n.Children {
-				if grammar.POS(c.Symbol) == grammar.Noun {
+				if grammar.POS(c.Symbol) == grammar.Noun && !gen.leaves[c].pluralLemma {
 					c.Word = morph.Pluralize(c.Lemma, gen.leaves[c].plural)
 				}
 			}

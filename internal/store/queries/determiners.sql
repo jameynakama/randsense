@@ -14,3 +14,9 @@ SELECT * FROM determiners
 WHERE active
 ORDER BY random()
 LIMIT 1;
+
+-- name: GetRandomDeterminerWithNumber :one
+SELECT * FROM determiners
+WHERE active AND number = ANY(@numbers::text[])
+ORDER BY random()
+LIMIT 1;

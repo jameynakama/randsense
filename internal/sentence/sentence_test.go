@@ -24,6 +24,11 @@ type fakeQuerier struct {
 	dets []store.Determiner
 	n    int
 	noun *store.Noun
+
+	// numberDet answers GetRandomDeterminerWithNumber, which records the
+	// numbers it was asked for.
+	numberDet store.Determiner
+	numbers   []string
 }
 
 func newFake(dets ...store.Determiner) *fakeQuerier {
@@ -56,6 +61,11 @@ func (f *fakeQuerier) GetRandomDeterminer(context.Context) (store.Determiner, er
 	d := f.dets[f.n%len(f.dets)]
 	f.n++
 	return d, f.err
+}
+
+func (f *fakeQuerier) GetRandomDeterminerWithNumber(_ context.Context, numbers []string) (store.Determiner, error) {
+	f.numbers = numbers
+	return f.numberDet, f.err
 }
 
 func (f *fakeQuerier) GetRandomPreposition(context.Context) (store.Preposition, error) {
@@ -305,5 +315,20 @@ func TestGenerateRejectsMalformedNounInflections(t *testing.T) {
 
 	if err == nil || !strings.Contains(err.Error(), `"goose"`) {
 		t.Errorf("expected an error naming goose; got %v", err)
+	}
+}
+
+func TestGenerateKeepsPluralLemmaPluralWithFittingDeterminer(t *testing.T) {
+	var q *fakeQuerier
+	seen := texts(t, simpleGrammar, func() *fakeQuerier {
+		q = newFake(store.Determiner{Lemma: "a", Number: "singular"})
+		q.noun = &store.Noun{Lemma: "Rastas", Inflections: []byte(`{}`), Plural: true}
+		q.numberDet = store.Determiner{Lemma: "the", Number: "either"}
+		return q
+	}, 50)
+
+	assertExactly(t, seen, "The Rastas devour.", "The Rastas devoured.")
+	if !slices.Equal(q.numbers, []string{"plural", "either"}) {
+		t.Errorf("expected determiner numbers [plural either]; got %v", q.numbers)
 	}
 }

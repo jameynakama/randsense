@@ -20,6 +20,7 @@ type Querier interface {
 	GetRandomAdverb(ctx context.Context) (Adverb, error)
 	GetRandomConjunction(ctx context.Context) (Conjunction, error)
 	GetRandomDeterminer(ctx context.Context) (Determiner, error)
+	GetRandomDeterminerWithNumber(ctx context.Context, numbers []string) (Determiner, error)
 	GetRandomNoun(ctx context.Context) (Noun, error)
 	GetRandomPreposition(ctx context.Context) (Preposition, error)
 	GetRandomPronoun(ctx context.Context) (Pronoun, error)
@@ -37,6 +38,10 @@ type Querier interface {
 	ListDeterminers(ctx context.Context) ([]Determiner, error)
 	ListPrepositions(ctx context.Context) ([]Preposition, error)
 	ListPronouns(ctx context.Context) ([]Pronoun, error)
+	// A lemma is plural if it ends in -s and its singular is also a lemma
+	// ("Rastas"/"Rasta"). Short words and -ss/-us/-is endings ("Ms", "Mass",
+	// "Pus") are left singular.
+	MarkPluralNouns(ctx context.Context) (int64, error)
 	TruncateAdjectives(ctx context.Context) error
 	TruncateAdverbs(ctx context.Context) error
 	TruncateConjunctions(ctx context.Context) error

@@ -29,6 +29,26 @@ func (q *Queries) GetRandomDeterminer(ctx context.Context) (Determiner, error) {
 	return i, err
 }
 
+const getRandomDeterminerWithNumber = `-- name: GetRandomDeterminerWithNumber :one
+SELECT id, lemma, type, number, active FROM determiners
+WHERE active AND number = ANY($1::text[])
+ORDER BY random()
+LIMIT 1
+`
+
+func (q *Queries) GetRandomDeterminerWithNumber(ctx context.Context, numbers []string) (Determiner, error) {
+	row := q.db.QueryRow(ctx, getRandomDeterminerWithNumber, numbers)
+	var i Determiner
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Type,
+		&i.Number,
+		&i.Active,
+	)
+	return i, err
+}
+
 const insertDeterminer = `-- name: InsertDeterminer :exec
 INSERT INTO determiners (lemma, type, number)
 VALUES ($1, $2, $3)

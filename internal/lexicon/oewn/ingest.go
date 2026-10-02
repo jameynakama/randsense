@@ -27,8 +27,9 @@ type Stats struct {
 	Skipped    int
 }
 
-// Ingest streams r as OEW WN-LMF XML, applies AllowLemma, dispatches each
-// entry to the per-POS table by Entry.POS, and inserts. The whole run is
+// Ingest streams r as OEW WN-LMF XML, applies AllowLemma (and AllowNoun for
+// nouns), dispatches each entry to the per-POS table by Entry.POS, and
+// inserts, then marks nouns whose lemma is already plural. The whole run is
 // one transaction -- any error rolls back. Each per-POS table is
 // truncated first so re-runs produce identical state regardless of prior
 // content (idempotency by clean slate).
@@ -69,6 +70,11 @@ func Ingest(ctx context.Context, pool *pgxpool.Pool, r io.Reader) (Stats, error)
 		return stats, fmt.Errorf("Ingest, Parse: %v", err)
 	}
 
+	// Runs after every noun is in, since a singular can follow its plural.
+	if _, err := q.MarkPluralNouns(ctx); err != nil {
+		return stats, fmt.Errorf("Ingest, MarkPluralNouns: %v", err)
+	}
+
 	return stats, tx.Commit(ctx)
 }
 
@@ -82,6 +88,10 @@ func ingestEntry(ctx context.Context, q *store.Queries, e Entry, stats *Stats) e
 
 	switch e.POS {
 	case "n":
+		if !AllowNoun(e.Lemma) {
+			stats.Skipped++
+			return nil
+		}
 		infl, err := nounInflectionsJSON(e.Forms)
 		if err != nil {
 			return err

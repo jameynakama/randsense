@@ -41,3 +41,37 @@ func TestAllowLemmaNouns(t *testing.T) {
 		})
 	}
 }
+
+func TestAllowNoun(t *testing.T) {
+	tests := []struct {
+		name     string
+		noun     string
+		expected bool
+	}{
+		{"common noun", "goose", true},
+		{"multi-word common noun", "sea anemone", true},
+		{"proper noun", "Microsoft", true},
+		{"multi-word proper noun", "Old French", true},
+		{"proper noun with lowercase connective", "Bill of Rights", true},
+		{"plural proper noun", "Boy Scouts", true},
+		{"single-word genus", "Sinornis", true},
+		{"proper modifier on common noun", "Norway rat", true},
+		{"proper modifier on common noun, -s plural", "Brussels sprouts", true},
+		{"taxonomic binomial", "Sorex araneus", false},
+		{"taxonomic binomial, -um", "Ribes nigrum", false},
+		{"taxonomic binomial, -i", "Indri indri", false},
+		{"taxonomic trinomial", "Odocoileus hemionus columbianus", false},
+		{"abbreviation", "OWLT", false},
+		{"abbreviation then words", "PSA blood test", false},
+		{"one capital letter", "A", true},
+		{"fails AllowLemma", ".22-caliber", false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if res := oewn.AllowNoun(tc.noun); res != tc.expected {
+				t.Errorf("expected %t; got %t", tc.expected, res)
+			}
+		})
+	}
+}

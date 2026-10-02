@@ -21,7 +21,7 @@ func (q *Queries) CountNouns(ctx context.Context) (int64, error) {
 }
 
 const getNounByLemma = `-- name: GetNounByLemma :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM nouns
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural FROM nouns
 WHERE lemma = $1
 `
 
@@ -40,12 +40,13 @@ func (q *Queries) GetNounByLemma(ctx context.Context, lemma string) (Noun, error
 		&i.VoteCount,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.Plural,
 	)
 	return i, err
 }
 
 const getRandomNoun = `-- name: GetRandomNoun :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM nouns
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural FROM nouns
 WHERE active
 ORDER BY random()
 LIMIT 1
@@ -66,6 +67,7 @@ func (q *Queries) GetRandomNoun(ctx context.Context) (Noun, error) {
 		&i.VoteCount,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.Plural,
 	)
 	return i, err
 }
@@ -85,6 +87,25 @@ type InsertNounParams struct {
 func (q *Queries) InsertNoun(ctx context.Context, arg InsertNounParams) error {
 	_, err := q.db.Exec(ctx, insertNoun, arg.Lemma, arg.Inflections, arg.Source)
 	return err
+}
+
+const markPluralNouns = `-- name: MarkPluralNouns :execrows
+UPDATE nouns p SET plural = TRUE
+WHERE p.lemma ~ 's$'
+  AND length(p.lemma) > 3
+  AND p.lemma !~ '(ss|us|is)$'
+  AND EXISTS (SELECT 1 FROM nouns n WHERE n.lemma = left(p.lemma, -1))
+`
+
+// A lemma is plural if it ends in -s and its singular is also a lemma
+// ("Rastas"/"Rasta"). Short words and -ss/-us/-is endings ("Ms", "Mass",
+// "Pus") are left singular.
+func (q *Queries) MarkPluralNouns(ctx context.Context) (int64, error) {
+	result, err := q.db.Exec(ctx, markPluralNouns)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const truncateNouns = `-- name: TruncateNouns :exec

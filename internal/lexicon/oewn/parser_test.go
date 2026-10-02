@@ -199,7 +199,7 @@ func TestParseSampleFile(t *testing.T) {
 		t.Fatalf("Parse: %v", err)
 	}
 
-	const expectedElements = 14
+	const expectedElements = 19
 	if len(got) != expectedElements {
 		t.Errorf("expected %d; got %d: %#v", expectedElements, len(got), got)
 	}

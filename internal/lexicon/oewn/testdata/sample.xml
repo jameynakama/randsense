@@ -18,6 +18,34 @@
     </LexicalEntry>
 
     <!-- regular noun: no Form -->
+    <!-- plural form listed before its singular; ingest marks it plural -->
+    <LexicalEntry id="oewn-rastas-n">
+      <Lemma writtenForm="Rastas" partOfSpeech="n"/>
+      <Sense id="oewn-rastas__1.05.00.." synset="oewn-0000000r-n"/>
+    </LexicalEntry>
+
+    <LexicalEntry id="oewn-rasta-n">
+      <Lemma writtenForm="Rasta" partOfSpeech="n"/>
+      <Sense id="oewn-rasta__1.05.00.." synset="oewn-0000000r-n"/>
+    </LexicalEntry>
+
+    <!-- ends in -ss: never marked plural -->
+    <LexicalEntry id="oewn-mass-n">
+      <Lemma writtenForm="Mass" partOfSpeech="n"/>
+      <Sense id="oewn-mass__1.05.00.." synset="oewn-0000000m-n"/>
+    </LexicalEntry>
+
+    <!-- taxonomic name and abbreviation, rejected by AllowNoun -->
+    <LexicalEntry id="oewn-sorex-n">
+      <Lemma writtenForm="Sorex araneus" partOfSpeech="n"/>
+      <Sense id="oewn-sorex__1.05.00.." synset="oewn-0000000s-n"/>
+    </LexicalEntry>
+
+    <LexicalEntry id="oewn-owlt-n">
+      <Lemma writtenForm="OWLT" partOfSpeech="n"/>
+      <Sense id="oewn-owlt__1.05.00.." synset="oewn-0000000o-n"/>
+    </LexicalEntry>
+
     <LexicalEntry id="oewn-shrimp-n">
       <Lemma writtenForm="shrimp" partOfSpeech="n"/>
       <Sense id="oewn-shrimp__1.05.00.." synset="oewn-02314320-n"/>

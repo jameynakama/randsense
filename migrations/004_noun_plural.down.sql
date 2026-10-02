@@ -1,0 +1,1 @@
+ALTER TABLE nouns DROP COLUMN plural;

@@ -13,8 +13,8 @@ import (
 
 // TestIngest is an integration test: it runs the real Ingest pipeline
 // against the testdata/sample.xml fixture and checks the resulting DB
-// state. 14 LexicalEntries total: 5 nouns, 4 verbs, 2 adjectives, 2 adverbs
-// all pass AllowLemma; 1 noun (.22-caliber) is filtered into Skipped.
+// state. 19 LexicalEntries total: 8 nouns, 4 verbs, 2 adjectives, 2 adverbs
+// pass the filters; 3 nouns (.22-caliber, Sorex araneus, OWLT) are Skipped.
 func TestIngest(t *testing.T) {
 	ctx := context.Background()
 
@@ -32,8 +32,8 @@ func TestIngest(t *testing.T) {
 	q := store.New(testPool)
 
 	t.Run("stats", func(t *testing.T) {
-		if stats.Nouns != 5 {
-			t.Errorf("Nouns: got %d, want 5", stats.Nouns)
+		if stats.Nouns != 8 {
+			t.Errorf("Nouns: got %d, want 8", stats.Nouns)
 		}
 		if stats.Verbs != 4 {
 			t.Errorf("Verbs: got %d, want 4", stats.Verbs)
@@ -44,8 +44,8 @@ func TestIngest(t *testing.T) {
 		if stats.Adverbs != 2 {
 			t.Errorf("Adverbs: got %d, want 2", stats.Adverbs)
 		}
-		if stats.Skipped != 1 {
-			t.Errorf("Skipped: got %d, want 1", stats.Skipped)
+		if stats.Skipped != 3 {
+			t.Errorf("Skipped: got %d, want 3", stats.Skipped)
 		}
 	})
 
@@ -54,8 +54,8 @@ func TestIngest(t *testing.T) {
 		if err != nil {
 			t.Fatalf("CountNouns: %v", err)
 		}
-		if count != 5 {
-			t.Errorf("CountNouns: got %d, want 5", count)
+		if count != 8 {
+			t.Errorf("CountNouns: got %d, want 8", count)
 		}
 
 		// irregular plural
@@ -78,6 +78,17 @@ func TestIngest(t *testing.T) {
 		}
 		if noun.Lemma != "Microsoft" {
 			t.Errorf("proper noun lemma: got %q, want %q", noun.Lemma, "Microsoft")
+		}
+
+		// plural lemmas: marked only when the singular is also a lemma
+		for lemma, want := range map[string]bool{"Rastas": true, "Rasta": false, "Mass": false, "goose": false} {
+			noun, err := q.GetNounByLemma(ctx, lemma)
+			if err != nil {
+				t.Fatalf("GetNounByLemma(%s): %v", lemma, err)
+			}
+			if noun.Plural != want {
+				t.Errorf("%s plural: got %t, want %t", lemma, noun.Plural, want)
+			}
 		}
 	})
 

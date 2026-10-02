@@ -18,3 +18,13 @@ SELECT * FROM nouns
 WHERE active
 ORDER BY random()
 LIMIT 1;
+
+-- name: MarkPluralNouns :execrows
+-- A lemma is plural if it ends in -s and its singular is also a lemma
+-- ("Rastas"/"Rasta"). Short words and -ss/-us/-is endings ("Ms", "Mass",
+-- "Pus") are left singular.
+UPDATE nouns p SET plural = TRUE
+WHERE p.lemma ~ 's$'
+  AND length(p.lemma) > 3
+  AND p.lemma !~ '(ss|us|is)$'
+  AND EXISTS (SELECT 1 FROM nouns n WHERE n.lemma = left(p.lemma, -1));
