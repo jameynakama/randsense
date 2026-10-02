@@ -9,6 +9,20 @@ import (
 	"context"
 )
 
+const getRandomPreposition = `-- name: GetRandomPreposition :one
+SELECT id, lemma, active FROM prepositions
+WHERE active
+ORDER BY random()
+LIMIT 1
+`
+
+func (q *Queries) GetRandomPreposition(ctx context.Context) (Preposition, error) {
+	row := q.db.QueryRow(ctx, getRandomPreposition)
+	var i Preposition
+	err := row.Scan(&i.ID, &i.Lemma, &i.Active)
+	return i, err
+}
+
 const insertPreposition = `-- name: InsertPreposition :exec
 INSERT INTO prepositions (lemma)
 VALUES ($1)

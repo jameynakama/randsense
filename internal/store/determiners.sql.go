@@ -9,6 +9,26 @@ import (
 	"context"
 )
 
+const getRandomDeterminer = `-- name: GetRandomDeterminer :one
+SELECT id, lemma, type, number, active FROM determiners
+WHERE active
+ORDER BY random()
+LIMIT 1
+`
+
+func (q *Queries) GetRandomDeterminer(ctx context.Context) (Determiner, error) {
+	row := q.db.QueryRow(ctx, getRandomDeterminer)
+	var i Determiner
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Type,
+		&i.Number,
+		&i.Active,
+	)
+	return i, err
+}
+
 const insertDeterminer = `-- name: InsertDeterminer :exec
 INSERT INTO determiners (lemma, type, number)
 VALUES ($1, $2, $3)

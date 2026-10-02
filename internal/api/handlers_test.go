@@ -5,15 +5,33 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/jameynakama/randsense/internal/api"
+	"github.com/jameynakama/randsense/internal/grammar"
 	"github.com/jameynakama/randsense/internal/store"
 )
 
+// testGrammar has one expansion, so with one seeded word per POS the
+// generated sentence is deterministic.
+const testGrammar = `
+[[rule]]
+symbol = "S"
+expansion = ["NP", "Verb"]
+
+[[rule]]
+symbol = "NP"
+expansion = ["Determiner", "Noun"]
+`
+
 func newTestServer(t *testing.T) *httptest.Server {
 	t.Helper()
-	return httptest.NewServer(api.NewRouter(api.RouterConfig{Queries: store.New(testPool)}))
+	g, err := grammar.Load(strings.NewReader(testGrammar))
+	if err != nil {
+		t.Fatalf("grammar.Load: %v", err)
+	}
+	return httptest.NewServer(api.NewRouter(api.RouterConfig{Queries: store.New(testPool), Grammar: g}))
 }
 
 func seedWords(t *testing.T) {
@@ -21,7 +39,7 @@ func seedWords(t *testing.T) {
 	ctx := context.Background()
 	q := store.New(testPool)
 
-	_, err := testPool.Exec(ctx, "TRUNCATE nouns, verbs, adjectives, adverbs RESTART IDENTITY CASCADE")
+	_, err := testPool.Exec(ctx, "TRUNCATE nouns, verbs, adjectives, adverbs, determiners RESTART IDENTITY CASCADE")
 	if err != nil {
 		t.Fatalf("seedWords#truncate: %v", err)
 	}
@@ -54,6 +72,60 @@ func seedWords(t *testing.T) {
 		Source:      "test",
 	}); err != nil {
 		t.Fatalf("seed adverb: %v", err)
+	}
+	if err := q.InsertDeterminer(ctx, store.InsertDeterminerParams{
+		Lemma:  "the",
+		Type:   "definite",
+		Number: "either",
+	}); err != nil {
+		t.Fatalf("seed determiner: %v", err)
+	}
+}
+
+func TestRandomSentence(t *testing.T) {
+	seedWords(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/sentences/random")
+	if err != nil {
+		t.Fatalf("GET: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status: got %d, want 200", resp.StatusCode)
+	}
+
+	var body struct {
+		Text string        `json:"text"`
+		Tree *grammar.Node `json:"tree"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body.Text != "The goose devour." {
+		t.Errorf("text: got %q, want %q", body.Text, "The goose devour.")
+	}
+	if body.Tree == nil || body.Tree.Symbol != "S" || len(body.Tree.Children) != 2 {
+		t.Errorf("tree: got %+v, want S with NP and Verb children", body.Tree)
+	}
+}
+
+func TestRandomSentenceWithEmptyLexiconReturns500(t *testing.T) {
+	ctx := context.Background()
+	if _, err := testPool.Exec(ctx, "TRUNCATE nouns, verbs, determiners RESTART IDENTITY CASCADE"); err != nil {
+		t.Fatalf("truncate: %v", err)
+	}
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v1/sentences/random")
+	if err != nil {
+		t.Fatalf("GET: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status: got %d, want 500", resp.StatusCode)
 	}
 }
 

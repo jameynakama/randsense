@@ -8,3 +8,9 @@ TRUNCATE determiners RESTART IDENTITY CASCADE;
 -- name: ListDeterminers :many
 SELECT * FROM determiners
 ORDER BY lemma;
+
+-- name: GetRandomDeterminer :one
+SELECT * FROM determiners
+WHERE active
+ORDER BY random()
+LIMIT 1;

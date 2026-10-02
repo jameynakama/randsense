@@ -139,9 +139,11 @@ func (g *Grammar) productiveSymbols() map[string]bool {
 	return productive
 }
 
-// Node is one constituent of a parse tree. A leaf's Symbol is a POS.
+// Node is one constituent of a parse tree. A leaf's Symbol is a POS, and its
+// Word is set once the leaf is filled from the lexicon.
 type Node struct {
 	Symbol   string  `json:"symbol"`
+	Word     string  `json:"word,omitempty"`
 	Children []*Node `json:"children,omitempty"`
 }
 

@@ -9,6 +9,25 @@ import (
 	"context"
 )
 
+const getRandomConjunction = `-- name: GetRandomConjunction :one
+SELECT id, lemma, type, active FROM conjunctions
+WHERE active
+ORDER BY random()
+LIMIT 1
+`
+
+func (q *Queries) GetRandomConjunction(ctx context.Context) (Conjunction, error) {
+	row := q.db.QueryRow(ctx, getRandomConjunction)
+	var i Conjunction
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Type,
+		&i.Active,
+	)
+	return i, err
+}
+
 const insertConjunction = `-- name: InsertConjunction :exec
 INSERT INTO conjunctions (lemma, type)
 VALUES ($1, $2)

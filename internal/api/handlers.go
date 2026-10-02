@@ -2,8 +2,11 @@ package api
 
 import (
 	"log"
+	"math/rand/v2"
 	"net/http"
 	"slices"
+
+	"github.com/jameynakama/randsense/internal/sentence"
 )
 
 func (h *Handler) randomWord(w http.ResponseWriter, r *http.Request) {
@@ -47,4 +50,16 @@ func (h *Handler) randomWord(w http.ResponseWriter, r *http.Request) {
 		}
 		writeJSON(w, http.StatusOK, getAdverbRespFromStoreShape(a))
 	}
+}
+
+func (h *Handler) randomSentence(w http.ResponseWriter, r *http.Request) {
+	// A *rand.Rand isn't safe for concurrent use, so each request gets its own.
+	rng := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
+	s, err := sentence.Generate(r.Context(), h.queries, h.grammar, rng)
+	if err != nil {
+		log.Printf("randomSentence: %v", err)
+		writeError(w, http.StatusInternalServerError, "server error")
+		return
+	}
+	writeJSON(w, http.StatusOK, s)
 }

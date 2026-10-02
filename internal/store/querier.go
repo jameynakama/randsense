@@ -18,7 +18,11 @@ type Querier interface {
 	GetNounByLemma(ctx context.Context, lemma string) (Noun, error)
 	GetRandomAdjective(ctx context.Context) (Adjective, error)
 	GetRandomAdverb(ctx context.Context) (Adverb, error)
+	GetRandomConjunction(ctx context.Context) (Conjunction, error)
+	GetRandomDeterminer(ctx context.Context) (Determiner, error)
 	GetRandomNoun(ctx context.Context) (Noun, error)
+	GetRandomPreposition(ctx context.Context) (Preposition, error)
+	GetRandomPronoun(ctx context.Context) (Pronoun, error)
 	GetRandomVerb(ctx context.Context) (Verb, error)
 	GetVerbByLemma(ctx context.Context, lemma string) (Verb, error)
 	InsertAdjective(ctx context.Context, arg InsertAdjectiveParams) error

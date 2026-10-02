@@ -8,8 +8,11 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jameynakama/randsense/internal/api"
+	"github.com/jameynakama/randsense/internal/grammar"
 	"github.com/jameynakama/randsense/internal/store"
 )
+
+const grammarPath = "data/grammar/grammar.toml"
 
 type config struct {
 	databaseURL string
@@ -55,7 +58,17 @@ func main() {
 	}
 	log.Println("database connected")
 
-	routerCfg := api.RouterConfig{Queries: store.New(db)}
+	f, err := os.Open(grammarPath)
+	if err != nil {
+		log.Fatalf("open %s: %v", grammarPath, err)
+	}
+	g, err := grammar.Load(f)
+	f.Close()
+	if err != nil {
+		log.Fatalf("load %s: %v", grammarPath, err)
+	}
+
+	routerCfg := api.RouterConfig{Queries: store.New(db), Grammar: g}
 	r := api.NewRouter(routerCfg)
 
 	log.Printf("starting server at http://localhost:%s", cfg.port)

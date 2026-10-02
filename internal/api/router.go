@@ -7,20 +7,24 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/jameynakama/randsense/internal/grammar"
 	"github.com/jameynakama/randsense/internal/store"
 )
 
 type RouterConfig struct {
 	Queries *store.Queries
+	Grammar *grammar.Grammar
 }
 
 type Handler struct {
 	queries *store.Queries
+	grammar *grammar.Grammar
 }
 
 func NewRouter(cfg RouterConfig) http.Handler {
 	h := &Handler{
 		queries: cfg.Queries,
+		grammar: cfg.Grammar,
 	}
 
 	r := chi.NewRouter()
@@ -32,6 +36,7 @@ func NewRouter(cfg RouterConfig) http.Handler {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/words/random", h.randomWord)
+		r.Get("/sentences/random", h.randomSentence)
 	})
 
 	return r

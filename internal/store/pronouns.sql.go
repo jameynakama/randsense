@@ -9,6 +9,28 @@ import (
 	"context"
 )
 
+const getRandomPronoun = `-- name: GetRandomPronoun :one
+SELECT id, lemma, case_, person, number, gender, active FROM pronouns
+WHERE active
+ORDER BY random()
+LIMIT 1
+`
+
+func (q *Queries) GetRandomPronoun(ctx context.Context) (Pronoun, error) {
+	row := q.db.QueryRow(ctx, getRandomPronoun)
+	var i Pronoun
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Case,
+		&i.Person,
+		&i.Number,
+		&i.Gender,
+		&i.Active,
+	)
+	return i, err
+}
+
 const insertPronoun = `-- name: InsertPronoun :exec
 INSERT INTO pronouns (lemma, case_, person, number, gender)
 VALUES ($1, $2, $3, $4, $5)

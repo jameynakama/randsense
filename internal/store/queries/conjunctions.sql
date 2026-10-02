@@ -8,3 +8,9 @@ TRUNCATE conjunctions RESTART IDENTITY CASCADE;
 -- name: ListConjunctions :many
 SELECT * FROM conjunctions
 ORDER BY lemma, type;
+
+-- name: GetRandomConjunction :one
+SELECT * FROM conjunctions
+WHERE active
+ORDER BY random()
+LIMIT 1;

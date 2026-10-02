@@ -13,7 +13,7 @@ gotest args="":
     go test ./... {{ args }}
 
 cover:
-    go test -coverprofile=coverage.out -coverpkg=./internal/api/...,./internal/grammar/...,./internal/lexicon/... ./... && go tool cover -func=coverage.out
+    go test -coverprofile=coverage.out -coverpkg=./internal/api/...,./internal/grammar/...,./internal/lexicon/...,./internal/sentence/... ./... && go tool cover -func=coverage.out
 
 # Start the dev server with hot reload
 run:
