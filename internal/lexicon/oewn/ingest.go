@@ -12,8 +12,8 @@ import (
 )
 
 // SourceName tags every row this package writes. Stored in the `source`
-// column so future ingest passes (mlconjug3 for verb morphology, SUBTLEX
-// for frequency, etc.) can reconcile rows by lemma+source.
+// column so future ingest passes (SUBTLEX for frequency, etc.) can
+// reconcile rows by lemma+source.
 const SourceName = "oewn-2025"
 
 // Stats reports per-POS row counts from a successful Ingest run, plus a
@@ -142,8 +142,7 @@ func ingestEntry(ctx context.Context, q *store.Queries, e Entry, stats *Stats) e
 // the empty object so the column never holds NULL or invalid JSON.
 //
 // OEW only attaches Form children to irregular plurals; regular nouns
-// arrive with empty Forms and fall back to morphology rules at inflection
-// time (M4).
+// arrive with empty Forms and fall back to morph.Pluralize's spelling rules.
 func nounInflectionsJSON(forms []string) ([]byte, error) {
 	if len(forms) == 0 {
 		return []byte("{}"), nil

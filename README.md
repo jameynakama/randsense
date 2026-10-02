@@ -28,6 +28,7 @@ Built in Go. Postgres for storage, WordNet (OEWN) as the primary lexicon.
 cp .env.example .env  # edit as needed
 docker compose up -d
 just migrate-up
+just ingest   # load OEWN and the closed-class word lists
 just run
 ```
 
@@ -43,14 +44,18 @@ Server starts on `http://localhost:8080` (or `PORT` from `.env`).
 | `just migrate-up`               | Apply pending migrations                 |
 | `just migrate-down [n]`         | Roll back n migrations (default 1)       |
 | `just generate`                 | Regenerate sqlc types after query changes|
+| `just ingest`                   | Load OEWN and `data/lexicon/closed_class.toml` |
 
 ## API
 
 ```
 GET /health
+GET /api/v1/words/random?pos=noun|verb|adjective|adverb
+GET /api/v1/sentences/random   -> {text, tree}
 ```
 
-More routes coming as milestones land.
+The server loads `data/grammar/grammar.toml` and `data/lexicon/verb_morphology.toml` at startup
+and refuses to start if either is invalid.
 
 ## Tests
 
