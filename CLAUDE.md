@@ -53,25 +53,30 @@ Don't reopen these without new evidence.
 
 ## Roadmap
 
-1. **Idioms with a broken object frame.** OEWN marks "give birth", "find fault" and "pull wires"
+1. **Frontend and saved sentences.** Designed in
+   `docs/superpowers/specs/2026-10-03-frontend-design.md`: monorepo move, saved sentences, live
+   feed over SSE, permalinks, stars, flags and a single-admin flag viewer. Build it in the
+   spec's stage order.
+2. **Idioms with a broken object frame.** OEWN marks "give birth", "find fault" and "pull wires"
    transitive, which gives "gave birth the goose". Each idiom needs a label: keep the frame,
    drop object frames (keeping "she gave birth"), or move it to a fixed-preposition frame ("gave
    birth to mud"). Some prepositions ("find fault with", "take kindly to") would need new
    frames. Keep the idioms themselves.
-2. **Curation loop, after a frontend exists.**
-   - **Voting:** an anonymous endpoint; anyone can vote, and votes only flag words for review.
-   - **Admin:** a rudimentary UI for one admin to sort by votes and disable or remove entries.
+3. **Curation loop, after the frontend.**
+   - **Flags are the votes:** the frontend's flags, with their copied lemma and part of speech,
+     are what flag words for review.
+   - **Admin:** grow the frontend's flag viewer into a UI for disabling or removing entries.
      No user accounts. psql on the server was rejected as the admin UX.
    - **Prerequisite:** ingest currently truncates and reloads, which would wipe `active`,
      `vote_count` and corrections to the heuristic `nouns.plural` flag. That flag misfires on
      Taos, Sauternes and tabes.
-3. **LLM batch labeling** for curation.
-4. **More sentence types:**
+4. **LLM batch labeling** for curation.
+5. **More sentence types:**
    - passive voice, from transitive frames only; `verb_morphology.toml` already has past
      participles
    - questions
    - conditionals
-5. **Compiled lexicon, once a base version feels done.** Build every source (OEWN, SUBTLEX-US,
+6. **Compiled lexicon, once a base version feels done.** Build every source (OEWN, SUBTLEX-US,
    `mislabeled`, the `data/lexicon/` lists) into one versioned file that ingest loads and that
    can be shared as research. It could also become where curation corrections live, so they
    survive re-ingest. Gzipped JSON Lines diffs well; WN-LMF XML fits poorly once synsets are
