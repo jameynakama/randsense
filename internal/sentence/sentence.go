@@ -274,6 +274,8 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 		switch qualifier := n.Qualifier(); qualifier {
 		case grammar.JoinsNPs:
 			w, err = q.GetRandomNPConjunction(ctx)
+		case grammar.Neither, grammar.Nor:
+			return qualifier, leafInfo{}, nil
 		case "":
 			w, err = q.GetRandomConjunction(ctx)
 		default:

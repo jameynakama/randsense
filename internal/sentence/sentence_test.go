@@ -657,6 +657,21 @@ func TestRealizeCoordinatedSubjectWithOrAgreesWithLastPart(t *testing.T) {
 		"These geese or this goose devours.", "These geese or this goose devoured.")
 }
 
+func TestRealizeNeitherNorAgreesWithLastPart(t *testing.T) {
+	singular := store.Determiner{Lemma: "this", Number: "singular"}
+	plural := store.Determiner{Lemma: "these", Number: "plural"}
+	build := func() *grammar.Node {
+		return node("S",
+			node("NP", leaf("Conjunction:neither"), detNoun(), leaf("Conjunction:nor"), detNoun()),
+			node("VP", leaf("Verb")))
+	}
+
+	assertExactly(t, realized(t, build, func() *fakeQuerier { return newFake(singular, plural) }, 20),
+		"Neither this goose nor these geese devour.", "Neither this goose nor these geese devoured.")
+	assertExactly(t, realized(t, build, func() *fakeQuerier { return newFake(plural, singular) }, 20),
+		"Neither these geese nor this goose devours.", "Neither these geese nor this goose devoured.")
+}
+
 func TestRealizePronounInCoordinatedSubjectIsNominative(t *testing.T) {
 	seen := realized(t, func() *grammar.Node {
 		return node("S",

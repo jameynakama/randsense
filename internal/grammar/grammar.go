@@ -89,11 +89,14 @@ var FixedPrepositions = map[Frame]string{
 }
 
 // Conjunction qualifiers: what a conjunction slot joins. "np" conjunctions
-// (and, or) can join noun phrases.
+// (and, or) can join noun phrases. Neither and Nor are those words, the two
+// halves of "neither...nor".
 const (
 	Coordinating  = "coordinating"
 	Subordinating = "subordinating"
 	JoinsNPs      = "np"
+	Neither       = "neither"
+	Nor           = "nor"
 )
 
 // Genitive qualifies a pronoun slot by case: "Pronoun:genitive" takes a
@@ -102,7 +105,8 @@ const Genitive = "genitive"
 
 // qualifiers lists what each POS can be qualified with ("Verb:transitive").
 // A qualified preposition, complementizer or pronoun is that word:
-// "Preposition:with" is always "with". Genitive is the exception.
+// "Preposition:with" is always "with". Genitive is the exception, and
+// conjunctions are qualified by type except for Neither and Nor.
 var qualifiers = map[POS][]string{
 	Verb: {
 		string(Intransitive), string(Transitive), string(Ditransitive), string(IntransitivePP), string(TransitivePP),
@@ -116,7 +120,7 @@ var qualifiers = map[POS][]string{
 	Pronoun:        {"it", Genitive},
 	Preposition:    {"from", "into", "of", "on", "to", "with"},
 	Complementizer: {"whether"},
-	Conjunction:    {Coordinating, Subordinating, JoinsNPs},
+	Conjunction:    {Coordinating, Subordinating, JoinsNPs, Neither, Nor},
 }
 
 func isPOS(symbol string) bool {

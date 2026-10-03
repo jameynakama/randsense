@@ -369,6 +369,14 @@ func TestLoadAcceptsGenitivePronouns(t *testing.T) {
 	`)
 }
 
+func TestLoadAcceptsNeitherNor(t *testing.T) {
+	mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["Conjunction:neither", "Noun", "Conjunction:nor", "Noun", "Verb"]
+	`)
+}
+
 func TestLeafWithFrame(t *testing.T) {
 	g := mustLoad(t, `
 	[[rule]]

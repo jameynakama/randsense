@@ -3,6 +3,9 @@
 # `just ingest`.
 #
 # "a" covers "an" too: the article is chosen when the sentence is inflected.
+#
+# "nor" isn't a conjunction here: joining clauses with it needs inversion
+# ("nor did the cat eat"). The grammar spells it out for "neither...nor".
 
 [[determiner]]
 lemma = "the"
@@ -522,10 +525,6 @@ type = "coordinating"
 lemma = "and"
 type = "coordinating"
 joins_nps = true
-
-[[conjunction]]
-lemma = "nor"
-type = "coordinating"
 
 [[conjunction]]
 lemma = "but"

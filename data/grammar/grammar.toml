@@ -4,8 +4,10 @@
 # Complementizer and To, which are "that" and "to"); any other symbol needs
 # rules. Verb and Conjunction slots can be qualified (see
 # grammar.qualifiers): "Verb:transitive" requires that frame, and
-# "Conjunction:np" an and/or that can join noun phrases. A fixed-preposition
-# frame ("Verb:transitive-with") needs its preposition spelled out, and
+# "Conjunction:np" an and/or that can join noun phrases, while
+# "Conjunction:neither" and "Conjunction:nor" are those words. A
+# fixed-preposition frame ("Verb:transitive-with") needs its preposition
+# spelled out, and
 # "Preposition:with" is always "with", as "Complementizer:whether" is
 # "whether" and "Pronoun:it" is "it". "Pronoun:genitive" takes a genitive
 # pronoun ("mine"). Unqualified slots take any word.
@@ -68,6 +70,11 @@ weight = 0.05
 symbol = "NP"
 expansion = ["NP", "Conjunction:np", "NP"]
 weight = 0.1
+
+[[rule]]
+symbol = "NP"
+expansion = ["Conjunction:neither", "NP", "Conjunction:nor", "NP"]
+weight = 0.03
 
 [[rule]]
 symbol = "VP"
