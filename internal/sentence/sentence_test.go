@@ -3,6 +3,7 @@ package sentence_test
 import (
 	"context"
 	"errors"
+	"github.com/jackc/pgx/v5"
 	"maps"
 	"math/rand/v2"
 	"slices"
@@ -30,8 +31,10 @@ type fakeQuerier struct {
 	numberDet store.Determiner
 	numbers   []string
 
-	// frame records what GetRandomVerbWithFrame was asked for.
-	frame string
+	// frame records what GetRandomVerbWithFrame was asked for; frames with
+	// no verbs in emptyFrames return pgx.ErrNoRows.
+	frame       string
+	emptyFrames []string
 
 	// pronouns answers GetRandomPronounWithCase by case; cases records the
 	// cases asked for.
@@ -94,6 +97,9 @@ func (f *fakeQuerier) GetRandomVerb(_ context.Context, commonness float64) (stor
 func (f *fakeQuerier) GetRandomVerbWithFrame(_ context.Context, arg store.GetRandomVerbWithFrameParams) (store.Verb, error) {
 	f.frame = arg.Frame
 	f.commonness = append(f.commonness, arg.Commonness)
+	if slices.Contains(f.emptyFrames, arg.Frame) {
+		return store.Verb{}, pgx.ErrNoRows
+	}
 	return store.Verb{Lemma: "give"}, f.err
 }
 
@@ -353,6 +359,66 @@ func TestGenerateReturnsLookupErrors(t *testing.T) {
 
 	if !errors.Is(err, boom) {
 		t.Errorf("expected boom; got %v", err)
+	}
+}
+
+// emptyFrameGrammar picks between a frame the fake has verbs for and one it
+// doesn't.
+const emptyFrameGrammar = `
+[[rule]]
+symbol = "S"
+expansion = ["NP", "VP"]
+
+[[rule]]
+symbol = "NP"
+expansion = ["Pronoun"]
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:intransitive"]
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:transitive-on", "Pronoun", "Preposition:on", "Pronoun"]
+`
+
+func TestGenerateRepicksAFrameWithNoVerbs(t *testing.T) {
+	seen := texts(t, emptyFrameGrammar, func() *fakeQuerier {
+		q := newFake()
+		q.emptyFrames = []string{"transitive-on"}
+		return q
+	}, 20)
+
+	assertExactly(t, seen, "She gives.", "She gave.")
+}
+
+func TestGenerateGivesUpWhenEveryFrameIsEmpty(t *testing.T) {
+	q := newFake()
+	q.emptyFrames = []string{"intransitive", "transitive-on"}
+
+	_, err := sentence.Generate(context.Background(), q, mustLoad(t, emptyFrameGrammar), loadVerbs(t), newRNG(), 0)
+
+	if !errors.Is(err, pgx.ErrNoRows) {
+		t.Errorf("expected pgx.ErrNoRows; got %v", err)
+	}
+}
+
+func TestGenerateDoesNotRepickOnOtherMissingWords(t *testing.T) {
+	q := newFake()
+	q.err = pgx.ErrNoRows
+	g := mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["Noun", "Verb:intransitive"]
+	`)
+
+	_, err := sentence.Generate(context.Background(), q, g, loadVerbs(t), newRNG(), 0)
+
+	if !errors.Is(err, pgx.ErrNoRows) {
+		t.Errorf("expected pgx.ErrNoRows; got %v", err)
+	}
+	if len(q.commonness) != 1 {
+		t.Errorf("expected one lookup and no retry; got %d", len(q.commonness))
 	}
 }
 

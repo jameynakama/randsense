@@ -6,11 +6,14 @@ package sentence
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand/v2"
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/jameynakama/randsense/internal/grammar"
 	"github.com/jameynakama/randsense/internal/morph"
@@ -59,14 +62,31 @@ type generator struct {
 	agr        map[*grammar.Node]agreement
 }
 
+// maxAttempts bounds how many trees Generate tries when a frame has no verbs.
+const maxAttempts = 10
+
+// errEmptyFrame marks a verb frame with no verbs at the commonness floor.
+var errEmptyFrame = errors.New("no verb with this frame")
+
 // Generate expands g and realizes the resulting tree. Content words are at
-// least as common as commonness, a Zipf frequency; 0 allows any word.
+// least as common as commonness, a Zipf frequency; 0 allows any word. A high
+// floor can leave a frame without verbs, so a tree that needs one is
+// replaced by a fresh expansion.
 func Generate(ctx context.Context, q store.Querier, g *grammar.Grammar, verbs *morph.Verbs, rng *rand.Rand, commonness float64) (*Sentence, error) {
-	tree, err := g.Expand(rng)
-	if err != nil {
-		return nil, fmt.Errorf("Generate: %w", err)
+	var err error
+	for range maxAttempts {
+		var tree *grammar.Node
+		tree, err = g.Expand(rng)
+		if err != nil {
+			return nil, fmt.Errorf("Generate: %w", err)
+		}
+		var s *Sentence
+		s, err = Realize(ctx, q, tree, verbs, rng, commonness)
+		if !errors.Is(err, errEmptyFrame) {
+			return s, err
+		}
 	}
-	return Realize(ctx, q, tree, verbs, rng, commonness)
+	return nil, err
 }
 
 // Realize fills every leaf of tree with a random active word and inflects the
@@ -180,6 +200,9 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 	case grammar.Verb:
 		if frame := n.Qualifier(); frame != "" {
 			w, err := q.GetRandomVerbWithFrame(ctx, store.GetRandomVerbWithFrameParams{Frame: frame, Commonness: gen.commonness})
+			if errors.Is(err, pgx.ErrNoRows) {
+				err = fmt.Errorf("%w: %w", errEmptyFrame, err)
+			}
 			return w.Lemma, leafInfo{}, err
 		}
 		w, err := q.GetRandomVerb(ctx, gen.commonness)
