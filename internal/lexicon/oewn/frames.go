@@ -61,6 +61,14 @@ var mislabeled = map[grammar.Frame][]string{
 		"supplicate", "think", "wait",
 	},
 	grammar.TransitiveIntoGerund: {"talk out of"},
+	// Almost any verb passes as "VERB her (in order) to sing", so only those
+	// no reading rescues are here. "promise" parses, but its subject, not its
+	// object, does the infinitive, so a reflexive there would agree wrongly.
+	grammar.TransitiveToInfinitive: {
+		"bring oneself", "clamor", "dedicate", "devote", "fall", "give notice", "give the axe",
+		"give the sack", "have", "let", "make", "opine", "pass judgment", "preach", "promise",
+		"rededicate", "say", "take into account",
+	},
 	grammar.AdjectiveComplement: {
 		"behave", "break even", "call in", "close off", "compact", "do", "drive", "endure", "excavate",
 		"fare", "flow", "get along", "get on", "go down", "go off", "go over", "hold out", "make",
