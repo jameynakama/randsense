@@ -128,6 +128,12 @@
       <Sense id="oewn-effervescent__5.00.00.." synset="oewn-02212345-s"/>
     </LexicalEntry>
 
+    <!-- Roman-numeral cardinal: ingest skips it -->
+    <LexicalEntry id="oewn-lxxiii-a">
+      <Lemma writtenForm="lxxiii" partOfSpeech="a"/>
+      <Sense id="oewn-lxxiii__5.00.00.cardinal.00" synset="oewn-02201083-s"/>
+    </LexicalEntry>
+
     <!-- adverb (r) -->
     <LexicalEntry id="oewn-curly-r">
       <Lemma writtenForm="curly" partOfSpeech="r"/>

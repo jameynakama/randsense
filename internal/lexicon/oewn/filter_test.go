@@ -75,3 +75,25 @@ func TestAllowNoun(t *testing.T) {
 		})
 	}
 }
+
+func TestAllowAdjective(t *testing.T) {
+	tests := []struct {
+		lemma    string
+		cardinal bool
+		expected bool
+	}{
+		{"lxxiii", true, false},
+		{"x", true, false},
+		{"seven", true, true},
+		{"civil", false, true},
+		{"good", false, true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.lemma, func(t *testing.T) {
+			if got := oewn.AllowAdjective(tc.lemma, tc.cardinal); got != tc.expected {
+				t.Errorf("expected %t; got %t", tc.expected, got)
+			}
+		})
+	}
+}

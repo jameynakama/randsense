@@ -37,6 +37,10 @@ type Entry struct {
 	// Populated only for verbs. Each <Sense subcat="..."> may contain
 	// multiple space-separated codes; this field flattens them.
 	Frames []string
+
+	// Cardinal reports a sense that is a cardinal number ("lxxiii", "seven"),
+	// whose sense ID is headed by "cardinal".
+	Cardinal bool
 }
 
 // lexicalEntry mirrors the XML structure of <LexicalEntry> for decoding.
@@ -51,6 +55,7 @@ type lexicalEntry struct {
 		WrittenForm string `xml:"writtenForm,attr"`
 	} `xml:"Form"`
 	Senses []struct {
+		ID     string `xml:"id,attr"`
 		Subcat string `xml:"subcat,attr"`
 	} `xml:"Sense"`
 }
@@ -108,7 +113,9 @@ func toEntry(le lexicalEntry) Entry {
 
 	var frames []string
 	seen := map[string]bool{}
+	cardinal := false
 	for _, s := range le.Senses {
+		cardinal = cardinal || strings.Contains(s.ID, ".cardinal.")
 		for f := range strings.FieldsSeq(s.Subcat) {
 			if !seen[f] {
 				frames = append(frames, f)
@@ -118,9 +125,10 @@ func toEntry(le lexicalEntry) Entry {
 	}
 
 	return Entry{
-		Lemma:  le.Lemma.WrittenForm,
-		POS:    le.Lemma.PartOfSpeech,
-		Forms:  forms,
-		Frames: frames,
+		Lemma:    le.Lemma.WrittenForm,
+		POS:      le.Lemma.PartOfSpeech,
+		Forms:    forms,
+		Frames:   frames,
+		Cardinal: cardinal,
 	}
 }

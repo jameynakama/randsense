@@ -129,6 +129,16 @@ func TestParse(t *testing.T) {
 			[]oewn.Entry{{Lemma: "effervescent", POS: "s", Forms: nil, Frames: nil}},
 		},
 		{
+			"cardinal number",
+			`
+		    <LexicalEntry id="oewn-lxxiii-a">
+		      <Lemma writtenForm="lxxiii" partOfSpeech="a"/>
+		      <Sense id="oewn-lxxiii__5.00.00.cardinal.00" synset="oewn-02201083-s"/>
+		    </LexicalEntry>
+			`,
+			[]oewn.Entry{{Lemma: "lxxiii", POS: "a", Cardinal: true}},
+		},
+		{
 			"adverb (r)",
 			`
 		    <LexicalEntry id="oewn-curly-r">
@@ -199,7 +209,7 @@ func TestParseSampleFile(t *testing.T) {
 		t.Fatalf("Parse: %v", err)
 	}
 
-	const expectedElements = 21
+	const expectedElements = 22
 	if len(got) != expectedElements {
 		t.Errorf("expected %d; got %d: %#v", expectedElements, len(got), got)
 	}

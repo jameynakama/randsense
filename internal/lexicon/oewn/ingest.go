@@ -27,8 +27,9 @@ type Stats struct {
 }
 
 // Ingest streams r as OEW WN-LMF XML, applies AllowLemma (and AllowNoun for
-// nouns), dispatches each entry to the per-POS table by Entry.POS, and
-// inserts, then marks nouns whose lemma is already plural. The whole run is
+// nouns, AllowAdjective for adjectives), dispatches each entry to the per-POS
+// table by Entry.POS, and inserts, then marks nouns whose lemma is already
+// plural. The whole run is
 // one transaction -- any error rolls back. Each per-POS table is
 // truncated first so re-runs produce identical state regardless of prior
 // content (idempotency by clean slate).
@@ -120,6 +121,10 @@ func ingestEntry(ctx context.Context, q *store.Queries, e Entry, stats *Stats) e
 		}
 		stats.Verbs++
 	case "a", "s":
+		if !AllowAdjective(e.Lemma, e.Cardinal) {
+			stats.Skipped++
+			return nil
+		}
 		err := q.InsertAdjective(ctx, store.InsertAdjectiveParams{
 			Lemma:       e.Lemma,
 			Inflections: []byte("{}"),

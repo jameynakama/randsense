@@ -22,3 +22,13 @@ var abbreviationRE = regexp.MustCompile(`^[A-Z]{2,}\b`)
 func AllowNoun(lemma string) bool {
 	return AllowLemma(lemma) && !taxonomicRE.MatchString(lemma) && !abbreviationRE.MatchString(lemma)
 }
+
+// romanRE matches lemmas spelled only with Roman-numeral letters, which also
+// catches words ("civil", "mild"), so it only counts for cardinal numbers.
+var romanRE = regexp.MustCompile(`^[ivxlcdm]+$`)
+
+// AllowAdjective applies adjective-only exclusions: Roman-numeral cardinals
+// ("lxxiii"). cardinal reports a cardinal-number sense.
+func AllowAdjective(lemma string, cardinal bool) bool {
+	return !(cardinal && romanRE.MatchString(lemma))
+}

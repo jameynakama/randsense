@@ -14,8 +14,9 @@ import (
 
 // TestIngest is an integration test: it runs the real Ingest pipeline
 // against the testdata/sample.xml fixture and checks the resulting DB
-// state. 21 LexicalEntries total: 10 nouns, 4 verbs, 2 adjectives, 2 adverbs
-// pass the filters; 3 nouns (.22-caliber, Sorex araneus, OWLT) are Skipped.
+// state. 22 LexicalEntries total: 10 nouns, 4 verbs, 2 adjectives, 2 adverbs
+// pass the filters; 3 nouns (.22-caliber, Sorex araneus, OWLT) and the
+// Roman-numeral adjective lxxiii are Skipped.
 func TestIngest(t *testing.T) {
 	ctx := context.Background()
 
@@ -45,8 +46,8 @@ func TestIngest(t *testing.T) {
 		if stats.Adverbs != 2 {
 			t.Errorf("Adverbs: got %d, want 2", stats.Adverbs)
 		}
-		if stats.Skipped != 3 {
-			t.Errorf("Skipped: got %d, want 3", stats.Skipped)
+		if stats.Skipped != 4 {
+			t.Errorf("Skipped: got %d, want 4", stats.Skipped)
 		}
 	})
 
