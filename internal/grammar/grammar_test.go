@@ -361,11 +361,11 @@ func TestLoadAcceptsDummySubjects(t *testing.T) {
 	`)
 }
 
-func TestLoadAcceptsGenitivePronouns(t *testing.T) {
+func TestLoadAcceptsPronounCases(t *testing.T) {
 	mustLoad(t, `
 	[[rule]]
 	symbol = "S"
-	expansion = ["Pronoun:genitive", "Verb"]
+	expansion = ["Pronoun:genitive", "Verb", "Pronoun:reflexive"]
 	`)
 }
 

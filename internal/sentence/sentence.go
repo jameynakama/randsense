@@ -22,10 +22,10 @@ import (
 
 // Agreement relies on these grammar symbols. An NP followed by a VP among its
 // siblings is that VP's subject: its pronouns are nominative and the VP's
-// verbs agree with it. An NP's person and number come from its pronoun, its
-// determiner, or, for "NP Conjunction NP", the coordination. Verbs under an
-// InfVP stay in their base form and verbs under a GerVP take -ing, up to any
-// clause nested inside them.
+// verbs and reflexives agree with it. An NP's person and number come from its
+// pronoun, its determiner, or, for "NP Conjunction NP", the coordination.
+// Verbs under an InfVP stay in their base form and verbs under a GerVP take
+// -ing, up to any clause nested inside them.
 const (
 	nounPhrase       = "NP"
 	verbPhrase       = "VP"
@@ -33,7 +33,7 @@ const (
 	gerundPhrase     = "GerVP"
 )
 
-// verbForm is how agreeVerbs inflects the verbs in a phrase.
+// verbForm is how agreeWithSubjects inflects the verbs in a phrase.
 type verbForm int
 
 const (
@@ -52,17 +52,20 @@ type Sentence struct {
 type leafInfo struct {
 	number      string       // determiners: "singular", "plural" or "either"; pronouns: "singular" or "plural"
 	person      morph.Person // pronouns
+	gender      string       // pronouns
 	plural      string       // nouns: irregular plural, if any
 	pluralLemma bool         // nouns: the lemma is already plural ("Rastas")
 }
 
-// agreement is the person and number a verb agrees with.
+// agreement is the person and number a verb agrees with, and the gender a
+// reflexive agrees with. An empty gender allows any.
 type agreement struct {
 	person morph.Person
 	number morph.Number
+	gender string
 }
 
-var thirdSingular = agreement{morph.Third, morph.Singular}
+var thirdSingular = agreement{morph.Third, morph.Singular, ""}
 
 type generator struct {
 	ctx        context.Context
@@ -125,7 +128,9 @@ func Realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *mo
 		return nil, fmt.Errorf("Realize: %w", err)
 	}
 	gen.agreeNouns(tree)
-	gen.agreeVerbs(tree, thirdSingular, finite)
+	if err := gen.agreeWithSubjects(tree, thirdSingular, finite); err != nil {
+		return nil, fmt.Errorf("Realize: %w", err)
+	}
 
 	leaves := leafNodes(tree)
 	words := make([]string, len(leaves))
@@ -139,9 +144,10 @@ func Realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *mo
 	return &Sentence{Text: format(words), Tree: tree}, nil
 }
 
-// fill gives every leaf under n a word. subject says n is (part of) a subject
-// NP. An NP fills its nouns first so that a plural lemma ("Rastas") can rule
-// out singular determiners ("a Rastas").
+// fill gives every leaf under n a word, except reflexives, which wait for
+// agreeWithSubjects. subject says n is (part of) a subject NP. An NP fills its
+// nouns first so that a plural lemma ("Rastas") can rule out singular
+// determiners ("a Rastas").
 func (gen *generator) fill(n *grammar.Node, subject bool) error {
 	pluralNoun := false
 	if n.Symbol == nounPhrase {
@@ -155,7 +161,7 @@ func (gen *generator) fill(n *grammar.Node, subject bool) error {
 		}
 	}
 	for i, c := range n.Children {
-		if c.Lemma != "" {
+		if c.Lemma != "" || isReflexive(c) {
 			continue
 		}
 		if len(c.Children) == 0 {
@@ -171,6 +177,10 @@ func (gen *generator) fill(n *grammar.Node, subject bool) error {
 		}
 	}
 	return nil
+}
+
+func isReflexive(n *grammar.Node) bool {
+	return n.POS() == grammar.Pronoun && n.Qualifier() == grammar.Reflexive
 }
 
 func verbPhraseFollows(siblings []*grammar.Node) bool {
@@ -258,7 +268,7 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 			pronounCase = "nominative"
 		}
 		w, err := q.GetRandomPronounWithCase(ctx, pronounCase)
-		return w.Lemma, leafInfo{number: w.Number, person: morph.Person(w.Person)}, err
+		return w.Lemma, leafInfo{number: w.Number, person: morph.Person(w.Person), gender: w.Gender}, err
 	case grammar.Comma:
 		return ",", leafInfo{}, nil
 	case grammar.Complementizer:
@@ -306,9 +316,10 @@ func (gen *generator) agreeNouns(n *grammar.Node) {
 	}
 }
 
-// npAgreement is a coordination's (plural for "and", the last part's for
-// "or"), a pronoun's, or third person with a number from a plural lemma or
-// the determiner (a coin flip for "either", singular without one).
+// npAgreement is a coordination's (the last part's for "or" and "nor",
+// otherwise plural in the lowest person among the parts: "you and she" is
+// second person), a pronoun's, or third person with a number from a plural
+// lemma or the determiner (a coin flip for "either", singular without one).
 func (gen *generator) npAgreement(n *grammar.Node) agreement {
 	var parts []*grammar.Node
 	conjunction := ""
@@ -324,7 +335,11 @@ func (gen *generator) npAgreement(n *grammar.Node) agreement {
 		if conjunction == "or" || conjunction == "nor" {
 			return gen.agr[parts[len(parts)-1]]
 		}
-		return agreement{morph.Third, morph.Plural}
+		agr := agreement{morph.Third, morph.Plural, ""}
+		for _, p := range parts {
+			agr.person = min(agr.person, gen.agr[p].person)
+		}
+		return agr
 	}
 
 	agr := thirdSingular
@@ -332,7 +347,7 @@ func (gen *generator) npAgreement(n *grammar.Node) agreement {
 		info := gen.leaves[c]
 		switch {
 		case c.POS() == grammar.Pronoun && len(c.Children) == 0:
-			return agreement{info.person, morph.Number(info.number)}
+			return agreement{info.person, morph.Number(info.number), info.gender}
 		case info.pluralLemma:
 			agr.number = morph.Plural
 		}
@@ -353,14 +368,28 @@ func (gen *generator) npAgreement(n *grammar.Node) agreement {
 	return agr
 }
 
-// agreeVerbs conjugates verbs for the sentence tense and the agreement of the
-// nearest NP before them among their siblings, or third singular if there is
-// none. A VP passes its subject's agreement down to the verbs inside it.
-// Verbs in an infinitive keep their base form; verbs in a gerund take -ing.
-func (gen *generator) agreeVerbs(n *grammar.Node, agr agreement, form verbForm) {
+// agreeWithSubjects conjugates verbs for the sentence tense and fills
+// reflexives, both agreeing with the nearest NP before them among their
+// siblings, or third singular if there is none. A VP passes its subject's
+// agreement down to the words inside it, so a reflexive in an infinitive
+// agrees with the object before it ("urge her to devour herself"). Verbs in
+// an infinitive keep their base form; verbs in a gerund take -ing.
+func (gen *generator) agreeWithSubjects(n *grammar.Node, agr agreement, form verbForm) error {
 	for _, c := range n.Children {
 		if c.Symbol == nounPhrase {
 			agr = gen.agr[c]
+		}
+		if isReflexive(c) {
+			w, err := gen.q.GetRandomPronounWithAgreement(gen.ctx, store.GetRandomPronounWithAgreementParams{
+				Case:   grammar.Reflexive,
+				Person: int16(agr.person),
+				Number: string(agr.number),
+				Gender: agr.gender,
+			})
+			if err != nil {
+				return fmt.Errorf("%s: %w", c.Symbol, err)
+			}
+			c.Lemma, c.Word = w.Lemma, w.Lemma
 		}
 		if len(c.Children) == 0 && c.POS() == grammar.Verb {
 			switch form {
@@ -370,17 +399,22 @@ func (gen *generator) agreeVerbs(n *grammar.Node, agr agreement, form verbForm) 
 				c.Word = gen.verbs.Participle(c.Lemma)
 			}
 		}
+		var err error
 		switch c.Symbol {
 		case verbPhrase:
-			gen.agreeVerbs(c, agr, form)
+			err = gen.agreeWithSubjects(c, agr, form)
 		case infinitivePhrase:
-			gen.agreeVerbs(c, agr, base)
+			err = gen.agreeWithSubjects(c, agr, base)
 		case gerundPhrase:
-			gen.agreeVerbs(c, agr, gerund)
+			err = gen.agreeWithSubjects(c, agr, gerund)
 		default:
-			gen.agreeVerbs(c, thirdSingular, finite)
+			err = gen.agreeWithSubjects(c, thirdSingular, finite)
+		}
+		if err != nil {
+			return err
 		}
 	}
+	return nil
 }
 
 func leafNodes(n *grammar.Node) []*grammar.Node {

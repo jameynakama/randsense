@@ -9,6 +9,42 @@ import (
 	"context"
 )
 
+const getRandomPronounWithAgreement = `-- name: GetRandomPronounWithAgreement :one
+SELECT id, lemma, case_, person, number, gender, active FROM pronouns
+WHERE active AND case_ = $1 AND person = $2 AND number = $3
+  AND ($4::text = '' OR gender = $4)
+ORDER BY random()
+LIMIT 1
+`
+
+type GetRandomPronounWithAgreementParams struct {
+	Case   string `db:"case_" json:"case_"`
+	Person int16  `db:"person" json:"person"`
+	Number string `db:"number" json:"number"`
+	Gender string `db:"gender" json:"gender"`
+}
+
+// An empty gender matches any.
+func (q *Queries) GetRandomPronounWithAgreement(ctx context.Context, arg GetRandomPronounWithAgreementParams) (Pronoun, error) {
+	row := q.db.QueryRow(ctx, getRandomPronounWithAgreement,
+		arg.Case,
+		arg.Person,
+		arg.Number,
+		arg.Gender,
+	)
+	var i Pronoun
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Case,
+		&i.Person,
+		&i.Number,
+		&i.Gender,
+		&i.Active,
+	)
+	return i, err
+}
+
 const getRandomPronounWithCase = `-- name: GetRandomPronounWithCase :one
 SELECT id, lemma, case_, person, number, gender, active FROM pronouns
 WHERE active AND case_ = $1

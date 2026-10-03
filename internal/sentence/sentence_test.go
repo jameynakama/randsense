@@ -41,6 +41,15 @@ type fakeQuerier struct {
 	pronouns map[string]store.Pronoun
 	cases    []string
 
+	// nominatives, when set, answers nominative lookups in turn.
+	nominatives []store.Pronoun
+	nNom        int
+
+	// agreements records what GetRandomPronounWithAgreement was asked for;
+	// it answers from reflexives, or with agreementErr.
+	agreements   []store.GetRandomPronounWithAgreementParams
+	agreementErr error
+
 	// npConj answers GetRandomNPConjunction; conjTypes records the types
 	// GetRandomConjunctionOfType was asked for.
 	npConj    store.Conjunction
@@ -66,7 +75,36 @@ func newFake(dets ...store.Determiner) *fakeQuerier {
 
 func (f *fakeQuerier) GetRandomPronounWithCase(_ context.Context, c string) (store.Pronoun, error) {
 	f.cases = append(f.cases, c)
+	if c == "nominative" && len(f.nominatives) > 0 {
+		p := f.nominatives[f.nNom%len(f.nominatives)]
+		f.nNom++
+		return p, f.err
+	}
 	return f.pronouns[c], f.err
+}
+
+var reflexives = []store.Pronoun{
+	{Lemma: "myself", Person: 1, Number: "singular", Gender: "epicene"},
+	{Lemma: "ourselves", Person: 1, Number: "plural", Gender: "epicene"},
+	{Lemma: "yourself", Person: 2, Number: "singular", Gender: "epicene"},
+	{Lemma: "yourselves", Person: 2, Number: "plural", Gender: "epicene"},
+	{Lemma: "himself", Person: 3, Number: "singular", Gender: "masc"},
+	{Lemma: "herself", Person: 3, Number: "singular", Gender: "fem"},
+	{Lemma: "itself", Person: 3, Number: "singular", Gender: "neuter"},
+	{Lemma: "themselves", Person: 3, Number: "plural", Gender: "epicene"},
+}
+
+func (f *fakeQuerier) GetRandomPronounWithAgreement(_ context.Context, arg store.GetRandomPronounWithAgreementParams) (store.Pronoun, error) {
+	f.agreements = append(f.agreements, arg)
+	if f.agreementErr != nil {
+		return store.Pronoun{}, f.agreementErr
+	}
+	for _, p := range reflexives {
+		if arg.Case == "reflexive" && p.Person == arg.Person && p.Number == arg.Number && (arg.Gender == "" || p.Gender == arg.Gender) {
+			return p, nil
+		}
+	}
+	return store.Pronoun{}, pgx.ErrNoRows
 }
 
 func (f *fakeQuerier) GetRandomConjunctionOfType(_ context.Context, t string) (store.Conjunction, error) {
@@ -624,6 +662,117 @@ func TestGenerateGenitivePronounIsThirdPersonOfEitherNumber(t *testing.T) {
 	assertExactly(t, seen, "Mine gives mine.", "Mine give mine.", "Mine gave mine.")
 	if !slices.Equal(q.cases, []string{"genitive", "genitive"}) {
 		t.Errorf("expected cases [genitive genitive]; got %v", q.cases)
+	}
+}
+
+// reflexiveObject builds "subject Verb:transitive Pronoun:reflexive".
+func reflexiveObject(subject *grammar.Node) *grammar.Node {
+	return node("S", subject, node("VP", leaf("Verb:transitive"), leaf("Pronoun:reflexive")))
+}
+
+func TestRealizeReflexiveAgreesWithPronounSubject(t *testing.T) {
+	tests := []struct {
+		subject store.Pronoun
+		want    []string
+	}{
+		{store.Pronoun{Lemma: "I", Person: 1, Number: "singular", Gender: "epicene"}, []string{"I give myself.", "I gave myself."}},
+		{store.Pronoun{Lemma: "we", Person: 1, Number: "plural", Gender: "epicene"}, []string{"We give ourselves.", "We gave ourselves."}},
+		{store.Pronoun{Lemma: "you", Person: 2, Number: "singular", Gender: "epicene"}, []string{"You give yourself.", "You gave yourself."}},
+		{store.Pronoun{Lemma: "you", Person: 2, Number: "plural", Gender: "epicene"}, []string{"You give yourselves.", "You gave yourselves."}},
+		{store.Pronoun{Lemma: "she", Person: 3, Number: "singular", Gender: "fem"}, []string{"She gives herself.", "She gave herself."}},
+		{store.Pronoun{Lemma: "it", Person: 3, Number: "singular", Gender: "neuter"}, []string{"It gives itself.", "It gave itself."}},
+		{store.Pronoun{Lemma: "they", Person: 3, Number: "plural", Gender: "epicene"}, []string{"They give themselves.", "They gave themselves."}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.want[0], func(t *testing.T) {
+			seen := realized(t, func() *grammar.Node {
+				return reflexiveObject(node("NP", leaf("Pronoun")))
+			}, func() *fakeQuerier {
+				q := newFake()
+				q.pronouns["nominative"] = tc.subject
+				return q
+			}, 20)
+
+			assertExactly(t, seen, tc.want...)
+		})
+	}
+}
+
+func TestRealizeReflexiveAfterNounSubjectTakesAnyGender(t *testing.T) {
+	tests := []struct {
+		det  store.Determiner
+		want store.GetRandomPronounWithAgreementParams
+	}{
+		{store.Determiner{Lemma: "this", Number: "singular"}, store.GetRandomPronounWithAgreementParams{Case: "reflexive", Person: 3, Number: "singular"}},
+		{store.Determiner{Lemma: "these", Number: "plural"}, store.GetRandomPronounWithAgreementParams{Case: "reflexive", Person: 3, Number: "plural"}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.det.Lemma, func(t *testing.T) {
+			q := newFake(tc.det)
+			_, err := sentence.Realize(context.Background(), q, reflexiveObject(detNoun()), loadVerbs(t), rand.New(rand.NewPCG(1, 0)), 0)
+			if err != nil {
+				t.Fatalf("Realize: %v", err)
+			}
+			if !slices.Equal(q.agreements, []store.GetRandomPronounWithAgreementParams{tc.want}) {
+				t.Errorf("expected agreement lookups %+v; got %+v", tc.want, q.agreements)
+			}
+		})
+	}
+}
+
+func TestRealizeReflexiveInInfinitiveAgreesWithObject(t *testing.T) {
+	seen := realized(t, func() *grammar.Node {
+		inf := node("InfVP", leaf("To"), node("VP", leaf("Verb:transitive"), leaf("Pronoun:reflexive")))
+		return node("S", detNoun(), node("VP", leaf("Verb:transitive-to-infinitive"), node("NP", leaf("Pronoun")), inf))
+	}, func() *fakeQuerier {
+		q := newFake(store.Determiner{Lemma: "these", Number: "plural"})
+		q.pronouns["accusative"] = store.Pronoun{Lemma: "her", Person: 3, Number: "singular", Gender: "fem"}
+		return q
+	}, 20)
+
+	// "Her" is who gives, so she gives herself, not the geese themselves.
+	assertExactly(t, seen, "These geese give her to give herself.", "These geese gave her to give herself.")
+}
+
+func TestRealizeReflexiveAfterCoordinatedSubjectTakesLowestPerson(t *testing.T) {
+	you := store.Pronoun{Lemma: "you", Person: 2, Number: "singular", Gender: "epicene"}
+	she := store.Pronoun{Lemma: "she", Person: 3, Number: "singular", Gender: "fem"}
+	he := store.Pronoun{Lemma: "he", Person: 3, Number: "singular", Gender: "masc"}
+	i := store.Pronoun{Lemma: "I", Person: 1, Number: "singular", Gender: "epicene"}
+	tests := []struct {
+		first, second store.Pronoun
+		want          []string
+	}{
+		{you, she, []string{"You and she give yourselves.", "You and she gave yourselves."}},
+		{she, i, []string{"She and I give ourselves.", "She and I gave ourselves."}},
+		{she, he, []string{"She and he give themselves.", "She and he gave themselves."}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.want[0], func(t *testing.T) {
+			seen := realized(t, func() *grammar.Node {
+				return reflexiveObject(node("NP", node("NP", leaf("Pronoun")), leaf("Conjunction:np"), node("NP", leaf("Pronoun"))))
+			}, func() *fakeQuerier {
+				q := newFake()
+				q.nominatives = []store.Pronoun{tc.first, tc.second}
+				return q
+			}, 20)
+
+			assertExactly(t, seen, tc.want...)
+		})
+	}
+}
+
+func TestRealizeReturnsReflexiveLookupErrors(t *testing.T) {
+	boom := errors.New("boom")
+	q := newFake()
+	q.agreementErr = boom
+
+	_, err := sentence.Realize(context.Background(), q, reflexiveObject(detNoun()), loadVerbs(t), rand.New(rand.NewPCG(1, 0)), 0)
+	if !errors.Is(err, boom) {
+		t.Errorf("expected boom; got %v", err)
 	}
 }
 

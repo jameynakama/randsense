@@ -99,13 +99,16 @@ const (
 	Nor           = "nor"
 )
 
-// Genitive qualifies a pronoun slot by case: "Pronoun:genitive" takes a
-// pronoun like "mine".
-const Genitive = "genitive"
+// Pronoun cases a pronoun slot can be qualified with: "Pronoun:genitive"
+// takes a pronoun like "mine", and "Pronoun:reflexive" one like "herself".
+const (
+	Genitive  = "genitive"
+	Reflexive = "reflexive"
+)
 
 // qualifiers lists what each POS can be qualified with ("Verb:transitive").
 // A qualified preposition, complementizer or pronoun is that word:
-// "Preposition:with" is always "with". Genitive is the exception, and
+// "Preposition:with" is always "with". The pronoun cases are the exception, and
 // conjunctions are qualified by type except for Neither and Nor.
 var qualifiers = map[POS][]string{
 	Verb: {
@@ -117,7 +120,7 @@ var qualifiers = map[POS][]string{
 		string(AdjectiveComplement), string(TransitiveAdjectiveComplement),
 		string(Weather), string(DummyThatClause),
 	},
-	Pronoun:        {"it", Genitive},
+	Pronoun:        {"it", Genitive, Reflexive},
 	Preposition:    {"from", "into", "of", "on", "to", "with"},
 	Complementizer: {"whether"},
 	Conjunction:    {Coordinating, Subordinating, JoinsNPs, Neither, Nor},

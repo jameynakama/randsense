@@ -10,7 +10,9 @@
 # spelled out, and
 # "Preposition:with" is always "with", as "Complementizer:whether" is
 # "whether" and "Pronoun:it" is "it". "Pronoun:genitive" takes a genitive
-# pronoun ("mine"). Unqualified slots take any word.
+# pronoun ("mine") and "Pronoun:reflexive" a reflexive ("herself"), which
+# agrees like a verb, so it belongs in a VP and never in an NP. Unqualified
+# slots take any word.
 #
 # Agreement depends on four symbol names, NP, VP, InfVP and GerVP: an NP
 # followed by a VP among its siblings is the subject (nominative pronouns, and
@@ -80,6 +82,11 @@ weight = 0.03
 symbol = "VP"
 expansion = ["Verb:transitive", "NP"]
 weight = 4
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:transitive", "Pronoun:reflexive"]
+weight = 0.3
 
 [[rule]]
 symbol = "VP"

@@ -25,6 +25,8 @@ type Querier interface {
 	GetRandomNPConjunction(ctx context.Context) (Conjunction, error)
 	GetRandomNoun(ctx context.Context, commonness float64) (Noun, error)
 	GetRandomPreposition(ctx context.Context) (Preposition, error)
+	// An empty gender matches any.
+	GetRandomPronounWithAgreement(ctx context.Context, arg GetRandomPronounWithAgreementParams) (Pronoun, error)
 	GetRandomPronounWithCase(ctx context.Context, case_ string) (Pronoun, error)
 	GetRandomVerb(ctx context.Context, commonness float64) (Verb, error)
 	GetRandomVerbWithFrame(ctx context.Context, arg GetRandomVerbWithFrameParams) (Verb, error)
