@@ -39,3 +39,6 @@ generate:
 # Ingest the OEWN lexicon and the curated closed-class words into the database
 ingest:
     go run ./cmd/ingest
+
+@get commonness="0":
+    http http://localhost:8080/api/v1/sentences/random?commonness={{ commonness }} | jq .text
