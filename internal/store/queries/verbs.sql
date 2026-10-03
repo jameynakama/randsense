@@ -15,12 +15,19 @@ WHERE lemma = $1;
 
 -- name: GetRandomVerb :one
 SELECT * FROM verbs
-WHERE active
+WHERE active AND coalesce(frequency, 0) >= @commonness::float8
 ORDER BY random()
 LIMIT 1;
 
 -- name: GetRandomVerbWithFrame :one
 SELECT * FROM verbs
 WHERE active AND frames ? @frame::text
+  AND coalesce(frequency, 0) >= @commonness::float8
 ORDER BY random()
 LIMIT 1;
+
+-- name: SetVerbFrequencies :execrows
+-- Words are lowercase, so only lowercase lemmas match.
+UPDATE verbs SET frequency = round(f.zipf::numeric, 2)
+FROM (SELECT unnest(@words::text[]) AS word, unnest(@zipfs::float8[]) AS zipf) f
+WHERE verbs.lemma = f.word;

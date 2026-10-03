@@ -1,0 +1,11 @@
+word	pos	count
+in	Preposition	443510
+in	Noun	67
+good	Adjective	1000
+quickly	Adverb	2800
+america	Name	3949
+john	Name	9647
+john	Noun	180
+goose	Noun	400
+baby	Noun	25918
+devour	Verb	54

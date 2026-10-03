@@ -15,6 +15,12 @@ WHERE lemma = $1;
 
 -- name: GetRandomAdjective :one
 SELECT * FROM adjectives
-WHERE active
+WHERE active AND coalesce(frequency, 0) >= @commonness::float8
 ORDER BY random()
 LIMIT 1;
+
+-- name: SetAdjectiveFrequencies :execrows
+-- Words are lowercase, so only lowercase lemmas match.
+UPDATE adjectives SET frequency = round(f.zipf::numeric, 2)
+FROM (SELECT unnest(@words::text[]) AS word, unnest(@zipfs::float8[]) AS zipf) f
+WHERE adjectives.lemma = f.word;

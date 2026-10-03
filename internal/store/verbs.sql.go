@@ -22,13 +22,13 @@ func (q *Queries) CountVerbs(ctx context.Context) (int64, error) {
 
 const getRandomVerb = `-- name: GetRandomVerb :one
 SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM verbs
-WHERE active
+WHERE active AND coalesce(frequency, 0) >= $1::float8
 ORDER BY random()
 LIMIT 1
 `
 
-func (q *Queries) GetRandomVerb(ctx context.Context) (Verb, error) {
-	row := q.db.QueryRow(ctx, getRandomVerb)
+func (q *Queries) GetRandomVerb(ctx context.Context, commonness float64) (Verb, error) {
+	row := q.db.QueryRow(ctx, getRandomVerb, commonness)
 	var i Verb
 	err := row.Scan(
 		&i.ID,
@@ -50,12 +50,18 @@ func (q *Queries) GetRandomVerb(ctx context.Context) (Verb, error) {
 const getRandomVerbWithFrame = `-- name: GetRandomVerbWithFrame :one
 SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM verbs
 WHERE active AND frames ? $1::text
+  AND coalesce(frequency, 0) >= $2::float8
 ORDER BY random()
 LIMIT 1
 `
 
-func (q *Queries) GetRandomVerbWithFrame(ctx context.Context, frame string) (Verb, error) {
-	row := q.db.QueryRow(ctx, getRandomVerbWithFrame, frame)
+type GetRandomVerbWithFrameParams struct {
+	Frame      string  `db:"frame" json:"frame"`
+	Commonness float64 `db:"commonness" json:"commonness"`
+}
+
+func (q *Queries) GetRandomVerbWithFrame(ctx context.Context, arg GetRandomVerbWithFrameParams) (Verb, error) {
+	row := q.db.QueryRow(ctx, getRandomVerbWithFrame, arg.Frame, arg.Commonness)
 	var i Verb
 	err := row.Scan(
 		&i.ID,
@@ -120,6 +126,26 @@ func (q *Queries) InsertVerb(ctx context.Context, arg InsertVerbParams) error {
 		arg.Source,
 	)
 	return err
+}
+
+const setVerbFrequencies = `-- name: SetVerbFrequencies :execrows
+UPDATE verbs SET frequency = round(f.zipf::numeric, 2)
+FROM (SELECT unnest($1::text[]) AS word, unnest($2::float8[]) AS zipf) f
+WHERE verbs.lemma = f.word
+`
+
+type SetVerbFrequenciesParams struct {
+	Words []string  `db:"words" json:"words"`
+	Zipfs []float64 `db:"zipfs" json:"zipfs"`
+}
+
+// Words are lowercase, so only lowercase lemmas match.
+func (q *Queries) SetVerbFrequencies(ctx context.Context, arg SetVerbFrequenciesParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setVerbFrequencies, arg.Words, arg.Zipfs)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const truncateVerbs = `-- name: TruncateVerbs :exec

@@ -16,18 +16,18 @@ type Querier interface {
 	GetAdjectiveByLemma(ctx context.Context, lemma string) (Adjective, error)
 	GetAdverbByLemma(ctx context.Context, lemma string) (Adverb, error)
 	GetNounByLemma(ctx context.Context, lemma string) (Noun, error)
-	GetRandomAdjective(ctx context.Context) (Adjective, error)
-	GetRandomAdverb(ctx context.Context) (Adverb, error)
+	GetRandomAdjective(ctx context.Context, commonness float64) (Adjective, error)
+	GetRandomAdverb(ctx context.Context, commonness float64) (Adverb, error)
 	GetRandomConjunction(ctx context.Context) (Conjunction, error)
 	GetRandomConjunctionOfType(ctx context.Context, type_ string) (Conjunction, error)
 	GetRandomDeterminer(ctx context.Context) (Determiner, error)
 	GetRandomDeterminerWithNumber(ctx context.Context, numbers []string) (Determiner, error)
 	GetRandomNPConjunction(ctx context.Context) (Conjunction, error)
-	GetRandomNoun(ctx context.Context) (Noun, error)
+	GetRandomNoun(ctx context.Context, commonness float64) (Noun, error)
 	GetRandomPreposition(ctx context.Context) (Preposition, error)
 	GetRandomPronounWithCase(ctx context.Context, case_ string) (Pronoun, error)
-	GetRandomVerb(ctx context.Context) (Verb, error)
-	GetRandomVerbWithFrame(ctx context.Context, frame string) (Verb, error)
+	GetRandomVerb(ctx context.Context, commonness float64) (Verb, error)
+	GetRandomVerbWithFrame(ctx context.Context, arg GetRandomVerbWithFrameParams) (Verb, error)
 	GetVerbByLemma(ctx context.Context, lemma string) (Verb, error)
 	InsertAdjective(ctx context.Context, arg InsertAdjectiveParams) error
 	InsertAdverb(ctx context.Context, arg InsertAdverbParams) error
@@ -45,6 +45,18 @@ type Querier interface {
 	// -es) is also a lemma ("Rastas"/"Rasta", "eyeglasses"/"eyeglass"). Short
 	// words and -ss/-us/-is endings ("Ms", "Mass", "Pus") are left singular.
 	MarkPluralNouns(ctx context.Context) (int64, error)
+	// Words are lowercase, so only lowercase lemmas match.
+	SetAdjectiveFrequencies(ctx context.Context, arg SetAdjectiveFrequenciesParams) (int64, error)
+	// Words are lowercase, so only lowercase lemmas match.
+	SetAdverbFrequencies(ctx context.Context, arg SetAdverbFrequenciesParams) (int64, error)
+	// Words are lowercase, so only lowercase lemmas match.
+	SetNounFrequencies(ctx context.Context, arg SetNounFrequenciesParams) (int64, error)
+	// Words are lowercase, so a capitalized lemma ("America") matches its
+	// lowercase form. Only name frequencies go here, so the element "In" doesn't
+	// pick up the preposition's.
+	SetProperNounFrequencies(ctx context.Context, arg SetProperNounFrequenciesParams) (int64, error)
+	// Words are lowercase, so only lowercase lemmas match.
+	SetVerbFrequencies(ctx context.Context, arg SetVerbFrequenciesParams) (int64, error)
 	TruncateAdjectives(ctx context.Context) error
 	TruncateAdverbs(ctx context.Context) error
 	TruncateConjunctions(ctx context.Context) error

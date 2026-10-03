@@ -227,3 +227,92 @@ func getWordBody(t *testing.T, srv *httptest.Server, pos string) map[string]any 
 	}
 	return body
 }
+
+func TestInvalidCommonnessReturns400(t *testing.T) {
+	seedWords(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	for _, path := range []string{"/api/v1/words/random?pos=noun&commonness=", "/api/v1/sentences/random?commonness="} {
+		for _, c := range []string{"lots", "-1", "7.5", "NaN"} {
+			t.Run(path+c, func(t *testing.T) {
+				resp, err := http.Get(srv.URL + path + c)
+				if err != nil {
+					t.Fatalf("GET: %v", err)
+				}
+				defer resp.Body.Close()
+				if resp.StatusCode != http.StatusBadRequest {
+					t.Errorf("status: got %d, want 400", resp.StatusCode)
+				}
+			})
+		}
+	}
+}
+
+// seedRareNoun adds "goffer", which has no frequency, and gives "goose" one,
+// so a commonness floor leaves only "goose".
+func seedRareNoun(t *testing.T) {
+	t.Helper()
+	ctx := context.Background()
+	if err := store.New(testPool).InsertNoun(ctx, store.InsertNounParams{
+		Lemma:       "goffer",
+		Inflections: []byte(`{}`),
+		Source:      "test",
+	}); err != nil {
+		t.Fatalf("seed noun: %v", err)
+	}
+	if _, err := testPool.Exec(ctx, "UPDATE nouns SET frequency = 4.12 WHERE lemma = 'goose'"); err != nil {
+		t.Fatalf("set frequency: %v", err)
+	}
+}
+
+func TestRandomWordHonorsCommonness(t *testing.T) {
+	seedWords(t)
+	seedRareNoun(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	for range 20 {
+		resp, err := http.Get(srv.URL + "/api/v1/words/random?pos=noun&commonness=4")
+		if err != nil {
+			t.Fatalf("GET: %v", err)
+		}
+		var body map[string]any
+		err = json.NewDecoder(resp.Body).Decode(&body)
+		resp.Body.Close()
+		if err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if body["lemma"] != "goose" {
+			t.Fatalf("lemma: got %v, want goose", body["lemma"])
+		}
+	}
+}
+
+func TestRandomSentenceHonorsCommonness(t *testing.T) {
+	seedWords(t)
+	seedRareNoun(t)
+	if _, err := testPool.Exec(context.Background(), "UPDATE verbs SET frequency = 3.03"); err != nil {
+		t.Fatalf("set frequency: %v", err)
+	}
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	for range 20 {
+		resp, err := http.Get(srv.URL + "/api/v1/sentences/random?commonness=3")
+		if err != nil {
+			t.Fatalf("GET: %v", err)
+		}
+		var body struct {
+			Text string `json:"text"`
+		}
+		err = json.NewDecoder(resp.Body).Decode(&body)
+		resp.Body.Close()
+		if err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if body.Text != "This goose devours." && body.Text != "This goose devoured." {
+			t.Fatalf("text: got %q, want This goose devours/devoured", body.Text)
+		}
+	}
+}

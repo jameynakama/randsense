@@ -9,11 +9,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jameynakama/randsense/internal/lexicon/closedclass"
 	"github.com/jameynakama/randsense/internal/lexicon/oewn"
+	"github.com/jameynakama/randsense/internal/lexicon/subtlex"
 )
 
 const (
 	defaultDataPath = "data/oewn-2025/english-wordnet-2025.xml.gz"
 	closedClassPath = "data/lexicon/closed_class.toml"
+	subtlexPath     = "data/subtlex-us/subtlex-us-pos.tsv.gz"
 )
 
 func main() {
@@ -55,6 +57,27 @@ func main() {
 
 	log.Printf("done: nouns=%d verbs=%d adjectives=%d adverbs=%d skipped=%d",
 		stats.Nouns, stats.Verbs, stats.Adjectives, stats.Adverbs, stats.Skipped)
+
+	sf, err := os.Open(subtlexPath)
+	if err != nil {
+		log.Fatalf("open %s: %v", subtlexPath, err)
+	}
+	defer sf.Close()
+
+	sgz, err := gzip.NewReader(sf)
+	if err != nil {
+		log.Fatalf("gzip: %v", err)
+	}
+	defer sgz.Close()
+
+	log.Printf("applying %s ...", subtlexPath)
+	sstats, err := subtlex.Apply(ctx, db, sgz)
+	if err != nil {
+		log.Fatalf("subtlex: %v", err)
+	}
+
+	log.Printf("done: frequencies for nouns=%d verbs=%d adjectives=%d adverbs=%d",
+		sstats.Nouns, sstats.Verbs, sstats.Adjectives, sstats.Adverbs)
 
 	cf, err := os.Open(closedClassPath)
 	if err != nil {

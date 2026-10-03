@@ -15,7 +15,7 @@ WHERE lemma = $1;
 
 -- name: GetRandomNoun :one
 SELECT * FROM nouns
-WHERE active
+WHERE active AND coalesce(frequency, 0) >= @commonness::float8
 ORDER BY random()
 LIMIT 1;
 
@@ -32,3 +32,17 @@ WHERE p.lemma ~ 's$'
     WHERE n.lemma = left(p.lemma, -1)
        OR (p.lemma ~ 'es$' AND n.lemma = left(p.lemma, -2))
   );
+
+-- name: SetNounFrequencies :execrows
+-- Words are lowercase, so only lowercase lemmas match.
+UPDATE nouns SET frequency = round(f.zipf::numeric, 2)
+FROM (SELECT unnest(@words::text[]) AS word, unnest(@zipfs::float8[]) AS zipf) f
+WHERE nouns.lemma = f.word;
+
+-- name: SetProperNounFrequencies :execrows
+-- Words are lowercase, so a capitalized lemma ("America") matches its
+-- lowercase form. Only name frequencies go here, so the element "In" doesn't
+-- pick up the preposition's.
+UPDATE nouns SET frequency = round(f.zipf::numeric, 2)
+FROM (SELECT unnest(@words::text[]) AS word, unnest(@zipfs::float8[]) AS zipf) f
+WHERE nouns.lemma <> lower(nouns.lemma) AND lower(nouns.lemma) = f.word;

@@ -46,13 +46,13 @@ func (q *Queries) GetAdjectiveByLemma(ctx context.Context, lemma string) (Adject
 
 const getRandomAdjective = `-- name: GetRandomAdjective :one
 SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM adjectives
-WHERE active
+WHERE active AND coalesce(frequency, 0) >= $1::float8
 ORDER BY random()
 LIMIT 1
 `
 
-func (q *Queries) GetRandomAdjective(ctx context.Context) (Adjective, error) {
-	row := q.db.QueryRow(ctx, getRandomAdjective)
+func (q *Queries) GetRandomAdjective(ctx context.Context, commonness float64) (Adjective, error) {
+	row := q.db.QueryRow(ctx, getRandomAdjective, commonness)
 	var i Adjective
 	err := row.Scan(
 		&i.ID,
@@ -85,6 +85,26 @@ type InsertAdjectiveParams struct {
 func (q *Queries) InsertAdjective(ctx context.Context, arg InsertAdjectiveParams) error {
 	_, err := q.db.Exec(ctx, insertAdjective, arg.Lemma, arg.Inflections, arg.Source)
 	return err
+}
+
+const setAdjectiveFrequencies = `-- name: SetAdjectiveFrequencies :execrows
+UPDATE adjectives SET frequency = round(f.zipf::numeric, 2)
+FROM (SELECT unnest($1::text[]) AS word, unnest($2::float8[]) AS zipf) f
+WHERE adjectives.lemma = f.word
+`
+
+type SetAdjectiveFrequenciesParams struct {
+	Words []string  `db:"words" json:"words"`
+	Zipfs []float64 `db:"zipfs" json:"zipfs"`
+}
+
+// Words are lowercase, so only lowercase lemmas match.
+func (q *Queries) SetAdjectiveFrequencies(ctx context.Context, arg SetAdjectiveFrequenciesParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setAdjectiveFrequencies, arg.Words, arg.Zipfs)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const truncateAdjectives = `-- name: TruncateAdjectives :exec

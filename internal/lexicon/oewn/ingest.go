@@ -12,8 +12,7 @@ import (
 )
 
 // SourceName tags every row this package writes. Stored in the `source`
-// column so future ingest passes (SUBTLEX for frequency, etc.) can
-// reconcile rows by lemma+source.
+// column so later ingest passes can reconcile rows by lemma+source.
 const SourceName = "oewn-2025"
 
 // Stats reports per-POS row counts from a successful Ingest run, plus a

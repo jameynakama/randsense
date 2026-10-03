@@ -49,36 +49,40 @@ type agreement struct {
 var thirdSingular = agreement{morph.Third, morph.Singular}
 
 type generator struct {
-	ctx    context.Context
-	q      store.Querier
-	verbs  *morph.Verbs
-	rng    *rand.Rand
-	tense  morph.Tense
-	leaves map[*grammar.Node]leafInfo
-	agr    map[*grammar.Node]agreement
+	ctx        context.Context
+	q          store.Querier
+	verbs      *morph.Verbs
+	rng        *rand.Rand
+	commonness float64
+	tense      morph.Tense
+	leaves     map[*grammar.Node]leafInfo
+	agr        map[*grammar.Node]agreement
 }
 
-// Generate expands g and realizes the resulting tree.
-func Generate(ctx context.Context, q store.Querier, g *grammar.Grammar, verbs *morph.Verbs, rng *rand.Rand) (*Sentence, error) {
+// Generate expands g and realizes the resulting tree. Content words are at
+// least as common as commonness, a Zipf frequency; 0 allows any word.
+func Generate(ctx context.Context, q store.Querier, g *grammar.Grammar, verbs *morph.Verbs, rng *rand.Rand, commonness float64) (*Sentence, error) {
 	tree, err := g.Expand(rng)
 	if err != nil {
 		return nil, fmt.Errorf("Generate: %w", err)
 	}
-	return Realize(ctx, q, tree, verbs, rng)
+	return Realize(ctx, q, tree, verbs, rng, commonness)
 }
 
 // Realize fills every leaf of tree with a random active word and inflects the
 // words: nouns agree with their determiner, verbs with their subject, all in
-// one tense chosen at random.
-func Realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *morph.Verbs, rng *rand.Rand) (*Sentence, error) {
+// one tense chosen at random. Content words are at least as common as
+// commonness.
+func Realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *morph.Verbs, rng *rand.Rand, commonness float64) (*Sentence, error) {
 	gen := &generator{
-		ctx:    ctx,
-		q:      q,
-		verbs:  verbs,
-		rng:    rng,
-		tense:  morph.Present,
-		leaves: map[*grammar.Node]leafInfo{},
-		agr:    map[*grammar.Node]agreement{},
+		ctx:        ctx,
+		q:          q,
+		verbs:      verbs,
+		rng:        rng,
+		commonness: commonness,
+		tense:      morph.Present,
+		leaves:     map[*grammar.Node]leafInfo{},
+		agr:        map[*grammar.Node]agreement{},
 	}
 	if rng.IntN(2) == 1 {
 		gen.tense = morph.Past
@@ -162,7 +166,7 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 	ctx, q := gen.ctx, gen.q
 	switch n.POS() {
 	case grammar.Noun:
-		w, err := q.GetRandomNoun(ctx)
+		w, err := q.GetRandomNoun(ctx, gen.commonness)
 		if err != nil {
 			return "", leafInfo{}, err
 		}
@@ -175,16 +179,16 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 		return w.Lemma, leafInfo{plural: infl.Plural, pluralLemma: w.Plural}, nil
 	case grammar.Verb:
 		if frame := n.Qualifier(); frame != "" {
-			w, err := q.GetRandomVerbWithFrame(ctx, frame)
+			w, err := q.GetRandomVerbWithFrame(ctx, store.GetRandomVerbWithFrameParams{Frame: frame, Commonness: gen.commonness})
 			return w.Lemma, leafInfo{}, err
 		}
-		w, err := q.GetRandomVerb(ctx)
+		w, err := q.GetRandomVerb(ctx, gen.commonness)
 		return w.Lemma, leafInfo{}, err
 	case grammar.Adjective:
-		w, err := q.GetRandomAdjective(ctx)
+		w, err := q.GetRandomAdjective(ctx, gen.commonness)
 		return w.Lemma, leafInfo{}, err
 	case grammar.Adverb:
-		w, err := q.GetRandomAdverb(ctx)
+		w, err := q.GetRandomAdverb(ctx, gen.commonness)
 		return w.Lemma, leafInfo{}, err
 	case grammar.Determiner:
 		if pluralNoun {

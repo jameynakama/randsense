@@ -47,13 +47,13 @@ func (q *Queries) GetNounByLemma(ctx context.Context, lemma string) (Noun, error
 
 const getRandomNoun = `-- name: GetRandomNoun :one
 SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural FROM nouns
-WHERE active
+WHERE active AND coalesce(frequency, 0) >= $1::float8
 ORDER BY random()
 LIMIT 1
 `
 
-func (q *Queries) GetRandomNoun(ctx context.Context) (Noun, error) {
-	row := q.db.QueryRow(ctx, getRandomNoun)
+func (q *Queries) GetRandomNoun(ctx context.Context, commonness float64) (Noun, error) {
+	row := q.db.QueryRow(ctx, getRandomNoun, commonness)
 	var i Noun
 	err := row.Scan(
 		&i.ID,
@@ -106,6 +106,48 @@ WHERE p.lemma ~ 's$'
 // words and -ss/-us/-is endings ("Ms", "Mass", "Pus") are left singular.
 func (q *Queries) MarkPluralNouns(ctx context.Context) (int64, error) {
 	result, err := q.db.Exec(ctx, markPluralNouns)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const setNounFrequencies = `-- name: SetNounFrequencies :execrows
+UPDATE nouns SET frequency = round(f.zipf::numeric, 2)
+FROM (SELECT unnest($1::text[]) AS word, unnest($2::float8[]) AS zipf) f
+WHERE nouns.lemma = f.word
+`
+
+type SetNounFrequenciesParams struct {
+	Words []string  `db:"words" json:"words"`
+	Zipfs []float64 `db:"zipfs" json:"zipfs"`
+}
+
+// Words are lowercase, so only lowercase lemmas match.
+func (q *Queries) SetNounFrequencies(ctx context.Context, arg SetNounFrequenciesParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setNounFrequencies, arg.Words, arg.Zipfs)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const setProperNounFrequencies = `-- name: SetProperNounFrequencies :execrows
+UPDATE nouns SET frequency = round(f.zipf::numeric, 2)
+FROM (SELECT unnest($1::text[]) AS word, unnest($2::float8[]) AS zipf) f
+WHERE nouns.lemma <> lower(nouns.lemma) AND lower(nouns.lemma) = f.word
+`
+
+type SetProperNounFrequenciesParams struct {
+	Words []string  `db:"words" json:"words"`
+	Zipfs []float64 `db:"zipfs" json:"zipfs"`
+}
+
+// Words are lowercase, so a capitalized lemma ("America") matches its
+// lowercase form. Only name frequencies go here, so the element "In" doesn't
+// pick up the preposition's.
+func (q *Queries) SetProperNounFrequencies(ctx context.Context, arg SetProperNounFrequenciesParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setProperNounFrequencies, arg.Words, arg.Zipfs)
 	if err != nil {
 		return 0, err
 	}

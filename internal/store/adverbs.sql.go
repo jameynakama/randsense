@@ -46,13 +46,13 @@ func (q *Queries) GetAdverbByLemma(ctx context.Context, lemma string) (Adverb, e
 
 const getRandomAdverb = `-- name: GetRandomAdverb :one
 SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM adverbs
-WHERE active
+WHERE active AND coalesce(frequency, 0) >= $1::float8
 ORDER BY random()
 LIMIT 1
 `
 
-func (q *Queries) GetRandomAdverb(ctx context.Context) (Adverb, error) {
-	row := q.db.QueryRow(ctx, getRandomAdverb)
+func (q *Queries) GetRandomAdverb(ctx context.Context, commonness float64) (Adverb, error) {
+	row := q.db.QueryRow(ctx, getRandomAdverb, commonness)
 	var i Adverb
 	err := row.Scan(
 		&i.ID,
@@ -85,6 +85,26 @@ type InsertAdverbParams struct {
 func (q *Queries) InsertAdverb(ctx context.Context, arg InsertAdverbParams) error {
 	_, err := q.db.Exec(ctx, insertAdverb, arg.Lemma, arg.Inflections, arg.Source)
 	return err
+}
+
+const setAdverbFrequencies = `-- name: SetAdverbFrequencies :execrows
+UPDATE adverbs SET frequency = round(f.zipf::numeric, 2)
+FROM (SELECT unnest($1::text[]) AS word, unnest($2::float8[]) AS zipf) f
+WHERE adverbs.lemma = f.word
+`
+
+type SetAdverbFrequenciesParams struct {
+	Words []string  `db:"words" json:"words"`
+	Zipfs []float64 `db:"zipfs" json:"zipfs"`
+}
+
+// Words are lowercase, so only lowercase lemmas match.
+func (q *Queries) SetAdverbFrequencies(ctx context.Context, arg SetAdverbFrequenciesParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setAdverbFrequencies, arg.Words, arg.Zipfs)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const truncateAdverbs = `-- name: TruncateAdverbs :exec

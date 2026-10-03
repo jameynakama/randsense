@@ -42,6 +42,9 @@ type fakeQuerier struct {
 	// GetRandomConjunctionOfType was asked for.
 	npConj    store.Conjunction
 	conjTypes []string
+
+	// commonness records the floor each content-word lookup was given.
+	commonness []float64
 }
 
 func newFake(dets ...store.Determiner) *fakeQuerier {
@@ -75,27 +78,32 @@ func (f *fakeQuerier) GetRandomNPConjunction(context.Context) (store.Conjunction
 	return f.npConj, f.err
 }
 
-func (f *fakeQuerier) GetRandomNoun(context.Context) (store.Noun, error) {
+func (f *fakeQuerier) GetRandomNoun(_ context.Context, commonness float64) (store.Noun, error) {
+	f.commonness = append(f.commonness, commonness)
 	if f.noun != nil {
 		return *f.noun, f.err
 	}
 	return store.Noun{Lemma: "goose", Inflections: []byte(`{"plural":"geese"}`)}, f.err
 }
 
-func (f *fakeQuerier) GetRandomVerb(context.Context) (store.Verb, error) {
+func (f *fakeQuerier) GetRandomVerb(_ context.Context, commonness float64) (store.Verb, error) {
+	f.commonness = append(f.commonness, commonness)
 	return store.Verb{Lemma: "devour"}, f.err
 }
 
-func (f *fakeQuerier) GetRandomVerbWithFrame(_ context.Context, frame string) (store.Verb, error) {
-	f.frame = frame
+func (f *fakeQuerier) GetRandomVerbWithFrame(_ context.Context, arg store.GetRandomVerbWithFrameParams) (store.Verb, error) {
+	f.frame = arg.Frame
+	f.commonness = append(f.commonness, arg.Commonness)
 	return store.Verb{Lemma: "give"}, f.err
 }
 
-func (f *fakeQuerier) GetRandomAdjective(context.Context) (store.Adjective, error) {
+func (f *fakeQuerier) GetRandomAdjective(_ context.Context, commonness float64) (store.Adjective, error) {
+	f.commonness = append(f.commonness, commonness)
 	return store.Adjective{Lemma: "ugly"}, f.err
 }
 
-func (f *fakeQuerier) GetRandomAdverb(context.Context) (store.Adverb, error) {
+func (f *fakeQuerier) GetRandomAdverb(_ context.Context, commonness float64) (store.Adverb, error) {
+	f.commonness = append(f.commonness, commonness)
 	return store.Adverb{Lemma: "loudly"}, f.err
 }
 
@@ -154,7 +162,7 @@ func texts(t *testing.T, grammarTOML string, newQ func() *fakeQuerier, n int) ma
 	v := loadVerbs(t)
 	seen := map[string]int{}
 	for i := range n {
-		s, err := sentence.Generate(context.Background(), newQ(), g, v, rand.New(rand.NewPCG(uint64(i), 0)))
+		s, err := sentence.Generate(context.Background(), newQ(), g, v, rand.New(rand.NewPCG(uint64(i), 0)), 0)
 		if err != nil {
 			t.Fatalf("Generate: %v", err)
 		}
@@ -244,7 +252,7 @@ func TestGenerateKeepsLemmaAndWordOnLeaves(t *testing.T) {
 	g := mustLoad(t, simpleGrammar)
 	q := newFake(store.Determiner{Lemma: "these", Number: "plural"})
 
-	s, err := sentence.Generate(context.Background(), q, g, loadVerbs(t), newRNG())
+	s, err := sentence.Generate(context.Background(), q, g, loadVerbs(t), newRNG(), 0)
 	if err != nil {
 		t.Fatalf("Generate: %v", err)
 	}
@@ -275,7 +283,7 @@ func TestGenerateFillsEveryPOS(t *testing.T) {
 	expansion = ["Pronoun", "Adverb", "Verb", "Preposition", "Determiner", "Adjective", "Noun", "Conjunction"]
 	`)
 
-	s, err := sentence.Generate(context.Background(), newFake(), g, loadVerbs(t), newRNG())
+	s, err := sentence.Generate(context.Background(), newFake(), g, loadVerbs(t), newRNG(), 0)
 	if err != nil {
 		t.Fatalf("Generate: %v", err)
 	}
@@ -283,6 +291,23 @@ func TestGenerateFillsEveryPOS(t *testing.T) {
 	// The pronoun isn't in a subject NP, so it's accusative.
 	if s.Text != "Her loudly devours under the ugly goose and." && s.Text != "Her loudly devoured under the ugly goose and." {
 		t.Errorf("expected Her loudly devours/devoured under the ugly goose and.; got %q", s.Text)
+	}
+}
+
+func TestGenerateAppliesCommonnessToEveryContentWord(t *testing.T) {
+	g := mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["Adverb", "Verb", "Verb:transitive", "Adjective", "Noun"]
+	`)
+	q := newFake()
+
+	if _, err := sentence.Generate(context.Background(), q, g, loadVerbs(t), newRNG(), 3.5); err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+
+	if want := []float64{3.5, 3.5, 3.5, 3.5, 3.5}; !slices.Equal(q.commonness, want) {
+		t.Errorf("expected commonness %v; got %v", want, q.commonness)
 	}
 }
 
@@ -297,7 +322,7 @@ func TestGenerateStoresLemmasOnTreeLeaves(t *testing.T) {
 	expansion = ["Determiner", "Noun"]
 	`)
 
-	s, err := sentence.Generate(context.Background(), newFake(), g, loadVerbs(t), newRNG())
+	s, err := sentence.Generate(context.Background(), newFake(), g, loadVerbs(t), newRNG(), 0)
 	if err != nil {
 		t.Fatalf("Generate: %v", err)
 	}
@@ -324,7 +349,7 @@ func TestGenerateReturnsLookupErrors(t *testing.T) {
 	q := newFake()
 	q.err = boom
 
-	_, err := sentence.Generate(context.Background(), q, g, loadVerbs(t), newRNG())
+	_, err := sentence.Generate(context.Background(), q, g, loadVerbs(t), newRNG(), 0)
 
 	if !errors.Is(err, boom) {
 		t.Errorf("expected boom; got %v", err)
@@ -343,7 +368,7 @@ func TestGenerateReturnsExpansionErrors(t *testing.T) {
 	expansion = ["Noun"]
 	`)
 
-	_, err := sentence.Generate(context.Background(), newFake(), g, loadVerbs(t), newRNG())
+	_, err := sentence.Generate(context.Background(), newFake(), g, loadVerbs(t), newRNG(), 0)
 
 	if err == nil {
 		t.Error("expected an error; got nil")
@@ -355,7 +380,7 @@ func TestGenerateRejectsMalformedNounInflections(t *testing.T) {
 	q := newFake()
 	q.noun = &store.Noun{Lemma: "goose", Inflections: []byte(`["geese"]`)}
 
-	_, err := sentence.Generate(context.Background(), q, g, loadVerbs(t), newRNG())
+	_, err := sentence.Generate(context.Background(), q, g, loadVerbs(t), newRNG(), 0)
 
 	if err == nil || !strings.Contains(err.Error(), `"goose"`) {
 		t.Errorf("expected an error naming goose; got %v", err)
@@ -393,7 +418,7 @@ func TestGeneratePicksVerbWithRequiredFrame(t *testing.T) {
 	`)
 	q := newFake(store.Determiner{Lemma: "this", Number: "singular"})
 
-	s, err := sentence.Generate(context.Background(), q, g, loadVerbs(t), newRNG())
+	s, err := sentence.Generate(context.Background(), q, g, loadVerbs(t), newRNG(), 0)
 	if err != nil {
 		t.Fatalf("Generate: %v", err)
 	}
@@ -422,7 +447,7 @@ func realized(t *testing.T, build func() *grammar.Node, newQ func() *fakeQuerier
 	v := loadVerbs(t)
 	seen := map[string]int{}
 	for i := range n {
-		s, err := sentence.Realize(context.Background(), newQ(), build(), v, rand.New(rand.NewPCG(uint64(i), 0)))
+		s, err := sentence.Realize(context.Background(), newQ(), build(), v, rand.New(rand.NewPCG(uint64(i), 0)), 0)
 		if err != nil {
 			t.Fatalf("Realize: %v", err)
 		}
