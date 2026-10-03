@@ -80,6 +80,37 @@ Copying `lemma` and `pos` onto the flag makes "most-flagged words" a plain `GROU
 reading stored trees. `word_index` is zero-based over the tree's leaves in order, commas
 included. A comma leaf can't be flagged: the server rejects that index with 400.
 
+## Tree data
+
+Grammar nerds should have something to dig into, so the saved tree keeps what generation works
+out rather than discarding it. Today a node has `symbol`, and a leaf also has `lemma` (the base
+word) and `word` (as inflected); the slot's frame is the qualifier in `symbol`
+(`Verb:transitive`). `grammar.Node` gains a typed `features` object, with empty fields omitted:
+
+```json
+{"symbol": "S", "features": {"tense": "past", "commonness": 0}, "children": [...]}
+{"symbol": "NP", "features": {"person": 3, "number": "plural"}, "children": [...]}
+{"symbol": "Verb:transitive", "lemma": "set on fire", "word": "set",
+ "features": {"tense": "past", "form": "finite", "person": 3, "number": "singular",
+              "frames": ["transitive", "intransitive"], "separable": true, "frequency": 3.12}}
+{"symbol": "Pronoun:reflexive", "lemma": "herself", "word": "herself",
+ "features": {"case": "reflexive", "person": 3, "number": "singular", "gender": "fem"}}
+```
+
+| node | features |
+|---|---|
+| root | `tense`, `commonness` |
+| NP | `person`, `number` (its agreement) |
+| noun | `number`, `frequency` |
+| verb | `tense`, `form` (`finite`, `base` or `gerund`), `person`, `number` (what it agreed with), `frames` (every frame the lemma has), `separable`, `frequency` |
+| adjective, adverb | `frequency` |
+| pronoun | `case`, `person`, `number`, `gender` |
+| determiner | `type`, `number` |
+
+`frequency` is the Zipf value from SUBTLEX-US, absent when the word has none. Lexicon row IDs are
+left out on purpose: ingest truncates and reloads, so they change on every re-ingest. Lemma plus
+part of speech is the stable key. The realize endpoint returns the same features.
+
 ## API
 
 All under `/api/v1`. Responses are JSON unless noted. List endpoints use limit-offset pagination,
@@ -155,15 +186,38 @@ SvelteKit, TypeScript in strict mode, plain CSS through Svelte's scoped styles (
 
 ### Look
 
-The old client's palette, with its readability and without its tilting buttons:
+The old client is `jameynakama/randsense-client` (React, 2021); this section describes it so it
+needn't be read again. Keep its palette and readability, drop its tilting buttons, and change the
+layout freely.
+
+What it was:
+
+- A single centered column, 60% wide (90% below 1024px), all text centered. The font was the
+  system stack (`-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, ...`) on a white page.
+- A "RandSense" `h1` at 5rem in `deeppink`.
+- A "Generate sentence" button: transparent background, 2px `cornflowerblue` border,
+  1rem radius, 1rem × 2rem padding, 1.5rem bold uppercase `slategray` text. On hover and focus
+  the text turned `cornflowerblue` (it also rotated 3° and scaled up; that goes). Disabled, it
+  was `ghostwhite` with a `slategrey` border and text.
+- The sentence: each word a borderless button at 4rem in `dodgerblue`, turning `hotpink` on
+  hover, with 0.5rem margins. Punctuation sat tight against the word before it.
+- Under it, "See sentence data" and "Is this grammatically incorrect?" buttons in the same style.
+  The second became a disabled "Thank you!" after one click, with no comment.
+- Clicking a word, or "See sentence data", showed the raw JSON in a collapsible JSON viewer,
+  1.5rem, 70% wide and left-aligned. A word's panel had a "Vote to remove this word?" button that
+  also became "Thank you!".
+- Errors showed as bold red text.
+
+The new look, from that:
 
 - white background, black body text
-- sentence words in dodger blue, hot pink on hover or selection
-- the "RandSense" title and accents in deep pink
-- pill buttons with a cornflower-blue outline
-
-Sentences are set large, as in the original. On phones the layout is a single column with smaller
-sentence text. One readable font for the UI and sentences, falling back to the system stack.
+- sentence words in `dodgerblue`, `hotpink` on hover or selection
+- the title and accents in `deeppink`
+- pill buttons with a `cornflowerblue` outline and `slategray` text, turning `cornflowerblue` on
+  hover, with no transform
+- sentences set large (about 4rem on desktop), smaller on phones in a single column
+- one readable font for the UI and sentences, falling back to the system stack
+- the raw-JSON viewer is replaced by the word card and structure outline below
 
 ### Pages
 
@@ -178,8 +232,9 @@ sentence text. One readable font for the UI and sentences, falling back to the s
 Used on the home and permalink pages.
 
 - Words render as buttons. Punctuation sits against the word before it.
-- Clicking a word opens its card: the word, lemma, part of speech, verb frame (from the leaf's
-  qualified symbol, such as `Verb:transitive`) and its grammatical role, derived from its
+- Clicking a word opens its card: the word, lemma, part of speech, the slot's frame (from the
+  qualified symbol, such as `Verb:transitive`), every field in its `features` (labeled readably:
+  "past tense", "3rd person plural", "reflexive"), and its grammatical role, derived from its
   position in the tree (subject, object, inside an infinitive or a prepositional phrase). A word
   with no recognizable role shows none. It's all computed from the tree, with no extra requests.
   Commas aren't clickable.
@@ -222,8 +277,9 @@ The exact rates are set in the nginx config at deploy time.
 Each stage ends working and committed.
 
 1. Monorepo move, Justfile recipes, doc paths, GitHub rename.
-2. Saved sentences: migration, short IDs, saving on `random`, the list and single-sentence
-   endpoints.
+2. Tree features (see "Tree data"), then saved sentences: migration, short IDs, saving on
+   `random`, the list and single-sentence endpoints. Features come first so every saved tree
+   has them.
 3. Stars and flags endpoints.
 4. SSE hub and stream endpoint, and broadcasting from `random` and the star endpoints.
 5. Admin auth and admin endpoints, and `just hash-password`.
