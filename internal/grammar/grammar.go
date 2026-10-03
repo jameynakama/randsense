@@ -96,9 +96,13 @@ const (
 	JoinsNPs      = "np"
 )
 
+// Genitive qualifies a pronoun slot by case: "Pronoun:genitive" takes a
+// pronoun like "mine".
+const Genitive = "genitive"
+
 // qualifiers lists what each POS can be qualified with ("Verb:transitive").
 // A qualified preposition, complementizer or pronoun is that word:
-// "Preposition:with" is always "with".
+// "Preposition:with" is always "with". Genitive is the exception.
 var qualifiers = map[POS][]string{
 	Verb: {
 		string(Intransitive), string(Transitive), string(Ditransitive), string(IntransitivePP), string(TransitivePP),
@@ -109,7 +113,7 @@ var qualifiers = map[POS][]string{
 		string(AdjectiveComplement), string(TransitiveAdjectiveComplement),
 		string(Weather), string(DummyThatClause),
 	},
-	Pronoun:        {"it"},
+	Pronoun:        {"it", Genitive},
 	Preposition:    {"from", "into", "of", "on", "to", "with"},
 	Complementizer: {"whether"},
 	Conjunction:    {Coordinating, Subordinating, JoinsNPs},

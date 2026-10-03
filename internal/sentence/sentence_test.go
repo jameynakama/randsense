@@ -599,6 +599,34 @@ func TestGenerateAgreesWithPronounPerson(t *testing.T) {
 	}
 }
 
+func TestGenerateGenitivePronounIsThirdPersonOfEitherNumber(t *testing.T) {
+	var q *fakeQuerier
+	seen := texts(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["NP", "VP"]
+
+	[[rule]]
+	symbol = "NP"
+	expansion = ["Pronoun:genitive"]
+
+	[[rule]]
+	symbol = "VP"
+	expansion = ["Verb:transitive", "NP"]
+	`, func() *fakeQuerier {
+		q = newFake()
+		q.pronouns["genitive"] = store.Pronoun{Lemma: "mine", Person: 1, Number: "singular"}
+		return q
+	}, 50)
+
+	// "Mine" stands for whatever is owned, so the possessor's person and
+	// number don't apply.
+	assertExactly(t, seen, "Mine gives mine.", "Mine give mine.", "Mine gave mine.")
+	if !slices.Equal(q.cases, []string{"genitive", "genitive"}) {
+		t.Errorf("expected cases [genitive genitive]; got %v", q.cases)
+	}
+}
+
 func TestRealizeCoordinatedSubjectWithAndIsPlural(t *testing.T) {
 	seen := realized(t, func() *grammar.Node {
 		return node("S", node("NP", detNoun(), leaf("Conjunction:np"), detNoun()), node("VP", leaf("Verb")))

@@ -240,6 +240,16 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 		w, err := q.GetRandomPreposition(ctx)
 		return w.Lemma, leafInfo{}, err
 	case grammar.Pronoun:
+		if n.Qualifier() == grammar.Genitive {
+			// "mine" stands for what is owned, not the owner, so it's third
+			// person of either number.
+			w, err := q.GetRandomPronounWithCase(ctx, grammar.Genitive)
+			number := morph.Singular
+			if gen.rng.IntN(2) == 1 {
+				number = morph.Plural
+			}
+			return w.Lemma, leafInfo{number: string(number), person: morph.Third}, err
+		}
 		if word := n.Qualifier(); word != "" {
 			return word, leafInfo{number: string(morph.Singular), person: morph.Third}, nil
 		}

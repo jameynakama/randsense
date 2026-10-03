@@ -46,7 +46,7 @@ Don't reopen these without new evidence.
 
 ## Roadmap
 
-1. **Unused closed-class words:** reflexive and genitive pronouns, and "neither...nor".
+1. **Unused closed-class words:** reflexive pronouns and "neither...nor".
 2. **Roman-numeral adjectives** (lxxxi, ixl). A naive regex would also hit "mix".
 3. **Curation loop, after a frontend exists.**
    - **Voting:** an anonymous endpoint; anyone can vote, and votes only flag words for review.

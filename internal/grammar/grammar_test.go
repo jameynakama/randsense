@@ -361,6 +361,14 @@ func TestLoadAcceptsDummySubjects(t *testing.T) {
 	`)
 }
 
+func TestLoadAcceptsGenitivePronouns(t *testing.T) {
+	mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["Pronoun:genitive", "Verb"]
+	`)
+}
+
 func TestLeafWithFrame(t *testing.T) {
 	g := mustLoad(t, `
 	[[rule]]
