@@ -159,8 +159,35 @@ func TestArticle(t *testing.T) {
 	}{
 		{"goose", "a"},
 		{"egg", "an"},
-		{"Ugandan", "an"},
 		{"damp", "a"},
+		{"umbrella", "an"},
+		// A "you" sound takes "a".
+		{"Ugandan", "a"},
+		{"European", "a"},
+		{"ewe", "a"},
+		{"unique", "a"},
+		{"unanimous", "a"},
+		{"using", "a"},
+		{"uterus", "a"},
+		{"Uruguayan", "a"},
+		{"unimportant", "an"},
+		{"uninvited", "an"},
+		{"unidentified", "an"},
+		{"unannounced", "an"},
+		// So does a "w" sound.
+		{"one-year", "a"},
+		{"once-over", "a"},
+		{"onerous", "an"},
+		// A silent "h" takes "an".
+		{"hour", "an"},
+		{"honest", "an"},
+		{"honorable", "an"},
+		{"heir", "an"},
+		{"herb", "an"},
+		{"herbal", "an"},
+		{"herbivore", "a"},
+		{"herbicide", "a"},
+		{"herbarium", "a"},
 	}
 
 	for _, tc := range tests {

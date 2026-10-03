@@ -157,13 +157,35 @@ func Pluralize(lemma, irregular string) string {
 	return strings.Join(words, " ")
 }
 
-// Article picks "a" or "an" by the next word's first letter. Words like
-// "hour" and "university" get it wrong.
-func Article(next string) string {
-	if strings.ContainsAny(strings.ToLower(next[:1]), "aeiou") {
-		return "an"
+// Prefixes whose sound overrides the first letter: a vowel letter that
+// sounds like "you" or "w" ("a unicorn", "a one-off"), or a silent "h" ("an
+// hour"). The exceptions keep the first-letter rule ("an uninvited guest",
+// "a herbivore"). Abbreviations like "mph" and "nth" still get it wrong.
+var (
+	consonantSoundPrefixes = []string{
+		"eu", "ewe", "one", "once", "uni", "unanim", "use", "usi", "usu", "usa",
+		"uti", "ute", "uta", "uto", "ura", "ure", "uri", "uro", "uru", "ubi",
+		"uka", "uku", "ukr", "ufo", "uga", "ugr", "uvu",
 	}
-	return "a"
+	consonantSoundExceptions = []string{"unin", "unim", "unid", "onerous", "oneir"}
+	silentHPrefixes          = []string{"hour", "honest", "honor", "honour", "heir", "herb"}
+	silentHExceptions        = []string{"herbi", "herbar"}
+)
+
+// Article picks "a" or "an" for the next word by its first letter, unless a
+// known prefix says it sounds otherwise.
+func Article(next string) string {
+	w := strings.ToLower(next)
+	switch {
+	case hasAnyPrefix(w, silentHPrefixes...) && !hasAnyPrefix(w, silentHExceptions...):
+		return "an"
+	case hasAnyPrefix(w, consonantSoundPrefixes...) && !hasAnyPrefix(w, consonantSoundExceptions...):
+		return "a"
+	case strings.ContainsAny(w[:1], "aeiou"):
+		return "an"
+	default:
+		return "a"
+	}
 }
 
 // addS applies the -s/-es/-ies rules shared by plurals and third-person verbs.
@@ -181,6 +203,10 @@ func addS(w string) string {
 
 func endsConsonantY(w string) bool {
 	return strings.HasSuffix(w, "y") && len(w) > 1 && !strings.ContainsRune("aeiou", rune(w[len(w)-2]))
+}
+
+func hasAnyPrefix(w string, prefixes ...string) bool {
+	return slices.ContainsFunc(prefixes, func(p string) bool { return strings.HasPrefix(w, p) })
 }
 
 func hasAnySuffix(w string, suffixes ...string) bool {
