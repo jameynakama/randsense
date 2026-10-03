@@ -235,6 +235,8 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 		return w.Lemma, leafInfo{number: w.Number, person: morph.Person(w.Person)}, err
 	case grammar.Comma:
 		return ",", leafInfo{}, nil
+	case grammar.Complementizer:
+		return "that", leafInfo{}, nil
 	default: // Conjunction: Load guarantees every leaf is a POS.
 		var w store.Conjunction
 		var err error

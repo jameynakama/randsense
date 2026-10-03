@@ -295,6 +295,14 @@ func TestLoadAcceptsEveryFixedPrepositionFrame(t *testing.T) {
 	}
 }
 
+func TestLoadAcceptsThatClause(t *testing.T) {
+	mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["Noun", "Verb:that-clause", "Complementizer", "Noun", "Verb"]
+	`)
+}
+
 func TestLeafWithFrame(t *testing.T) {
 	g := mustLoad(t, `
 	[[rule]]

@@ -40,7 +40,6 @@ Don't reopen these without new evidence.
 ## Roadmap
 
 1. **Verb frames outside `grammar.Frame`**, which need nested clauses or other new slots:
-   - that-clause
    - infinitive
    - gerund
    - adjective complement

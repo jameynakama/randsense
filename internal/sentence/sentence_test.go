@@ -650,6 +650,19 @@ func TestRealizeVerbInNestedVPAgreesWithSubject(t *testing.T) {
 	assertExactly(t, seen, "These geese devour loudly.", "These geese devoured loudly.")
 }
 
+func TestRealizeThatClauseHasItsOwnSubject(t *testing.T) {
+	seen := realized(t, func() *grammar.Node {
+		embedded := node("Clause", node("NP", leaf("Pronoun")), node("VP", leaf("Verb:intransitive")))
+		return node("S", detNoun(), node("VP", leaf("Verb:that-clause"), leaf("Complementizer"), embedded))
+	}, func() *fakeQuerier {
+		return newFake(store.Determiner{Lemma: "these", Number: "plural"})
+	}, 20)
+
+	// The embedded pronoun is a nominative subject, and its verb agrees with
+	// it rather than with the plural outer subject.
+	assertExactly(t, seen, "These geese give that she gives.", "These geese gave that she gave.")
+}
+
 func TestGenerateJoinsClausesWithTypedConjunctionsInOneTense(t *testing.T) {
 	clauses := `
 	[[rule]]
