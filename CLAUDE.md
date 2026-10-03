@@ -40,15 +40,17 @@ Don't reopen these without new evidence.
   lemma keeps its other frames. A frame code with too many mislabeled lemmas stays unmapped: the
   bare-infinitive codes (`via-inf`, `vtaa-inf`, `vii-inf`) list allow, permit and induce alongside
   let, make and have ("allowed him go"), so only the to-infinitive codes are used.
+- **Separable verbs are syntax only.** `data/lexicon/separable_verbs.toml` lists multiword
+  verbs whose object goes after the head verb ("look it up", "set the goose on fire"). An idiom
+  is listed only when the other order breaks the syntax, never to keep its meaning.
 - **One test database per package.** `go test ./...` runs packages in parallel, and each
   database-backed package drops and recreates its database. Each derives its own name from
   `TEST_DATABASE_URL` with a package suffix (`_api`, `_oewn`); a new one needs its own.
 
 ## Roadmap
 
-1. **Pronoun objects of separable phrasal verbs** go after the particle ("fought off itself",
-   "tip off us") when they must go before it. The fix needs to know which multiword verbs are
-   separable.
+1. **Idioms with a broken object frame** ("find fault", "pull wires", "give birth") can't take a
+   direct object in any order. Add those lemma-frame pairs to `mislabeled`.
 2. **Roman-numeral adjectives** (lxxxi, ixl). A naive regex would also hit "mix".
 3. **Curation loop, after a frontend exists.**
    - **Voting:** an anonymous endpoint; anyone can vote, and votes only flag words for review.
@@ -63,6 +65,12 @@ Don't reopen these without new evidence.
      participles
    - questions
    - conditionals
+6. **Compiled lexicon, once a base version feels done.** Build every source (OEWN, SUBTLEX-US,
+   `mislabeled`, the `data/lexicon/` lists) into one versioned file that ingest loads and that
+   can be shared as research. It could also become where curation corrections live, so they
+   survive re-ingest. Gzipped JSON Lines diffs well; WN-LMF XML fits poorly once synsets are
+   gone. Check whether SUBTLEX-US and SPECIALIST allow redistribution before publishing; OEWN is
+   CC BY 4.0.
 
 ## Known quirks
 

@@ -35,6 +35,8 @@ type fakeQuerier struct {
 	// no verbs in emptyFrames return pgx.ErrNoRows.
 	frame       string
 	emptyFrames []string
+	// framed, when set, answers GetRandomVerbWithFrame.
+	framed *store.Verb
 
 	// pronouns answers GetRandomPronounWithCase by case; cases records the
 	// cases asked for.
@@ -137,6 +139,9 @@ func (f *fakeQuerier) GetRandomVerbWithFrame(_ context.Context, arg store.GetRan
 	f.commonness = append(f.commonness, arg.Commonness)
 	if slices.Contains(f.emptyFrames, arg.Frame) {
 		return store.Verb{}, pgx.ErrNoRows
+	}
+	if f.framed != nil {
+		return *f.framed, f.err
 	}
 	return store.Verb{Lemma: "give"}, f.err
 }
@@ -801,6 +806,46 @@ func TestRealizeReturnsReflexiveLookupErrors(t *testing.T) {
 	_, err := sentence.Realize(context.Background(), q, reflexiveObject(detNoun()), loadVerbs(t), rand.New(rand.NewPCG(1, 0)), 0)
 	if !errors.Is(err, boom) {
 		t.Errorf("expected boom; got %v", err)
+	}
+}
+
+func TestRealizeSplitsSeparableVerbAroundObject(t *testing.T) {
+	lookUp := store.Verb{Lemma: "look up", Separable: true}
+	countOn := store.Verb{Lemma: "count on"}
+	pronoun := func() *grammar.Node { return node("NP", leaf("Pronoun")) }
+	tests := []struct {
+		name   string
+		verb   store.Verb
+		object func() *grammar.Node
+		want   []string
+	}{
+		{"pronoun", lookUp, pronoun, []string{"She looks her up.", "She looked her up."}},
+		{"reflexive", lookUp, func() *grammar.Node { return leaf("Pronoun:reflexive") }, []string{"She looks herself up.", "She looked herself up."}},
+		{"noun phrase", lookUp, detNoun, []string{"She looks up these geese.", "She looked up these geese."}},
+		{"coordination", lookUp, func() *grammar.Node { return node("NP", pronoun(), leaf("Conjunction:np"), detNoun()) },
+			[]string{"She looks up her and these geese.", "She looked up her and these geese."}},
+		{"inseparable", countOn, pronoun, []string{"She counts on her.", "She counted on her."}},
+		{"idiom with a noun phrase", store.Verb{Lemma: "call into question", Separable: true}, detNoun,
+			[]string{"She calls these geese into question.", "She called these geese into question."}},
+		{"idiom with a pronoun", store.Verb{Lemma: "call to order", Separable: true}, pronoun,
+			[]string{"She calls her to order.", "She called her to order."}},
+		{"verb-first idiom", store.Verb{Lemma: "tickle pink", Separable: true}, pronoun,
+			[]string{"She tickles her pink.", "She tickled her pink."}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			seen := realized(t, func() *grammar.Node {
+				return node("S", node("NP", leaf("Pronoun")), node("VP", leaf("Verb:transitive"), tc.object()))
+			}, func() *fakeQuerier {
+				q := newFake(store.Determiner{Lemma: "these", Number: "plural"})
+				q.pronouns["nominative"] = store.Pronoun{Lemma: "she", Person: 3, Number: "singular", Gender: "fem"}
+				q.framed = &tc.verb
+				return q
+			}, 20)
+
+			assertExactly(t, seen, tc.want...)
+		})
 	}
 }
 

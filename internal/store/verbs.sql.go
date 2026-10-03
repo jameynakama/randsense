@@ -21,7 +21,7 @@ func (q *Queries) CountVerbs(ctx context.Context) (int64, error) {
 }
 
 const getRandomVerb = `-- name: GetRandomVerb :one
-SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM verbs
+SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable FROM verbs
 WHERE active AND coalesce(frequency, 0) >= $1::float8
 ORDER BY random()
 LIMIT 1
@@ -43,12 +43,13 @@ func (q *Queries) GetRandomVerb(ctx context.Context, commonness float64) (Verb, 
 		&i.VoteCount,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.Separable,
 	)
 	return i, err
 }
 
 const getRandomVerbWithFrame = `-- name: GetRandomVerbWithFrame :one
-SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM verbs
+SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable FROM verbs
 WHERE active AND frames ? $1::text
   AND coalesce(frequency, 0) >= $2::float8
 ORDER BY random()
@@ -76,12 +77,13 @@ func (q *Queries) GetRandomVerbWithFrame(ctx context.Context, arg GetRandomVerbW
 		&i.VoteCount,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.Separable,
 	)
 	return i, err
 }
 
 const getVerbByLemma = `-- name: GetVerbByLemma :one
-SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM verbs
+SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable FROM verbs
 WHERE lemma = $1
 `
 
@@ -101,6 +103,7 @@ func (q *Queries) GetVerbByLemma(ctx context.Context, lemma string) (Verb, error
 		&i.VoteCount,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.Separable,
 	)
 	return i, err
 }
@@ -126,6 +129,19 @@ func (q *Queries) InsertVerb(ctx context.Context, arg InsertVerbParams) error {
 		arg.Source,
 	)
 	return err
+}
+
+const setSeparableVerbs = `-- name: SetSeparableVerbs :execrows
+UPDATE verbs SET separable = TRUE
+WHERE lemma = ANY($1::text[])
+`
+
+func (q *Queries) SetSeparableVerbs(ctx context.Context, lemmas []string) (int64, error) {
+	result, err := q.db.Exec(ctx, setSeparableVerbs, lemmas)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const setVerbFrequencies = `-- name: SetVerbFrequencies :execrows

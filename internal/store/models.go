@@ -104,4 +104,5 @@ type Verb struct {
 	VoteCount   int32              `db:"vote_count" json:"vote_count"`
 	CreateTime  pgtype.Timestamptz `db:"create_time" json:"create_time"`
 	UpdateTime  pgtype.Timestamptz `db:"update_time" json:"update_time"`
+	Separable   bool               `db:"separable" json:"separable"`
 }

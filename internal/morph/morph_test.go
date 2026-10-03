@@ -113,6 +113,7 @@ func TestConjugate(t *testing.T) {
 		{"give up", morph.Past, morph.Third, morph.Singular, "gave up"},
 		{"take care of", morph.Present, morph.Third, morph.Singular, "takes care of"},
 		{"test drive", morph.Present, morph.Third, morph.Singular, "test drives"},
+		{"call into question", morph.Present, morph.Third, morph.Singular, "calls into question"},
 		{"go ballistic", morph.Past, morph.Third, morph.Singular, "went ballistic"},
 		{"go ballistic", morph.Present, morph.Third, morph.Singular, "goes ballistic"},
 		{"stop dead", morph.Present, morph.Third, morph.Singular, "stops dead"},

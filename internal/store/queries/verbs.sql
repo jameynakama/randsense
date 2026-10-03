@@ -31,3 +31,7 @@ LIMIT 1;
 UPDATE verbs SET frequency = round(f.zipf::numeric, 2)
 FROM (SELECT unnest(@words::text[]) AS word, unnest(@zipfs::float8[]) AS zipf) f
 WHERE verbs.lemma = f.word;
+
+-- name: SetSeparableVerbs :execrows
+UPDATE verbs SET separable = TRUE
+WHERE lemma = ANY(@lemmas::text[]);

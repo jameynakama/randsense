@@ -56,6 +56,7 @@ type leafInfo struct {
 	gender      string       // pronouns
 	plural      string       // nouns: irregular plural, if any
 	pluralLemma bool         // nouns: the lemma is already plural ("Rastas")
+	separable   bool         // verbs: a pronoun object goes before the particle ("look it up")
 }
 
 // agreement is the person and number a verb agrees with, and the gender a
@@ -133,6 +134,8 @@ func Realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *mo
 		return nil, fmt.Errorf("Realize: %w", err)
 	}
 
+	text := map[*grammar.Node]string{}
+	gen.separateParticles(tree, text)
 	leaves := leafNodes(tree)
 	words := make([]string, len(leaves))
 	for i, l := range leaves {
@@ -140,6 +143,9 @@ func Realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *mo
 			l.Word = morph.Article(leaves[i+1].Word)
 		}
 		words[i] = l.Word
+		if t, ok := text[l]; ok {
+			words[i] = t
+		}
 	}
 
 	return &Sentence{Text: format(words), Tree: tree}, nil
@@ -227,10 +233,10 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 			if errors.Is(err, pgx.ErrNoRows) {
 				err = fmt.Errorf("%w: %w", errEmptyFrame, err)
 			}
-			return w.Lemma, leafInfo{}, err
+			return w.Lemma, leafInfo{separable: w.Separable}, err
 		}
 		w, err := q.GetRandomVerb(ctx, gen.commonness)
-		return w.Lemma, leafInfo{}, err
+		return w.Lemma, leafInfo{separable: w.Separable}, err
 	case grammar.Adjective:
 		w, err := q.GetRandomAdjective(ctx, gen.commonness)
 		return w.Lemma, leafInfo{}, err
@@ -394,11 +400,18 @@ func (gen *generator) agreeWithSubjects(n *grammar.Node, agr agreement, form ver
 			c.Lemma, c.Word = w.Lemma, w.Lemma
 		}
 		if len(c.Children) == 0 && c.POS() == grammar.Verb {
+			// A separable verb leads with its verb ("tickles pink"), which
+			// morph can't always tell from the lemma alone.
+			lemma, rest := c.Lemma, ""
+			if gen.leaves[c].separable {
+				lemma, rest, _ = strings.Cut(c.Lemma, " ")
+				rest = " " + rest
+			}
 			switch form {
 			case finite:
-				c.Word = gen.verbs.Conjugate(c.Lemma, gen.tense, agr.person, agr.number)
+				c.Word = gen.verbs.Conjugate(lemma, gen.tense, agr.person, agr.number) + rest
 			case gerund:
-				c.Word = gen.verbs.Participle(c.Lemma)
+				c.Word = gen.verbs.Participle(lemma) + rest
 			}
 		}
 		var err error
@@ -415,6 +428,43 @@ func (gen *generator) agreeWithSubjects(n *grammar.Node, agr agreement, form ver
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// separateParticles records in text how to write a separable verb and the
+// object right after it, which goes between the verb's first word and the
+// rest: "looked it up", "set the goose on fire". A lone particle only follows
+// a pronoun object, since "looked up the goose" is fine too. The tree keeps
+// the verb's word whole.
+func (gen *generator) separateParticles(n *grammar.Node, text map[*grammar.Node]string) {
+	for i, c := range n.Children {
+		gen.separateParticles(c, text)
+		if c.POS() != grammar.Verb || !gen.leaves[c].separable || i+1 == len(n.Children) {
+			continue
+		}
+		// Only multi-word lemmas are separable.
+		head, rest, _ := strings.Cut(c.Word, " ")
+		obj := pronounObject(n.Children[i+1])
+		if obj == nil && strings.Contains(rest, " ") && n.Children[i+1].Symbol == nounPhrase {
+			leaves := leafNodes(n.Children[i+1])
+			obj = leaves[len(leaves)-1]
+		}
+		if obj != nil {
+			text[c] = head
+			text[obj] = obj.Word + " " + rest
+		}
+	}
+}
+
+// pronounObject is n's pronoun if n is a reflexive or an NP of just a
+// pronoun, or nil.
+func pronounObject(n *grammar.Node) *grammar.Node {
+	if isReflexive(n) {
+		return n
+	}
+	if n.Symbol == nounPhrase && len(n.Children) == 1 && n.Children[0].POS() == grammar.Pronoun {
+		return n.Children[0]
 	}
 	return nil
 }

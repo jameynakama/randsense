@@ -34,9 +34,10 @@ const (
 	Plural   Number = "plural"
 )
 
-// particles end phrasal verbs, whose first word carries the inflection
-// ("culls out", "takes care of"). They also mark where a multi-word noun's
-// head ends ("talks of the town").
+// particles end phrasal verbs, or follow the verb of an idiom, whose first
+// word carries the inflection ("culls out", "takes care of", "calls into
+// question"). They also mark where a multi-word noun's head ends ("talks of
+// the town").
 var particles = []string{
 	"about", "across", "after", "along", "apart", "around", "aside", "away", "back",
 	"by", "down", "for", "forth", "in", "into", "of", "off", "on", "out", "over",
@@ -79,8 +80,9 @@ func LoadVerbs(r io.Reader) (*Verbs, error) {
 
 // Conjugate inflects a verb lemma for tense and subject person and number. In a
 // multi-word lemma only the head word changes: the first word of a phrasal
-// verb or of an idiom led by a verb in the data ("went ballistic", "stops
-// dead"), otherwise the last ("test drives").
+// verb, of an idiom whose second word is a particle ("calls into question"),
+// or of an idiom led by a verb in the data ("went ballistic", "stops dead"),
+// otherwise the last ("test drives").
 func (v *Verbs) Conjugate(lemma string, t Tense, p Person, n Number) string {
 	words := strings.Fields(lemma)
 	head := v.head(words)
@@ -99,7 +101,8 @@ func (v *Verbs) Participle(lemma string) string {
 
 func (v *Verbs) head(words []string) int {
 	_, irregular := v.irregular[words[0]]
-	if irregular || v.doubled[words[0]] || slices.Contains(particles, words[len(words)-1]) {
+	if irregular || v.doubled[words[0]] || slices.Contains(particles, words[len(words)-1]) ||
+		(len(words) > 1 && slices.Contains(particles, words[1])) {
 		return 0
 	}
 	return len(words) - 1

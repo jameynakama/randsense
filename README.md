@@ -30,7 +30,7 @@ for word frequency.
 cp .env.example .env  # edit as needed
 docker compose up -d
 just migrate-up
-just ingest   # load OEWN, SUBTLEX-US frequencies and the closed-class word lists
+just ingest   # load OEWN, separable-verb labels, SUBTLEX-US frequencies and closed-class words
 just run
 ```
 
@@ -46,7 +46,7 @@ Server starts on `http://localhost:8080` (or `PORT` from `.env`).
 | `just migrate-up`               | Apply pending migrations                 |
 | `just migrate-down [n]`         | Roll back n migrations (default 1)       |
 | `just generate`                 | Regenerate sqlc types after query changes|
-| `just ingest`                   | Load OEWN, SUBTLEX-US and `data/lexicon/closed_class.toml` |
+| `just ingest`                   | Load OEWN, SUBTLEX-US and the `data/lexicon/` lists |
 
 ## API
 

@@ -15,6 +15,7 @@ import (
 const (
 	defaultDataPath = "data/oewn-2025/english-wordnet-2025.xml.gz"
 	closedClassPath = "data/lexicon/closed_class.toml"
+	separablePath   = "data/lexicon/separable_verbs.toml"
 	subtlexPath     = "data/subtlex-us/subtlex-us-pos.tsv.gz"
 )
 
@@ -57,6 +58,19 @@ func main() {
 
 	log.Printf("done: nouns=%d verbs=%d adjectives=%d adverbs=%d skipped=%d",
 		stats.Nouns, stats.Verbs, stats.Adjectives, stats.Adverbs, stats.Skipped)
+
+	pf, err := os.Open(separablePath)
+	if err != nil {
+		log.Fatalf("open %s: %v", separablePath, err)
+	}
+	defer pf.Close()
+
+	log.Printf("marking %s ...", separablePath)
+	separable, err := oewn.MarkSeparable(ctx, db, pf)
+	if err != nil {
+		log.Fatalf("separable: %v", err)
+	}
+	log.Printf("done: separable verbs=%d", separable)
 
 	sf, err := os.Open(subtlexPath)
 	if err != nil {

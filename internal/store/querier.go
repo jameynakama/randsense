@@ -57,6 +57,7 @@ type Querier interface {
 	// lowercase form. Only name frequencies go here, so the element "In" doesn't
 	// pick up the preposition's.
 	SetProperNounFrequencies(ctx context.Context, arg SetProperNounFrequenciesParams) (int64, error)
+	SetSeparableVerbs(ctx context.Context, lemmas []string) (int64, error)
 	// Words are lowercase, so only lowercase lemmas match.
 	SetVerbFrequencies(ctx context.Context, arg SetVerbFrequenciesParams) (int64, error)
 	TruncateAdjectives(ctx context.Context) error
