@@ -297,6 +297,26 @@ func (n *Node) Leaves() []POS {
 	return leaves
 }
 
+// Validate reports whether the tree could have been expanded from some
+// grammar: every leaf is a POS, optionally qualified, and no inner node is.
+func (n *Node) Validate() error {
+	terminal, err := checkTerminal(n.Symbol)
+	switch {
+	case err != nil:
+		return err
+	case len(n.Children) == 0 && !terminal:
+		return fmt.Errorf("grammar: leaf %q is not a part of speech", n.Symbol)
+	case len(n.Children) > 0 && terminal:
+		return fmt.Errorf("grammar: %q is a part of speech and cannot have children", n.Symbol)
+	}
+	for _, c := range n.Children {
+		if err := c.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // maxDepth bounds tree depth so a grammar whose recursion outweighs its base
 // cases fails instead of growing without limit.
 const maxDepth = 32

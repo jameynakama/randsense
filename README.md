@@ -54,6 +54,20 @@ Server starts on `http://localhost:8080` (or `PORT` from `.env`).
 GET /health
 GET /api/v1/words/random?pos=noun|verb|adjective|adverb[&commonness=N]
 GET /api/v1/sentences/random[?commonness=N]   -> {text, tree}
+POST /api/v1/sentences/realize[?commonness=N] -> {text, tree}
+```
+
+`realize` takes a tree in the shape `random` returns and fills it with fresh words, so a specific
+construction can be checked without fishing for it. Leaves must be parts of speech, optionally
+qualified as in `grammar.toml`. Agreement depends on the `NP`, `VP`, `InfVP` and `GerVP` symbols,
+as it does there. Bodies are capped at 64 KiB. A slot no word fits, such as a frame with no verbs
+above the floor, returns 422.
+
+```bash
+echo '{"symbol": "S", "children": [
+  {"symbol": "NP", "children": [{"symbol": "Pronoun"}]},
+  {"symbol": "VP", "children": [{"symbol": "Verb:transitive"}, {"symbol": "Pronoun:reflexive"}]}
+]}' | http POST :8080/api/v1/sentences/realize | jq .text
 ```
 
 `commonness` (0 to 7, default 0) limits nouns, verbs, adjectives and adverbs to words at least that

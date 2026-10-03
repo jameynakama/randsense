@@ -316,3 +316,72 @@ func TestRandomSentenceHonorsCommonness(t *testing.T) {
 		}
 	}
 }
+
+// realizeTree is "Determiner Noun Verb:transitive Determiner Noun".
+const realizeTree = `{"symbol": "S", "children": [
+	{"symbol": "NP", "children": [{"symbol": "Determiner"}, {"symbol": "Noun"}]},
+	{"symbol": "VP", "children": [
+		{"symbol": "Verb:transitive"},
+		{"symbol": "NP", "children": [{"symbol": "Determiner"}, {"symbol": "Noun"}]}
+	]}
+]}`
+
+func postTree(t *testing.T, srv *httptest.Server, query, tree string) *http.Response {
+	t.Helper()
+	resp, err := http.Post(srv.URL+"/api/v1/sentences/realize"+query, "application/json", strings.NewReader(tree))
+	if err != nil {
+		t.Fatalf("POST: %v", err)
+	}
+	return resp
+}
+
+func TestRealizeSentence(t *testing.T) {
+	seedWords(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	// A tree from a previous response gets fresh words.
+	tree := strings.Replace(realizeTree, `{"symbol": "Noun"}`, `{"symbol": "Noun", "lemma": "moon", "word": "moons"}`, 1)
+	resp := postTree(t, srv, "", tree)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status: got %d, want 200", resp.StatusCode)
+	}
+
+	var body struct {
+		Text string `json:"text"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body.Text != "This goose devours this goose." && body.Text != "This goose devoured this goose." {
+		t.Errorf("text: got %q, want This goose devours/devoured this goose", body.Text)
+	}
+}
+
+func TestRealizeSentenceRejectsBadRequests(t *testing.T) {
+	seedWords(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	tests := []struct {
+		name, query, tree string
+		want              int
+	}{
+		{"invalid commonness", "?commonness=lots", realizeTree, http.StatusBadRequest},
+		{"not JSON", "", "S -> NP VP", http.StatusBadRequest},
+		{"too large", "", `{"symbol": "S", "children": [` + strings.Repeat(`{"symbol": "Noun"},`, 10000) + `{"symbol": "Noun"}]}`, http.StatusBadRequest},
+		{"leaf that isn't a POS", "", `{"symbol": "S", "children": [{"symbol": "NP"}]}`, http.StatusBadRequest},
+		{"frame without verbs", "", `{"symbol": "S", "children": [{"symbol": "Verb:ditransitive"}]}`, http.StatusUnprocessableEntity},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			resp := postTree(t, srv, tc.query, tc.tree)
+			defer resp.Body.Close()
+			if resp.StatusCode != tc.want {
+				t.Errorf("status: got %d, want %d", resp.StatusCode, tc.want)
+			}
+		})
+	}
+}

@@ -41,6 +41,7 @@ func NewRouter(cfg RouterConfig) http.Handler {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/words/random", h.randomWord)
 		r.Get("/sentences/random", h.randomSentence)
+		r.Post("/sentences/realize", h.realizeSentence)
 	})
 
 	return r

@@ -1,6 +1,8 @@
 package api
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand/v2"
@@ -8,6 +10,9 @@ import (
 	"slices"
 	"strconv"
 
+	"github.com/jackc/pgx/v5"
+
+	"github.com/jameynakama/randsense/internal/grammar"
 	"github.com/jameynakama/randsense/internal/sentence"
 )
 
@@ -91,4 +96,47 @@ func (h *Handler) randomSentence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, s)
+}
+
+// maxTreeBytes caps a realize request body, since every leaf is a lookup.
+const maxTreeBytes = 64 << 10
+
+// realizeSentence fills a posted tree, in the shape randomSentence returns,
+// with words. Any words already in the tree are replaced.
+func (h *Handler) realizeSentence(w http.ResponseWriter, r *http.Request) {
+	c, err := commonness(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	var tree grammar.Node
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxTreeBytes)).Decode(&tree); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("body must be a JSON tree of at most %d bytes: %v", maxTreeBytes, err))
+		return
+	}
+	if err := tree.Validate(); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	clearWords(&tree)
+
+	rng := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
+	s, err := sentence.Realize(r.Context(), h.queries, &tree, h.verbs, rng, c)
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeError(w, http.StatusUnprocessableEntity, "no word in the lexicon fits a slot in this tree at this commonness")
+		return
+	}
+	if err != nil {
+		log.Printf("realizeSentence: %v", err)
+		writeError(w, http.StatusInternalServerError, "server error")
+		return
+	}
+	writeJSON(w, http.StatusOK, s)
+}
+
+func clearWords(n *grammar.Node) {
+	n.Lemma, n.Word = "", ""
+	for _, c := range n.Children {
+		clearWords(c)
+	}
 }

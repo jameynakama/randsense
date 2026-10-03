@@ -377,6 +377,40 @@ func TestLoadAcceptsNeitherNor(t *testing.T) {
 	`)
 }
 
+func TestValidateAcceptsTreeOfTerminals(t *testing.T) {
+	tree := &grammar.Node{Symbol: "S", Children: []*grammar.Node{
+		{Symbol: "NP", Children: []*grammar.Node{{Symbol: "Determiner"}, {Symbol: "Noun"}}},
+		{Symbol: "VP", Children: []*grammar.Node{{Symbol: "Verb:transitive"}, {Symbol: "Pronoun:reflexive"}}},
+	}}
+
+	if err := tree.Validate(); err != nil {
+		t.Errorf("expected no error; got %v", err)
+	}
+}
+
+func TestValidateRejectsMalformedTrees(t *testing.T) {
+	tests := []struct {
+		name string
+		tree *grammar.Node
+		want string
+	}{
+		{"leaf that isn't a POS", &grammar.Node{Symbol: "S", Children: []*grammar.Node{{Symbol: "NP"}}}, `"NP"`},
+		{"unknown qualifier", &grammar.Node{Symbol: "S", Children: []*grammar.Node{{Symbol: "Verb:bogus"}}}, `"Verb:bogus"`},
+		{"POS with children", &grammar.Node{Symbol: "S", Children: []*grammar.Node{
+			{Symbol: "Noun", Children: []*grammar.Node{{Symbol: "Noun"}}},
+		}}, `"Noun"`},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.tree.Validate()
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Errorf("expected error mentioning %s; got %v", tc.want, err)
+			}
+		})
+	}
+}
+
 func TestLeafWithFrame(t *testing.T) {
 	g := mustLoad(t, `
 	[[rule]]
