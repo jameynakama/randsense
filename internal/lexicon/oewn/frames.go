@@ -10,8 +10,8 @@ import (
 // frameCodes maps OEWN subcat codes to the frames the grammar uses. The codes
 // also encode subject animacy (Somebody/Something), which is dropped on
 // purpose: only the complement structure matters. Codes not listed (bare
-// infinitives, adjectives, dummy subjects, and fixed prepositions
-// with a single sense) are unsupported and dropped.
+// infinitives, dummy subjects, and fixed prepositions with a single sense)
+// are unsupported and dropped.
 var frameCodes = map[string]grammar.Frame{
 	"via":             grammar.Intransitive,
 	"vii":             grammar.Intransitive,
@@ -41,6 +41,9 @@ var frameCodes = map[string]grammar.Frame{
 	"via-whether-inf": grammar.WhetherInfinitive,
 	"via-ger":         grammar.Gerund,
 	"vtaa-into-ger":   grammar.TransitiveIntoGerund,
+	"via-adj":         grammar.AdjectiveComplement,
+	"vii-adj":         grammar.AdjectiveComplement,
+	"vtii-adj":        grammar.TransitiveAdjectiveComplement,
 }
 
 // mislabeled lists lemmas OEWN gives a frame they can't take ("shaped
@@ -56,6 +59,17 @@ var mislabeled = map[grammar.Frame][]string{
 		"supplicate", "think", "wait",
 	},
 	grammar.TransitiveIntoGerund: {"talk out of"},
+	grammar.AdjectiveComplement: {
+		"behave", "break even", "call in", "close off", "compact", "do", "drive", "endure", "excavate",
+		"fare", "flow", "get along", "get on", "go down", "go off", "go over", "hold out", "make",
+		"make out", "move", "pack", "place", "point", "proceed", "rate", "read", "resonate", "ride",
+		"roll", "roll up", "savor", "savour", "say", "score", "shut off", "step", "take", "think",
+		"unearth", "wash", "work",
+	},
+	grammar.TransitiveAdjectiveComplement: {
+		"do by", "evaluate", "fit", "gloss over", "greet", "handle", "pass judgment", "see", "skate over",
+		"skimp over", "slur over", "smooth over", "take for", "tout", "view as",
+	},
 }
 
 // MapFrames converts a verb's subcat codes to sorted, unique frame names. It

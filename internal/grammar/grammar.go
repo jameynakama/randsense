@@ -67,6 +67,9 @@ const (
 	// TransitiveIntoGerund has an object and "into" before its gerund:
 	// "coax her into going".
 	TransitiveIntoGerund Frame = "transitive-into-gerund"
+	// Adjective complements: "seem ugly", "consider her ugly".
+	AdjectiveComplement           Frame = "adjective"
+	TransitiveAdjectiveComplement Frame = "transitive-adjective"
 )
 
 // FixedPrepositions maps each fixed-preposition frame to its preposition.
@@ -99,6 +102,7 @@ var qualifiers = map[POS][]string{
 		string(TransitiveOn), string(TransitiveTo), string(TransitiveWith), string(ThatClause),
 		string(ToInfinitive), string(TransitiveToInfinitive), string(WhetherInfinitive),
 		string(Gerund), string(TransitiveIntoGerund),
+		string(AdjectiveComplement), string(TransitiveAdjectiveComplement),
 	},
 	Preposition:    {"from", "into", "of", "on", "to", "with"},
 	Complementizer: {"whether"},

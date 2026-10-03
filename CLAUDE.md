@@ -43,7 +43,6 @@ Don't reopen these without new evidence.
 ## Roadmap
 
 1. **Verb frames outside `grammar.Frame`**, which need nested clauses or other new slots:
-   - adjective complement
    - dummy subject ("It is raining")
 2. **Unused closed-class words:** reflexive and genitive pronouns, and "neither...nor".
 3. **Roman-numeral adjectives** (lxxxi, ixl). A naive regex would also hit "mix".

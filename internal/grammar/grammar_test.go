@@ -336,6 +336,14 @@ func TestLoadAcceptsGerund(t *testing.T) {
 	`)
 }
 
+func TestLoadAcceptsAdjectiveComplements(t *testing.T) {
+	mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["Noun", "Verb:adjective", "Adjective", "Verb:transitive-adjective", "Noun", "Adjective"]
+	`)
+}
+
 func TestLeafWithFrame(t *testing.T) {
 	g := mustLoad(t, `
 	[[rule]]

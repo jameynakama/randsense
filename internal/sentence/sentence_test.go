@@ -722,6 +722,28 @@ func TestRealizeClauseInsideGerundIsFinite(t *testing.T) {
 	assertExactly(t, seen, "This goose gives giving that she gives.", "This goose gave giving that she gave.")
 }
 
+func TestGeneratePredicatesAdjectiveOfObject(t *testing.T) {
+	var q *fakeQuerier
+	seen := texts(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["NP", "VP"]
+
+	[[rule]]
+	symbol = "NP"
+	expansion = ["Pronoun"]
+
+	[[rule]]
+	symbol = "VP"
+	expansion = ["Verb:transitive-adjective", "NP", "Adjective"]
+	`, func() *fakeQuerier { q = newFake(); return q }, 20)
+
+	assertExactly(t, seen, "She gives her ugly.", "She gave her ugly.")
+	if q.frame != "transitive-adjective" {
+		t.Errorf("expected a verb lookup for frame transitive-adjective; got %q", q.frame)
+	}
+}
+
 func TestGenerateJoinsClausesWithTypedConjunctionsInOneTense(t *testing.T) {
 	clauses := `
 	[[rule]]

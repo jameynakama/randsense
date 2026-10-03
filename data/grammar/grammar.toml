@@ -148,6 +148,16 @@ weight = 0.15
 
 [[rule]]
 symbol = "VP"
+expansion = ["Verb:adjective", "Adjective"]
+weight = 0.4
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:transitive-adjective", "NP", "Adjective"]
+weight = 0.2
+
+[[rule]]
+symbol = "VP"
 expansion = ["VP", "Adverb"]
 
 [[rule]]
