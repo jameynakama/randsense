@@ -28,7 +28,8 @@ Don't reopen these without new evidence.
 - **Commas.** A comma appears only before a clause-coordinating conjunction; without one, "for"
   and "so" read as prepositions. Subordinate clauses only follow the main clause, so they need no
   comma.
-- **Coordination agreement.** "or" and "nor" agree with their last part; "and" is always plural.
+- **Coordination agreement.** "or" and "nor" agree with their last part; "and" is plural, in the
+  lowest person among its parts ("you and I ... ourselves").
 - **Rare words are a feature.** `commonness` is a per-request floor, never an ingest filter.
   Frequency comes from SUBTLEX-US counts per part of speech; plain word-form counts let common
   spellings pass in rare roles (verb "baby", noun "meet"). When a frame has no verbs at the floor,
@@ -69,7 +70,8 @@ Don't reopen these without new evidence.
 These are deliberately left alone.
 
 - **Accepted as funny, not bugs:** pluralized mass nouns and names ("soccers", "smokings",
-  "Morgans") and -man compounds ("waterwomans").
+  "Morgans"), -man compounds ("waterwomans"), and reflexives of any gender after a noun subject
+  ("the philosophy devoured himself").
 - **Rare homographs at `commonness=0`:** noun "few", adjective "meet" and verb "baby" make
   grammatical sentences read as broken. If revisited, either drop lemmas whose spelling is mostly
   another part of speech (SUBTLEX's dominant-POS data), or keep closed-class spellings out of
@@ -80,3 +82,8 @@ These are deliberately left alone.
 - **Unmatched words count as 0:** single-word genus names and drug brands (Cryptoprocta,
   Mevacor) stay in the noun table, but any floor drops them because SUBTLEX-US lacks them.
 - **a/an misses:** abbreviations (mph, nth) and a few other words (Oneida, yttrium).
+- **"neither X or Y":** the determiner "neither" in the first part of an "or" coordination reads
+  like a broken "neither...nor". Under evaluation; a possible fix is removing "neither" from the
+  determiners.
+- **Genitive "his" as a subject** can be mistaken for a determiner when the verb is also a
+  noun ("His look deficient").

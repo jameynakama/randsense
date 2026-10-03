@@ -16,7 +16,7 @@
 #
 # Agreement depends on four symbol names, NP, VP, InfVP and GerVP: an NP
 # followed by a VP among its siblings is the subject (nominative pronouns, and
-# the VP's verbs agree with it). An NP's person and number come from its
+# the VP's verbs and reflexives agree with it). An NP's person and number come from its
 # Pronoun, its Determiner, or "NP Conjunction NP" coordination. Verbs under an
 # InfVP keep their base form and verbs under a GerVP take -ing, up to any
 # clause nested inside them.
