@@ -10,7 +10,7 @@ import (
 )
 
 const getRandomConjunction = `-- name: GetRandomConjunction :one
-SELECT id, lemma, type, active FROM conjunctions
+SELECT id, lemma, type, active, joins_nps FROM conjunctions
 WHERE active
 ORDER BY random()
 LIMIT 1
@@ -24,27 +24,69 @@ func (q *Queries) GetRandomConjunction(ctx context.Context) (Conjunction, error)
 		&i.Lemma,
 		&i.Type,
 		&i.Active,
+		&i.JoinsNps,
+	)
+	return i, err
+}
+
+const getRandomConjunctionOfType = `-- name: GetRandomConjunctionOfType :one
+SELECT id, lemma, type, active, joins_nps FROM conjunctions
+WHERE active AND type = $1
+ORDER BY random()
+LIMIT 1
+`
+
+func (q *Queries) GetRandomConjunctionOfType(ctx context.Context, type_ string) (Conjunction, error) {
+	row := q.db.QueryRow(ctx, getRandomConjunctionOfType, type_)
+	var i Conjunction
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Type,
+		&i.Active,
+		&i.JoinsNps,
+	)
+	return i, err
+}
+
+const getRandomNPConjunction = `-- name: GetRandomNPConjunction :one
+SELECT id, lemma, type, active, joins_nps FROM conjunctions
+WHERE active AND joins_nps
+ORDER BY random()
+LIMIT 1
+`
+
+func (q *Queries) GetRandomNPConjunction(ctx context.Context) (Conjunction, error) {
+	row := q.db.QueryRow(ctx, getRandomNPConjunction)
+	var i Conjunction
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Type,
+		&i.Active,
+		&i.JoinsNps,
 	)
 	return i, err
 }
 
 const insertConjunction = `-- name: InsertConjunction :exec
-INSERT INTO conjunctions (lemma, type)
-VALUES ($1, $2)
+INSERT INTO conjunctions (lemma, type, joins_nps)
+VALUES ($1, $2, $3)
 `
 
 type InsertConjunctionParams struct {
-	Lemma string `db:"lemma" json:"lemma"`
-	Type  string `db:"type" json:"type"`
+	Lemma    string `db:"lemma" json:"lemma"`
+	Type     string `db:"type" json:"type"`
+	JoinsNps bool   `db:"joins_nps" json:"joins_nps"`
 }
 
 func (q *Queries) InsertConjunction(ctx context.Context, arg InsertConjunctionParams) error {
-	_, err := q.db.Exec(ctx, insertConjunction, arg.Lemma, arg.Type)
+	_, err := q.db.Exec(ctx, insertConjunction, arg.Lemma, arg.Type, arg.JoinsNps)
 	return err
 }
 
 const listConjunctions = `-- name: ListConjunctions :many
-SELECT id, lemma, type, active FROM conjunctions
+SELECT id, lemma, type, active, joins_nps FROM conjunctions
 ORDER BY lemma, type
 `
 
@@ -62,6 +104,7 @@ func (q *Queries) ListConjunctions(ctx context.Context) ([]Conjunction, error) {
 			&i.Lemma,
 			&i.Type,
 			&i.Active,
+			&i.JoinsNps,
 		); err != nil {
 			return nil, err
 		}

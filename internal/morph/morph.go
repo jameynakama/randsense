@@ -19,6 +19,14 @@ const (
 	Past    Tense = "past"
 )
 
+type Person int
+
+const (
+	First  Person = 1
+	Second Person = 2
+	Third  Person = 3
+)
+
 type Number string
 
 const (
@@ -68,42 +76,45 @@ func LoadVerbs(r io.Reader) (*Verbs, error) {
 	return v, nil
 }
 
-// Conjugate inflects a verb lemma for tense and subject number. In a
+// Conjugate inflects a verb lemma for tense and subject person and number. In a
 // multi-word lemma only the head word changes: the first word of a phrasal
 // verb or of an idiom led by a verb in the data ("went ballistic", "stops
 // dead"), otherwise the last ("test drives").
-func (v *Verbs) Conjugate(lemma string, t Tense, n Number) string {
+func (v *Verbs) Conjugate(lemma string, t Tense, p Person, n Number) string {
 	words := strings.Fields(lemma)
 	head := len(words) - 1
 	_, irregular := v.irregular[words[0]]
 	if irregular || v.doubled[words[0]] || slices.Contains(particles, words[head]) {
 		head = 0
 	}
-	words[head] = v.conjugateWord(words[head], t, n)
+	words[head] = v.conjugateWord(words[head], t, p, n)
 	return strings.Join(words, " ")
 }
 
-func (v *Verbs) conjugateWord(w string, t Tense, n Number) string {
+func (v *Verbs) conjugateWord(w string, t Tense, p Person, n Number) string {
+	singular := n == Singular && p != Second
 	if w == "be" {
 		switch {
-		case t == Present && n == Singular:
+		case t == Present && singular && p == First:
+			return "am"
+		case t == Present && singular:
 			return "is"
 		case t == Present:
 			return "are"
-		case n == Singular:
+		case singular:
 			return "was"
 		default:
 			return "were"
 		}
 	}
-	if t == Present && n == Plural {
+	if t == Present && (n == Plural || p != Third) {
 		return w
 	}
 
 	// A hyphenated verb not in the data inflects its last part (spoon-fed).
 	_, known := v.irregular[w]
 	if i := strings.LastIndex(w, "-"); i >= 0 && !known && !v.doubled[w] {
-		return w[:i+1] + v.conjugateWord(w[i+1:], t, n)
+		return w[:i+1] + v.conjugateWord(w[i+1:], t, p, n)
 	}
 
 	irr, ok := v.irregular[w]

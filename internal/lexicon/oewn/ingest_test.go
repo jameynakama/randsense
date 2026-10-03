@@ -14,7 +14,7 @@ import (
 
 // TestIngest is an integration test: it runs the real Ingest pipeline
 // against the testdata/sample.xml fixture and checks the resulting DB
-// state. 19 LexicalEntries total: 8 nouns, 4 verbs, 2 adjectives, 2 adverbs
+// state. 21 LexicalEntries total: 10 nouns, 4 verbs, 2 adjectives, 2 adverbs
 // pass the filters; 3 nouns (.22-caliber, Sorex araneus, OWLT) are Skipped.
 func TestIngest(t *testing.T) {
 	ctx := context.Background()
@@ -33,8 +33,8 @@ func TestIngest(t *testing.T) {
 	q := store.New(testPool)
 
 	t.Run("stats", func(t *testing.T) {
-		if stats.Nouns != 8 {
-			t.Errorf("Nouns: got %d, want 8", stats.Nouns)
+		if stats.Nouns != 10 {
+			t.Errorf("Nouns: got %d, want 10", stats.Nouns)
 		}
 		if stats.Verbs != 4 {
 			t.Errorf("Verbs: got %d, want 4", stats.Verbs)
@@ -55,8 +55,8 @@ func TestIngest(t *testing.T) {
 		if err != nil {
 			t.Fatalf("CountNouns: %v", err)
 		}
-		if count != 8 {
-			t.Errorf("CountNouns: got %d, want 8", count)
+		if count != 10 {
+			t.Errorf("CountNouns: got %d, want 10", count)
 		}
 
 		// irregular plural
@@ -82,7 +82,7 @@ func TestIngest(t *testing.T) {
 		}
 
 		// plural lemmas: marked only when the singular is also a lemma
-		for lemma, want := range map[string]bool{"Rastas": true, "Rasta": false, "Mass": false, "goose": false} {
+		for lemma, want := range map[string]bool{"Rastas": true, "Rasta": false, "eyeglasses": true, "eyeglass": false, "Mass": false, "goose": false} {
 			noun, err := q.GetNounByLemma(ctx, lemma)
 			if err != nil {
 				t.Fatalf("GetNounByLemma(%s): %v", lemma, err)

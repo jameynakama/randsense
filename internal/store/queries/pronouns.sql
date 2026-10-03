@@ -9,8 +9,8 @@ TRUNCATE pronouns RESTART IDENTITY CASCADE;
 SELECT * FROM pronouns
 ORDER BY lemma, case_, person, number, gender;
 
--- name: GetRandomPronoun :one
+-- name: GetRandomPronounWithCase :one
 SELECT * FROM pronouns
-WHERE active
+WHERE active AND case_ = $1
 ORDER BY random()
 LIMIT 1;

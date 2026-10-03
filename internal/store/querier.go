@@ -19,11 +19,13 @@ type Querier interface {
 	GetRandomAdjective(ctx context.Context) (Adjective, error)
 	GetRandomAdverb(ctx context.Context) (Adverb, error)
 	GetRandomConjunction(ctx context.Context) (Conjunction, error)
+	GetRandomConjunctionOfType(ctx context.Context, type_ string) (Conjunction, error)
 	GetRandomDeterminer(ctx context.Context) (Determiner, error)
 	GetRandomDeterminerWithNumber(ctx context.Context, numbers []string) (Determiner, error)
+	GetRandomNPConjunction(ctx context.Context) (Conjunction, error)
 	GetRandomNoun(ctx context.Context) (Noun, error)
 	GetRandomPreposition(ctx context.Context) (Preposition, error)
-	GetRandomPronoun(ctx context.Context) (Pronoun, error)
+	GetRandomPronounWithCase(ctx context.Context, case_ string) (Pronoun, error)
 	GetRandomVerb(ctx context.Context) (Verb, error)
 	GetRandomVerbWithFrame(ctx context.Context, frame string) (Verb, error)
 	GetVerbByLemma(ctx context.Context, lemma string) (Verb, error)
@@ -39,9 +41,9 @@ type Querier interface {
 	ListDeterminers(ctx context.Context) ([]Determiner, error)
 	ListPrepositions(ctx context.Context) ([]Preposition, error)
 	ListPronouns(ctx context.Context) ([]Pronoun, error)
-	// A lemma is plural if it ends in -s and its singular is also a lemma
-	// ("Rastas"/"Rasta"). Short words and -ss/-us/-is endings ("Ms", "Mass",
-	// "Pus") are left singular.
+	// A lemma is plural if it ends in -s and its singular (minus -s, or minus
+	// -es) is also a lemma ("Rastas"/"Rasta", "eyeglasses"/"eyeglass"). Short
+	// words and -ss/-us/-is endings ("Ms", "Mass", "Pus") are left singular.
 	MarkPluralNouns(ctx context.Context) (int64, error)
 	TruncateAdjectives(ctx context.Context) error
 	TruncateAdverbs(ctx context.Context) error

@@ -29,6 +29,17 @@
       <Sense id="oewn-rasta__1.05.00.." synset="oewn-0000000r-n"/>
     </LexicalEntry>
 
+    <!-- -es plural whose singular drops the whole "es" -->
+    <LexicalEntry id="oewn-eyeglasses-n">
+      <Lemma writtenForm="eyeglasses" partOfSpeech="n"/>
+      <Sense id="oewn-eyeglasses__1.05.00.." synset="oewn-0000000e-n"/>
+    </LexicalEntry>
+
+    <LexicalEntry id="oewn-eyeglass-n">
+      <Lemma writtenForm="eyeglass" partOfSpeech="n"/>
+      <Sense id="oewn-eyeglass__1.05.00.." synset="oewn-0000000e-n"/>
+    </LexicalEntry>
+
     <!-- ends in -ss: never marked plural -->
     <LexicalEntry id="oewn-mass-n">
       <Lemma writtenForm="Mass" partOfSpeech="n"/>

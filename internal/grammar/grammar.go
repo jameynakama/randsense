@@ -28,9 +28,11 @@ const (
 	Preposition POS = "Preposition"
 	Pronoun     POS = "Pronoun"
 	Conjunction POS = "Conjunction"
+	// Comma is punctuation, not a word: it isn't filled from the lexicon.
+	Comma POS = "Comma"
 )
 
-var allPOS = []POS{Noun, Verb, Adjective, Adverb, Determiner, Preposition, Pronoun, Conjunction}
+var allPOS = []POS{Noun, Verb, Adjective, Adverb, Determiner, Preposition, Pronoun, Conjunction, Comma}
 
 // Frame is a verb's complement structure. A grammar can require one on a
 // verb slot: "Verb:transitive".
@@ -44,28 +46,40 @@ const (
 	TransitivePP   Frame = "transitive-pp"
 )
 
-var allFrames = []Frame{Intransitive, Transitive, Ditransitive, IntransitivePP, TransitivePP}
+// Conjunction qualifiers: what a conjunction slot joins. "np" conjunctions
+// (and, or) can join noun phrases.
+const (
+	Coordinating  = "coordinating"
+	Subordinating = "subordinating"
+	JoinsNPs      = "np"
+)
+
+// qualifiers lists what each POS can be qualified with ("Verb:transitive").
+var qualifiers = map[POS][]string{
+	Verb:        {string(Intransitive), string(Transitive), string(Ditransitive), string(IntransitivePP), string(TransitivePP)},
+	Conjunction: {Coordinating, Subordinating, JoinsNPs},
+}
 
 func isPOS(symbol string) bool {
 	return slices.Contains(allPOS, POS(symbol))
 }
 
 // splitSymbol separates a terminal like "Verb:transitive" into its POS and
-// frame. The frame is empty when there's no qualifier.
-func splitSymbol(symbol string) (POS, Frame) {
-	pos, frame, _ := strings.Cut(symbol, ":")
-	return POS(pos), Frame(frame)
+// qualifier, which is empty when there isn't one.
+func splitSymbol(symbol string) (POS, string) {
+	pos, qualifier, _ := strings.Cut(symbol, ":")
+	return POS(pos), qualifier
 }
 
-// checkTerminal reports whether symbol is a POS, optionally qualified with a
-// frame, and errors on a qualifier that isn't a Verb frame.
+// checkTerminal reports whether symbol is a POS, optionally qualified, and
+// errors on a qualifier that POS doesn't take.
 func checkTerminal(symbol string) (bool, error) {
-	pos, frame := splitSymbol(symbol)
+	pos, qualifier := splitSymbol(symbol)
 	if !isPOS(string(pos)) {
 		return false, nil
 	}
-	if frame != "" && (pos != Verb || !slices.Contains(allFrames, frame)) {
-		return false, fmt.Errorf("grammar: %q: only Verb takes a frame, one of %v", symbol, allFrames)
+	if qualifier != "" && !slices.Contains(qualifiers[pos], qualifier) {
+		return false, fmt.Errorf("grammar: %q: qualifiers allowed are %v", symbol, qualifiers)
 	}
 	return true, nil
 }
@@ -183,7 +197,7 @@ func (g *Grammar) productiveSymbols() map[string]bool {
 }
 
 // Node is one constituent of a parse tree. A leaf's Symbol is a POS,
-// optionally with a frame ("Verb:transitive"). Once the leaf is filled from
+// optionally qualified ("Verb:transitive"). Once the leaf is filled from
 // the lexicon, Lemma is the dictionary form and Word the inflected one.
 type Node struct {
 	Symbol   string  `json:"symbol"`
@@ -198,10 +212,11 @@ func (n *Node) POS() POS {
 	return pos
 }
 
-// Frame is a verb leaf's required frame, or empty.
-func (n *Node) Frame() Frame {
-	_, frame := splitSymbol(n.Symbol)
-	return frame
+// Qualifier is a leaf's qualifier ("transitive" in "Verb:transitive"), or
+// empty.
+func (n *Node) Qualifier() string {
+	_, qualifier := splitSymbol(n.Symbol)
+	return qualifier
 }
 
 // Leaves returns the tree's POS slots in sentence order.

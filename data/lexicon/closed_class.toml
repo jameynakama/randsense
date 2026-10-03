@@ -521,6 +521,7 @@ type = "coordinating"
 [[conjunction]]
 lemma = "and"
 type = "coordinating"
+joins_nps = true
 
 [[conjunction]]
 lemma = "nor"
@@ -533,6 +534,7 @@ type = "coordinating"
 [[conjunction]]
 lemma = "or"
 type = "coordinating"
+joins_nps = true
 
 [[conjunction]]
 lemma = "yet"

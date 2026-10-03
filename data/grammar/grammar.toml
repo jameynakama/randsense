@@ -1,15 +1,31 @@
 # Weighted grammar for sentence generation. Weights are relative among a
 # symbol's rules and default to 1. Terminals are the POS names in
-# grammar.POS (Noun, Verb, Determiner, ...); any other symbol needs rules.
-# A Verb slot can require a frame ("Verb:transitive"); see grammar.Frame for
-# the list. A plain Verb takes any verb.
+# grammar.POS (Noun, Verb, Determiner, ..., and Comma for punctuation); any
+# other symbol needs rules. Verb and Conjunction slots can be qualified (see
+# grammar.qualifiers): "Verb:transitive" requires that frame, and
+# "Conjunction:np" an and/or that can join noun phrases. Unqualified slots
+# take any word.
 #
-# Agreement depends on two symbol names: an NP's Determiner sets the number
-# of its Nouns, and the Verbs in a VP agree with the nearest NP before that VP
-# among its siblings.
+# Agreement depends on two symbol names, NP and VP: an NP followed by a VP
+# among its siblings is the subject (nominative pronouns, and the VP's verbs
+# agree with it). An NP's person and number come from its Pronoun, its
+# Determiner, or "NP Conjunction NP" coordination.
 
 [[rule]]
 symbol = "S"
+expansion = ["Clause"]
+weight = 6
+
+[[rule]]
+symbol = "S"
+expansion = ["Clause", "Comma", "Conjunction:coordinating", "Clause"]
+
+[[rule]]
+symbol = "S"
+expansion = ["Clause", "Conjunction:subordinating", "Clause"]
+
+[[rule]]
+symbol = "Clause"
 expansion = ["NP", "VP"]
 
 [[rule]]
@@ -21,6 +37,16 @@ weight = 0.5
 symbol = "NP"
 expansion = ["Determiner", "Noun"]
 weight = 0.5
+
+[[rule]]
+symbol = "NP"
+expansion = ["Pronoun"]
+weight = 0.25
+
+[[rule]]
+symbol = "NP"
+expansion = ["NP", "Conjunction:np", "NP"]
+weight = 0.1
 
 [[rule]]
 symbol = "VP"
@@ -43,6 +69,15 @@ expansion = ["Verb:transitive-pp", "NP", "PP"]
 [[rule]]
 symbol = "VP"
 expansion = ["Verb:ditransitive", "NP", "NP"]
+weight = 0.5
+
+[[rule]]
+symbol = "VP"
+expansion = ["VP", "Adverb"]
+
+[[rule]]
+symbol = "VP"
+expansion = ["Adverb", "VP"]
 weight = 0.5
 
 [[rule]]

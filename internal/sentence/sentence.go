@@ -17,9 +17,10 @@ import (
 	"github.com/jameynakama/randsense/internal/store"
 )
 
-// Agreement relies on these grammar symbols: an NP's determiner sets the
-// number of its nouns, and a VP's verbs agree with the nearest NP before the
-// VP among its siblings (the subject).
+// Agreement relies on these grammar symbols. An NP followed by a VP among its
+// siblings is that VP's subject: its pronouns are nominative and the VP's
+// verbs agree with it. An NP's person and number come from its pronoun, its
+// determiner, or, for "NP Conjunction NP", the coordination.
 const (
 	nounPhrase = "NP"
 	verbPhrase = "VP"
@@ -33,10 +34,19 @@ type Sentence struct {
 
 // leafInfo is what agreement needs from a leaf's lexicon row.
 type leafInfo struct {
-	number      string // determiners: "singular", "plural" or "either"
-	plural      string // nouns: irregular plural, if any
-	pluralLemma bool   // nouns: the lemma is already plural ("Rastas")
+	number      string       // determiners: "singular", "plural" or "either"; pronouns: "singular" or "plural"
+	person      morph.Person // pronouns
+	plural      string       // nouns: irregular plural, if any
+	pluralLemma bool         // nouns: the lemma is already plural ("Rastas")
 }
+
+// agreement is the person and number a verb agrees with.
+type agreement struct {
+	person morph.Person
+	number morph.Number
+}
+
+var thirdSingular = agreement{morph.Third, morph.Singular}
 
 type generator struct {
 	ctx    context.Context
@@ -45,18 +55,22 @@ type generator struct {
 	rng    *rand.Rand
 	tense  morph.Tense
 	leaves map[*grammar.Node]leafInfo
-	number map[*grammar.Node]morph.Number
+	agr    map[*grammar.Node]agreement
 }
 
-// Generate expands g, fills every leaf with a random active word, and
-// inflects the words: nouns agree with their determiner, verbs with their
-// subject, all in one tense chosen at random.
+// Generate expands g and realizes the resulting tree.
 func Generate(ctx context.Context, q store.Querier, g *grammar.Grammar, verbs *morph.Verbs, rng *rand.Rand) (*Sentence, error) {
 	tree, err := g.Expand(rng)
 	if err != nil {
 		return nil, fmt.Errorf("Generate: %w", err)
 	}
+	return Realize(ctx, q, tree, verbs, rng)
+}
 
+// Realize fills every leaf of tree with a random active word and inflects the
+// words: nouns agree with their determiner, verbs with their subject, all in
+// one tense chosen at random.
+func Realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *morph.Verbs, rng *rand.Rand) (*Sentence, error) {
 	gen := &generator{
 		ctx:    ctx,
 		q:      q,
@@ -64,17 +78,17 @@ func Generate(ctx context.Context, q store.Querier, g *grammar.Grammar, verbs *m
 		rng:    rng,
 		tense:  morph.Present,
 		leaves: map[*grammar.Node]leafInfo{},
-		number: map[*grammar.Node]morph.Number{},
+		agr:    map[*grammar.Node]agreement{},
 	}
 	if rng.IntN(2) == 1 {
 		gen.tense = morph.Past
 	}
 
-	if err := gen.fill(tree); err != nil {
-		return nil, fmt.Errorf("Generate: %w", err)
+	if err := gen.fill(tree, false); err != nil {
+		return nil, fmt.Errorf("Realize: %w", err)
 	}
 	gen.agreeNouns(tree)
-	gen.agreeVerbs(tree, morph.Singular)
+	gen.agreeVerbs(tree, thirdSingular)
 
 	leaves := leafNodes(tree)
 	words := make([]string, len(leaves))
@@ -88,39 +102,51 @@ func Generate(ctx context.Context, q store.Querier, g *grammar.Grammar, verbs *m
 	return &Sentence{Text: format(words), Tree: tree}, nil
 }
 
-// fill gives every leaf under n a word. An NP fills its nouns first so that
-// a plural lemma ("Rastas") can rule out singular determiners ("a Rastas").
-func (gen *generator) fill(n *grammar.Node) error {
+// fill gives every leaf under n a word. subject says n is (part of) a subject
+// NP. An NP fills its nouns first so that a plural lemma ("Rastas") can rule
+// out singular determiners ("a Rastas").
+func (gen *generator) fill(n *grammar.Node, subject bool) error {
 	pluralNoun := false
 	if n.Symbol == nounPhrase {
 		for _, c := range n.Children {
 			if c.POS() == grammar.Noun {
-				if err := gen.fillLeaf(c, false); err != nil {
+				if err := gen.fillLeaf(c, false, false); err != nil {
 					return err
 				}
 				pluralNoun = pluralNoun || gen.leaves[c].pluralLemma
 			}
 		}
 	}
-	for _, c := range n.Children {
+	for i, c := range n.Children {
 		if c.Lemma != "" {
 			continue
 		}
 		if len(c.Children) == 0 {
-			if err := gen.fillLeaf(c, pluralNoun); err != nil {
+			if err := gen.fillLeaf(c, pluralNoun, subject); err != nil {
 				return err
 			}
 			continue
 		}
-		if err := gen.fill(c); err != nil {
+		childSubject := c.Symbol == nounPhrase &&
+			((n.Symbol == nounPhrase && subject) || verbPhraseFollows(n.Children[i+1:]))
+		if err := gen.fill(c, childSubject); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (gen *generator) fillLeaf(n *grammar.Node, pluralNoun bool) error {
-	lemma, info, err := gen.randomWord(n.POS(), n.Frame(), pluralNoun)
+func verbPhraseFollows(siblings []*grammar.Node) bool {
+	for _, s := range siblings {
+		if s.Symbol == verbPhrase {
+			return true
+		}
+	}
+	return false
+}
+
+func (gen *generator) fillLeaf(n *grammar.Node, pluralNoun, subject bool) error {
+	lemma, info, err := gen.randomWord(n, pluralNoun, subject)
 	if err != nil {
 		return fmt.Errorf("%s: %w", n.Symbol, err)
 	}
@@ -129,11 +155,12 @@ func (gen *generator) fillLeaf(n *grammar.Node, pluralNoun bool) error {
 	return nil
 }
 
-// randomWord picks a word for pos. A verb must have frame, if one is given;
-// pluralNoun restricts a determiner to ones that can go with a plural noun.
-func (gen *generator) randomWord(pos grammar.POS, frame grammar.Frame, pluralNoun bool) (string, leafInfo, error) {
+// randomWord picks a word for leaf n, honoring its qualifier. pluralNoun
+// restricts a determiner to ones that can go with a plural noun; subject
+// makes a pronoun nominative rather than accusative.
+func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (string, leafInfo, error) {
 	ctx, q := gen.ctx, gen.q
-	switch pos {
+	switch n.POS() {
 	case grammar.Noun:
 		w, err := q.GetRandomNoun(ctx)
 		if err != nil {
@@ -147,8 +174,8 @@ func (gen *generator) randomWord(pos grammar.POS, frame grammar.Frame, pluralNou
 		}
 		return w.Lemma, leafInfo{plural: infl.Plural, pluralLemma: w.Plural}, nil
 	case grammar.Verb:
-		if frame != "" {
-			w, err := q.GetRandomVerbWithFrame(ctx, string(frame))
+		if frame := n.Qualifier(); frame != "" {
+			w, err := q.GetRandomVerbWithFrame(ctx, frame)
 			return w.Lemma, leafInfo{}, err
 		}
 		w, err := q.GetRandomVerb(ctx)
@@ -170,67 +197,112 @@ func (gen *generator) randomWord(pos grammar.POS, frame grammar.Frame, pluralNou
 		w, err := q.GetRandomPreposition(ctx)
 		return w.Lemma, leafInfo{}, err
 	case grammar.Pronoun:
-		w, err := q.GetRandomPronoun(ctx)
-		return w.Lemma, leafInfo{}, err
+		pronounCase := "accusative"
+		if subject {
+			pronounCase = "nominative"
+		}
+		w, err := q.GetRandomPronounWithCase(ctx, pronounCase)
+		return w.Lemma, leafInfo{number: w.Number, person: morph.Person(w.Person)}, err
+	case grammar.Comma:
+		return ",", leafInfo{}, nil
 	default: // Conjunction: Load guarantees every leaf is a POS.
-		w, err := q.GetRandomConjunction(ctx)
+		var w store.Conjunction
+		var err error
+		switch qualifier := n.Qualifier(); qualifier {
+		case grammar.JoinsNPs:
+			w, err = q.GetRandomNPConjunction(ctx)
+		case "":
+			w, err = q.GetRandomConjunction(ctx)
+		default:
+			w, err = q.GetRandomConjunctionOfType(ctx, qualifier)
+		}
 		return w.Lemma, leafInfo{}, err
 	}
 }
 
-// agreeNouns gives every NP a number: plural if a noun's lemma is already
-// plural, otherwise from its determiner (a coin flip for "either", singular
-// without one). Its nouns are pluralized to match.
+// agreeNouns works out every NP's agreement, inner NPs first, and pluralizes
+// nouns to match.
 func (gen *generator) agreeNouns(n *grammar.Node) {
-	if n.Symbol == nounPhrase {
-		number := morph.Singular
-		for _, c := range n.Children {
-			if gen.leaves[c].pluralLemma {
-				number = morph.Plural
-			}
-		}
-		for _, c := range n.Children {
-			if c.POS() != grammar.Determiner || number == morph.Plural {
-				continue
-			}
-			switch gen.leaves[c].number {
-			case "plural":
-				number = morph.Plural
-			case "either":
-				if gen.rng.IntN(2) == 1 {
-					number = morph.Plural
-				}
-			}
-		}
-		gen.number[n] = number
-		if number == morph.Plural {
-			for _, c := range n.Children {
-				if c.POS() == grammar.Noun && !gen.leaves[c].pluralLemma {
-					c.Word = morph.Pluralize(c.Lemma, gen.leaves[c].plural)
-				}
-			}
-		}
-	}
 	for _, c := range n.Children {
 		gen.agreeNouns(c)
 	}
+	if n.Symbol != nounPhrase {
+		return
+	}
+
+	agr := gen.npAgreement(n)
+	gen.agr[n] = agr
+	if agr.number == morph.Plural {
+		for _, c := range n.Children {
+			if c.POS() == grammar.Noun && len(c.Children) == 0 && !gen.leaves[c].pluralLemma {
+				c.Word = morph.Pluralize(c.Lemma, gen.leaves[c].plural)
+			}
+		}
+	}
 }
 
-// agreeVerbs conjugates verbs for the sentence tense and the number of the
-// nearest NP before them among their siblings, or singular if there is none.
-// A VP passes its subject's number down to the verbs inside it.
-func (gen *generator) agreeVerbs(n *grammar.Node, number morph.Number) {
+// npAgreement is a coordination's (plural for "and", the last part's for
+// "or"), a pronoun's, or third person with a number from a plural lemma or
+// the determiner (a coin flip for "either", singular without one).
+func (gen *generator) npAgreement(n *grammar.Node) agreement {
+	var parts []*grammar.Node
+	conjunction := ""
+	for _, c := range n.Children {
+		switch {
+		case c.Symbol == nounPhrase:
+			parts = append(parts, c)
+		case len(c.Children) == 0 && c.POS() == grammar.Conjunction:
+			conjunction = c.Lemma
+		}
+	}
+	if len(parts) > 1 {
+		if conjunction == "or" || conjunction == "nor" {
+			return gen.agr[parts[len(parts)-1]]
+		}
+		return agreement{morph.Third, morph.Plural}
+	}
+
+	agr := thirdSingular
+	for _, c := range n.Children {
+		info := gen.leaves[c]
+		switch {
+		case c.POS() == grammar.Pronoun && len(c.Children) == 0:
+			return agreement{info.person, morph.Number(info.number)}
+		case info.pluralLemma:
+			agr.number = morph.Plural
+		}
+	}
+	for _, c := range n.Children {
+		if c.POS() != grammar.Determiner || agr.number == morph.Plural {
+			continue
+		}
+		switch gen.leaves[c].number {
+		case "plural":
+			agr.number = morph.Plural
+		case "either":
+			if gen.rng.IntN(2) == 1 {
+				agr.number = morph.Plural
+			}
+		}
+	}
+	return agr
+}
+
+// agreeVerbs conjugates verbs for the sentence tense and the agreement of the
+// nearest NP before them among their siblings, or third singular if there is
+// none. A VP passes its subject's agreement down to the verbs inside it.
+func (gen *generator) agreeVerbs(n *grammar.Node, agr agreement) {
 	for _, c := range n.Children {
 		if c.Symbol == nounPhrase {
-			number = gen.number[c]
+			agr = gen.agr[c]
 		}
 		if len(c.Children) == 0 && c.POS() == grammar.Verb {
-			c.Word = gen.verbs.Conjugate(c.Lemma, gen.tense, number)
+			c.Word = gen.verbs.Conjugate(c.Lemma, gen.tense, agr.person, agr.number)
 		}
 		if c.Symbol == verbPhrase {
-			gen.agreeVerbs(c, number)
+			gen.agreeVerbs(c, agr)
 		} else {
-			gen.agreeVerbs(c, morph.Singular)
+			gen.agreeVerbs(c, thirdSingular)
 		}
 	}
 }
@@ -246,9 +318,17 @@ func leafNodes(n *grammar.Node) []*grammar.Node {
 	return leaves
 }
 
-// format joins words into a sentence: first letter capitalized, final period.
+// format joins words into a sentence: commas attached to the word before,
+// first letter capitalized, final period.
 func format(words []string) string {
-	text := strings.Join(words, " ")
+	var b strings.Builder
+	for i, w := range words {
+		if i > 0 && w != "," {
+			b.WriteByte(' ')
+		}
+		b.WriteString(w)
+	}
+	text := b.String()
 	r, size := utf8.DecodeRuneInString(text)
 	return string(unicode.ToUpper(r)) + text[size:] + "."
 }

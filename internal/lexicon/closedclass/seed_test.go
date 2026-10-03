@@ -36,6 +36,7 @@ gender = "fem"
 [[conjunction]]
 lemma = "and"
 type = "coordinating"
+joins_nps = true
 `
 
 const otherFixture = `
@@ -103,7 +104,7 @@ func takeSnapshot(t *testing.T) snapshot {
 		t.Fatalf("ListConjunctions: %v", err)
 	}
 	for _, c := range conjs {
-		s.Conjunctions = append(s.Conjunctions, store.InsertConjunctionParams{Lemma: c.Lemma, Type: c.Type})
+		s.Conjunctions = append(s.Conjunctions, store.InsertConjunctionParams{Lemma: c.Lemma, Type: c.Type, JoinsNps: c.JoinsNps})
 	}
 	return s
 }
@@ -135,7 +136,7 @@ func TestSeedWritesEveryTable(t *testing.T) {
 			{Lemma: "she", Case: "nominative", Person: 3, Number: "singular", Gender: "fem"},
 		},
 		Conjunctions: []store.InsertConjunctionParams{
-			{Lemma: "and", Type: "coordinating"},
+			{Lemma: "and", Type: "coordinating", JoinsNps: true},
 		},
 	}
 	if got := takeSnapshot(t); !reflect.DeepEqual(got, want) {

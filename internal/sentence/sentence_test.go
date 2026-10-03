@@ -32,13 +32,47 @@ type fakeQuerier struct {
 
 	// frame records what GetRandomVerbWithFrame was asked for.
 	frame string
+
+	// pronouns answers GetRandomPronounWithCase by case; cases records the
+	// cases asked for.
+	pronouns map[string]store.Pronoun
+	cases    []string
+
+	// npConj answers GetRandomNPConjunction; conjTypes records the types
+	// GetRandomConjunctionOfType was asked for.
+	npConj    store.Conjunction
+	conjTypes []string
 }
 
 func newFake(dets ...store.Determiner) *fakeQuerier {
 	if len(dets) == 0 {
 		dets = []store.Determiner{{Lemma: "the", Number: "either"}}
 	}
-	return &fakeQuerier{dets: dets}
+	return &fakeQuerier{
+		dets: dets,
+		pronouns: map[string]store.Pronoun{
+			"nominative": {Lemma: "she", Person: 3, Number: "singular"},
+			"accusative": {Lemma: "her", Person: 3, Number: "singular"},
+		},
+		npConj: store.Conjunction{Lemma: "and"},
+	}
+}
+
+func (f *fakeQuerier) GetRandomPronounWithCase(_ context.Context, c string) (store.Pronoun, error) {
+	f.cases = append(f.cases, c)
+	return f.pronouns[c], f.err
+}
+
+func (f *fakeQuerier) GetRandomConjunctionOfType(_ context.Context, t string) (store.Conjunction, error) {
+	f.conjTypes = append(f.conjTypes, t)
+	return map[string]store.Conjunction{
+		"coordinating":  {Lemma: "but"},
+		"subordinating": {Lemma: "because"},
+	}[t], f.err
+}
+
+func (f *fakeQuerier) GetRandomNPConjunction(context.Context) (store.Conjunction, error) {
+	return f.npConj, f.err
 }
 
 func (f *fakeQuerier) GetRandomNoun(context.Context) (store.Noun, error) {
@@ -80,17 +114,18 @@ func (f *fakeQuerier) GetRandomPreposition(context.Context) (store.Preposition, 
 	return store.Preposition{Lemma: "under"}, f.err
 }
 
-func (f *fakeQuerier) GetRandomPronoun(context.Context) (store.Pronoun, error) {
-	return store.Pronoun{Lemma: "she"}, f.err
-}
-
 func (f *fakeQuerier) GetRandomConjunction(context.Context) (store.Conjunction, error) {
 	return store.Conjunction{Lemma: "and"}, f.err
 }
 
 func loadVerbs(t *testing.T) *morph.Verbs {
 	t.Helper()
-	v, err := morph.LoadVerbs(strings.NewReader(""))
+	v, err := morph.LoadVerbs(strings.NewReader(`
+	[[irregular]]
+	base = "give"
+	third = "gives"
+	past = "gave"
+	`))
 	if err != nil {
 		t.Fatalf("LoadVerbs: %v", err)
 	}
@@ -245,8 +280,9 @@ func TestGenerateFillsEveryPOS(t *testing.T) {
 		t.Fatalf("Generate: %v", err)
 	}
 
-	if s.Text != "She loudly devours under the ugly goose and." && s.Text != "She loudly devoured under the ugly goose and." {
-		t.Errorf("expected She loudly devours/devoured under the ugly goose and.; got %q", s.Text)
+	// The pronoun isn't in a subject NP, so it's accusative.
+	if s.Text != "Her loudly devours under the ugly goose and." && s.Text != "Her loudly devoured under the ugly goose and." {
+		t.Errorf("expected Her loudly devours/devoured under the ugly goose and.; got %q", s.Text)
 	}
 }
 
@@ -367,5 +403,174 @@ func TestGeneratePicksVerbWithRequiredFrame(t *testing.T) {
 	}
 	if s.Text != "This goose gives this goose this goose." && s.Text != "This goose gave this goose this goose." {
 		t.Errorf("expected This goose gives/gave this goose this goose.; got %q", s.Text)
+	}
+}
+
+// leaf and node build trees for Realize.
+func leaf(symbol string) *grammar.Node { return &grammar.Node{Symbol: symbol} }
+
+func node(symbol string, children ...*grammar.Node) *grammar.Node {
+	return &grammar.Node{Symbol: symbol, Children: children}
+}
+
+func detNoun() *grammar.Node { return node("NP", leaf("Determiner"), leaf("Noun")) }
+
+// realized realizes a fresh copy of the tree from build over n seeds and
+// returns how often each text came out.
+func realized(t *testing.T, build func() *grammar.Node, newQ func() *fakeQuerier, n int) map[string]int {
+	t.Helper()
+	v := loadVerbs(t)
+	seen := map[string]int{}
+	for i := range n {
+		s, err := sentence.Realize(context.Background(), newQ(), build(), v, rand.New(rand.NewPCG(uint64(i), 0)))
+		if err != nil {
+			t.Fatalf("Realize: %v", err)
+		}
+		seen[s.Text]++
+	}
+	return seen
+}
+
+const pronounGrammar = `
+[[rule]]
+symbol = "S"
+expansion = ["NP", "VP"]
+
+[[rule]]
+symbol = "NP"
+expansion = ["Pronoun"]
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:transitive", "NP"]
+`
+
+func TestGenerateUsesNominativeSubjectAndAccusativeObject(t *testing.T) {
+	var q *fakeQuerier
+	seen := texts(t, pronounGrammar, func() *fakeQuerier { q = newFake(); return q }, 20)
+
+	assertExactly(t, seen, "She gives her.", "She gave her.")
+	if !slices.Equal(q.cases, []string{"nominative", "accusative"}) {
+		t.Errorf("expected cases [nominative accusative]; got %v", q.cases)
+	}
+}
+
+func TestGenerateAgreesWithPronounPerson(t *testing.T) {
+	tests := []struct {
+		pronoun store.Pronoun
+		want    []string
+	}{
+		{store.Pronoun{Lemma: "I", Person: 1, Number: "singular"}, []string{"I give her.", "I gave her."}},
+		{store.Pronoun{Lemma: "you", Person: 2, Number: "singular"}, []string{"You give her.", "You gave her."}},
+		{store.Pronoun{Lemma: "they", Person: 3, Number: "plural"}, []string{"They give her.", "They gave her."}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.pronoun.Lemma, func(t *testing.T) {
+			seen := texts(t, pronounGrammar, func() *fakeQuerier {
+				q := newFake()
+				q.pronouns["nominative"] = tc.pronoun
+				return q
+			}, 20)
+
+			assertExactly(t, seen, tc.want...)
+		})
+	}
+}
+
+func TestRealizeCoordinatedSubjectWithAndIsPlural(t *testing.T) {
+	seen := realized(t, func() *grammar.Node {
+		return node("S", node("NP", detNoun(), leaf("Conjunction:np"), detNoun()), node("VP", leaf("Verb")))
+	}, func() *fakeQuerier {
+		return newFake(store.Determiner{Lemma: "this", Number: "singular"})
+	}, 20)
+
+	assertExactly(t, seen, "This goose and this goose devour.", "This goose and this goose devoured.")
+}
+
+func TestRealizeCoordinatedSubjectWithOrAgreesWithLastPart(t *testing.T) {
+	singular := store.Determiner{Lemma: "this", Number: "singular"}
+	plural := store.Determiner{Lemma: "these", Number: "plural"}
+	build := func() *grammar.Node {
+		return node("S", node("NP", detNoun(), leaf("Conjunction:np"), detNoun()), node("VP", leaf("Verb")))
+	}
+	withOr := func(dets ...store.Determiner) func() *fakeQuerier {
+		return func() *fakeQuerier {
+			q := newFake(dets...)
+			q.npConj = store.Conjunction{Lemma: "or"}
+			return q
+		}
+	}
+
+	assertExactly(t, realized(t, build, withOr(singular, plural), 20),
+		"This goose or these geese devour.", "This goose or these geese devoured.")
+	assertExactly(t, realized(t, build, withOr(plural, singular), 20),
+		"These geese or this goose devours.", "These geese or this goose devoured.")
+}
+
+func TestRealizePronounInCoordinatedSubjectIsNominative(t *testing.T) {
+	seen := realized(t, func() *grammar.Node {
+		return node("S",
+			node("NP", node("NP", leaf("Pronoun")), leaf("Conjunction:np"), detNoun()),
+			node("VP", leaf("Verb:transitive"), node("NP", leaf("Pronoun"))))
+	}, func() *fakeQuerier {
+		return newFake(store.Determiner{Lemma: "this", Number: "singular"})
+	}, 20)
+
+	assertExactly(t, seen, "She and this goose give her.", "She and this goose gave her.")
+}
+
+func TestRealizeVerbInNestedVPAgreesWithSubject(t *testing.T) {
+	seen := realized(t, func() *grammar.Node {
+		return node("S", detNoun(), node("VP", node("VP", leaf("Verb")), leaf("Adverb")))
+	}, func() *fakeQuerier {
+		return newFake(store.Determiner{Lemma: "these", Number: "plural"})
+	}, 20)
+
+	assertExactly(t, seen, "These geese devour loudly.", "These geese devoured loudly.")
+}
+
+func TestGenerateJoinsClausesWithTypedConjunctionsInOneTense(t *testing.T) {
+	clauses := `
+	[[rule]]
+	symbol = "Clause"
+	expansion = ["NP", "VP"]
+
+	[[rule]]
+	symbol = "NP"
+	expansion = ["Determiner", "Noun"]
+
+	[[rule]]
+	symbol = "VP"
+	expansion = ["Verb"]
+	`
+	tests := []struct {
+		name      string
+		expansion string
+		conjType  string
+		want      []string
+	}{
+		{"coordinating, with comma", `["Clause", "Comma", "Conjunction:coordinating", "Clause"]`, "coordinating",
+			[]string{"This goose devours, but this goose devours.", "This goose devoured, but this goose devoured."}},
+		{"subordinating", `["Clause", "Conjunction:subordinating", "Clause"]`, "subordinating",
+			[]string{"This goose devours because this goose devours.", "This goose devoured because this goose devoured."}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var q *fakeQuerier
+			seen := texts(t, `
+			[[rule]]
+			symbol = "S"
+			expansion = `+tc.expansion+clauses, func() *fakeQuerier {
+				q = newFake(store.Determiner{Lemma: "this", Number: "singular"})
+				return q
+			}, 20)
+
+			assertExactly(t, seen, tc.want...)
+			if !slices.Equal(q.conjTypes, []string{tc.conjType}) {
+				t.Errorf("expected conjunction types [%s]; got %v", tc.conjType, q.conjTypes)
+			}
+		})
 	}
 }

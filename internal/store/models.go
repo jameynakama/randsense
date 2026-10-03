@@ -37,10 +37,11 @@ type Adverb struct {
 }
 
 type Conjunction struct {
-	ID     int64  `db:"id" json:"id"`
-	Lemma  string `db:"lemma" json:"lemma"`
-	Type   string `db:"type" json:"type"`
-	Active bool   `db:"active" json:"active"`
+	ID       int64  `db:"id" json:"id"`
+	Lemma    string `db:"lemma" json:"lemma"`
+	Type     string `db:"type" json:"type"`
+	Active   bool   `db:"active" json:"active"`
+	JoinsNps bool   `db:"joins_nps" json:"joins_nps"`
 }
 
 type Determiner struct {

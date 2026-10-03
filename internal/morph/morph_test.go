@@ -62,48 +62,60 @@ func TestConjugate(t *testing.T) {
 	tests := []struct {
 		lemma  string
 		tense  morph.Tense
+		person morph.Person
 		number morph.Number
 		want   string
 	}{
-		{"walk", morph.Present, morph.Singular, "walks"},
-		{"walk", morph.Present, morph.Plural, "walk"},
-		{"walk", morph.Past, morph.Singular, "walked"},
-		{"walk", morph.Past, morph.Plural, "walked"},
-		{"kiss", morph.Present, morph.Singular, "kisses"},
-		{"fix", morph.Present, morph.Singular, "fixes"},
-		{"buzz", morph.Present, morph.Singular, "buzzes"},
-		{"catch", morph.Present, morph.Singular, "catches"},
-		{"wash", morph.Present, morph.Singular, "washes"},
-		{"go", morph.Present, morph.Singular, "goes"},
-		{"carry", morph.Present, morph.Singular, "carries"},
-		{"carry", morph.Past, morph.Singular, "carried"},
-		{"play", morph.Present, morph.Singular, "plays"},
-		{"play", morph.Past, morph.Singular, "played"},
-		{"bake", morph.Past, morph.Singular, "baked"},
-		{"stop", morph.Past, morph.Singular, "stopped"},
-		{"refer", morph.Past, morph.Plural, "referred"},
-		{"visit", morph.Past, morph.Singular, "visited"},
-		{"eat", morph.Past, morph.Singular, "ate"},
-		{"have", morph.Present, morph.Singular, "has"},
-		{"have", morph.Present, morph.Plural, "have"},
-		{"be", morph.Present, morph.Singular, "is"},
-		{"be", morph.Present, morph.Plural, "are"},
-		{"be", morph.Past, morph.Singular, "was"},
-		{"be", morph.Past, morph.Plural, "were"},
-		{"cull out", morph.Present, morph.Singular, "culls out"},
-		{"give up", morph.Past, morph.Singular, "gave up"},
-		{"take care of", morph.Present, morph.Singular, "takes care of"},
-		{"test drive", morph.Present, morph.Singular, "test drives"},
-		{"go ballistic", morph.Past, morph.Singular, "went ballistic"},
-		{"go ballistic", morph.Present, morph.Singular, "goes ballistic"},
-		{"stop dead", morph.Present, morph.Singular, "stops dead"},
-		{"spoon-feed", morph.Past, morph.Singular, "spoon-fed"},
-		{"double-check", morph.Present, morph.Singular, "double-checks"},
+		{"walk", morph.Present, morph.Third, morph.Singular, "walks"},
+		{"walk", morph.Present, morph.Third, morph.Plural, "walk"},
+		{"walk", morph.Past, morph.Third, morph.Singular, "walked"},
+		{"walk", morph.Past, morph.Third, morph.Plural, "walked"},
+		{"kiss", morph.Present, morph.Third, morph.Singular, "kisses"},
+		{"fix", morph.Present, morph.Third, morph.Singular, "fixes"},
+		{"buzz", morph.Present, morph.Third, morph.Singular, "buzzes"},
+		{"catch", morph.Present, morph.Third, morph.Singular, "catches"},
+		{"wash", morph.Present, morph.Third, morph.Singular, "washes"},
+		{"go", morph.Present, morph.Third, morph.Singular, "goes"},
+		{"veto", morph.Present, morph.Third, morph.Singular, "vetoes"},
+		{"radio", morph.Present, morph.Third, morph.Singular, "radios"},
+		{"carry", morph.Present, morph.Third, morph.Singular, "carries"},
+		{"carry", morph.Past, morph.Third, morph.Singular, "carried"},
+		{"play", morph.Present, morph.Third, morph.Singular, "plays"},
+		{"play", morph.Past, morph.Third, morph.Singular, "played"},
+		{"bake", morph.Past, morph.Third, morph.Singular, "baked"},
+		{"stop", morph.Past, morph.Third, morph.Singular, "stopped"},
+		{"refer", morph.Past, morph.Third, morph.Plural, "referred"},
+		{"visit", morph.Past, morph.Third, morph.Singular, "visited"},
+		{"eat", morph.Past, morph.Third, morph.Singular, "ate"},
+		{"have", morph.Present, morph.Third, morph.Singular, "has"},
+		{"have", morph.Present, morph.Third, morph.Plural, "have"},
+		{"be", morph.Present, morph.Third, morph.Singular, "is"},
+		{"be", morph.Present, morph.Third, morph.Plural, "are"},
+		{"be", morph.Past, morph.Third, morph.Singular, "was"},
+		{"be", morph.Past, morph.Third, morph.Plural, "were"},
+		{"be", morph.Present, morph.First, morph.Singular, "am"},
+		{"be", morph.Present, morph.Second, morph.Singular, "are"},
+		{"be", morph.Present, morph.First, morph.Plural, "are"},
+		{"be", morph.Past, morph.First, morph.Singular, "was"},
+		{"be", morph.Past, morph.Second, morph.Singular, "were"},
+		{"walk", morph.Present, morph.First, morph.Singular, "walk"},
+		{"walk", morph.Present, morph.Second, morph.Singular, "walk"},
+		{"have", morph.Present, morph.First, morph.Singular, "have"},
+		{"eat", morph.Past, morph.First, morph.Singular, "ate"},
+		{"cull out", morph.Present, morph.Third, morph.Singular, "culls out"},
+		{"give up", morph.Past, morph.Third, morph.Singular, "gave up"},
+		{"take care of", morph.Present, morph.Third, morph.Singular, "takes care of"},
+		{"test drive", morph.Present, morph.Third, morph.Singular, "test drives"},
+		{"go ballistic", morph.Past, morph.Third, morph.Singular, "went ballistic"},
+		{"go ballistic", morph.Present, morph.Third, morph.Singular, "goes ballistic"},
+		{"stop dead", morph.Present, morph.Third, morph.Singular, "stops dead"},
+		{"spoon-feed", morph.Past, morph.Third, morph.Singular, "spoon-fed"},
+		{"double-check", morph.Present, morph.Third, morph.Singular, "double-checks"},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.lemma+"/"+tc.want, func(t *testing.T) {
-			if got := v.Conjugate(tc.lemma, tc.tense, tc.number); got != tc.want {
+			if got := v.Conjugate(tc.lemma, tc.tense, tc.person, tc.number); got != tc.want {
 				t.Errorf("expected %q; got %q", tc.want, got)
 			}
 		})
@@ -177,10 +189,10 @@ func TestProjectVerbMorphologyLoads(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadVerbs: %v", err)
 	}
-	if got := v.Conjugate("swim", morph.Past, morph.Singular); got != "swam" {
+	if got := v.Conjugate("swim", morph.Past, morph.Third, morph.Singular); got != "swam" {
 		t.Errorf("expected swam; got %q", got)
 	}
-	if got := v.Conjugate("prefer", morph.Past, morph.Singular); got != "preferred" {
+	if got := v.Conjugate("prefer", morph.Past, morph.Third, morph.Singular); got != "preferred" {
 		t.Errorf("expected preferred; got %q", got)
 	}
 }

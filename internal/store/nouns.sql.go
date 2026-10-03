@@ -94,12 +94,16 @@ UPDATE nouns p SET plural = TRUE
 WHERE p.lemma ~ 's$'
   AND length(p.lemma) > 3
   AND p.lemma !~ '(ss|us|is)$'
-  AND EXISTS (SELECT 1 FROM nouns n WHERE n.lemma = left(p.lemma, -1))
+  AND EXISTS (
+    SELECT 1 FROM nouns n
+    WHERE n.lemma = left(p.lemma, -1)
+       OR (p.lemma ~ 'es$' AND n.lemma = left(p.lemma, -2))
+  )
 `
 
-// A lemma is plural if it ends in -s and its singular is also a lemma
-// ("Rastas"/"Rasta"). Short words and -ss/-us/-is endings ("Ms", "Mass",
-// "Pus") are left singular.
+// A lemma is plural if it ends in -s and its singular (minus -s, or minus
+// -es) is also a lemma ("Rastas"/"Rasta", "eyeglasses"/"eyeglass"). Short
+// words and -ss/-us/-is endings ("Ms", "Mass", "Pus") are left singular.
 func (q *Queries) MarkPluralNouns(ctx context.Context) (int64, error) {
 	result, err := q.db.Exec(ctx, markPluralNouns)
 	if err != nil {

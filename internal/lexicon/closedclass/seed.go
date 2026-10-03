@@ -42,8 +42,9 @@ type pronoun struct {
 }
 
 type conjunction struct {
-	Lemma string `toml:"lemma"`
-	Type  string `toml:"type"`
+	Lemma    string `toml:"lemma"`
+	Type     string `toml:"type"`
+	JoinsNPs bool   `toml:"joins_nps"`
 }
 
 type file struct {
@@ -116,7 +117,7 @@ func Seed(ctx context.Context, pool *pgxpool.Pool, r io.Reader) (Stats, error) {
 		}
 	}
 	for _, c := range f.Conjunctions {
-		err := q.InsertConjunction(ctx, store.InsertConjunctionParams{Lemma: c.Lemma, Type: c.Type})
+		err := q.InsertConjunction(ctx, store.InsertConjunctionParams{Lemma: c.Lemma, Type: c.Type, JoinsNps: c.JoinsNPs})
 		if err != nil {
 			return Stats{}, fmt.Errorf("Seed, conjunction %q: %w", c.Lemma, err)
 		}

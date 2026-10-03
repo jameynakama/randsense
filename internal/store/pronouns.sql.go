@@ -9,15 +9,15 @@ import (
 	"context"
 )
 
-const getRandomPronoun = `-- name: GetRandomPronoun :one
+const getRandomPronounWithCase = `-- name: GetRandomPronounWithCase :one
 SELECT id, lemma, case_, person, number, gender, active FROM pronouns
-WHERE active
+WHERE active AND case_ = $1
 ORDER BY random()
 LIMIT 1
 `
 
-func (q *Queries) GetRandomPronoun(ctx context.Context) (Pronoun, error) {
-	row := q.db.QueryRow(ctx, getRandomPronoun)
+func (q *Queries) GetRandomPronounWithCase(ctx context.Context, case_ string) (Pronoun, error) {
+	row := q.db.QueryRow(ctx, getRandomPronounWithCase, case_)
 	var i Pronoun
 	err := row.Scan(
 		&i.ID,

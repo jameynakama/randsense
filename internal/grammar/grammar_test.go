@@ -103,6 +103,24 @@ func TestLoadRejectsInvalidGrammar(t *testing.T) {
 			`"Verb:sideways"`,
 		},
 		{
+			"verb frame on a conjunction",
+			`
+			[[rule]]
+			symbol = "S"
+			expansion = ["Noun", "Conjunction:transitive", "Noun"]
+			`,
+			`"Conjunction:transitive"`,
+		},
+		{
+			"conjunction type on a verb",
+			`
+			[[rule]]
+			symbol = "S"
+			expansion = ["Verb:np"]
+			`,
+			`"Verb:np"`,
+		},
+		{
 			"symbol that can never reach terminals",
 			`
 			[[rule]]
@@ -268,14 +286,26 @@ func TestLeafWithFrame(t *testing.T) {
 	}
 
 	verb := tree.Children[1]
-	if verb.Symbol != "Verb:transitive" || verb.POS() != grammar.Verb || verb.Frame() != grammar.Transitive {
-		t.Errorf("expected Verb:transitive leaf; got symbol %q, POS %q, frame %q", verb.Symbol, verb.POS(), verb.Frame())
+	if verb.Symbol != "Verb:transitive" || verb.POS() != grammar.Verb || verb.Qualifier() != string(grammar.Transitive) {
+		t.Errorf("expected Verb:transitive leaf; got symbol %q, POS %q, qualifier %q", verb.Symbol, verb.POS(), verb.Qualifier())
 	}
-	if noun := tree.Children[0]; noun.POS() != grammar.Noun || noun.Frame() != "" {
-		t.Errorf("expected plain Noun leaf; got POS %q, frame %q", noun.POS(), noun.Frame())
+	if noun := tree.Children[0]; noun.POS() != grammar.Noun || noun.Qualifier() != "" {
+		t.Errorf("expected plain Noun leaf; got POS %q, qualifier %q", noun.POS(), noun.Qualifier())
 	}
 	want := []grammar.POS{grammar.Noun, grammar.Verb, grammar.Noun}
 	if got := tree.Leaves(); !slices.Equal(got, want) {
 		t.Errorf("expected leaves %v; got %v", want, got)
+	}
+}
+
+func TestLoadAcceptsConjunctionTypesAndComma(t *testing.T) {
+	for _, q := range []string{"coordinating", "subordinating", "np"} {
+		t.Run(q, func(t *testing.T) {
+			mustLoad(t, `
+			[[rule]]
+			symbol = "S"
+			expansion = ["Noun", "Comma", "Conjunction:`+q+`", "Noun"]
+			`)
+		})
 	}
 }
