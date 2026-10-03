@@ -18,8 +18,8 @@ Don't reopen these without new evidence.
 - **Morphology source.** The NLM SPECIALIST lexicon from the previous Django app has a structural
   medical bias that filtering can't remove, so it supplies only morphology:
   `data/lexicon/verb_morphology.toml` comes from its `<variants>` lines (irreg, regd).
-- **Re-extraction.** If participles or more morphology are needed, re-extract from SPECIALIST; the
-  extraction script was throwaway.
+- **Re-extraction.** If more morphology is needed, re-extract from SPECIALIST; the extraction
+  script was throwaway.
 - **No ProperNoun slot.** OEWN has dropped nearly all named entities, so capitalized nouns are
   mostly common nouns (Hopi, Amati, Rastas) and take determiners.
 - **Grammar-first verb frames.** The grammar picks `Verb:<frame>` and a verb with that frame is
@@ -31,10 +31,14 @@ Don't reopen these without new evidence.
 - **Coordination agreement.** "or" and "nor" agree with their last part; "and" is always plural.
 - **Rare words are a feature.** `commonness` is a per-request floor, never an ingest filter.
   Frequency comes from SUBTLEX-US counts per part of speech; plain word-form counts let common
-  spellings pass in rare roles (verb "baby", noun "meet").
-- **No bare infinitives.** OEWN's bare-infinitive codes (`via-inf`, `vtaa-inf`, `vii-inf`) are
-  mislabeled: alongside let, make and have they list allow, permit and induce ("allowed him
-  go"). Only the to-infinitive codes are used.
+  spellings pass in rare roles (verb "baby", noun "meet"). When a frame has no verbs at the floor,
+  `Generate` expands a fresh tree. Capping the floor per frame was rejected because it would
+  quietly break the floor's guarantee.
+- **Mislabeled OEWN frames.** OEWN gives many lemmas frames they can't take ("hoped singing",
+  "broke even ugly"). Exclude those lemma-frame pairs using `mislabeled` in `oewn/frames.go`; each
+  lemma keeps its other frames. A frame code with too many mislabeled lemmas stays unmapped: the
+  bare-infinitive codes (`via-inf`, `vtaa-inf`, `vii-inf`) list allow, permit and induce alongside
+  let, make and have ("allowed him go"), so only the to-infinitive codes are used.
 - **Shared test database.** `internal/api` and `internal/lexicon/oewn` drop and recreate the same
   `TEST_DATABASE_URL` database. Leave it until it causes failures. If parallel `go test ./...`
   flakes with drop/create errors, give each package its own database, as `closedclass` and
@@ -69,7 +73,8 @@ These are deliberately left alone.
   another part of speech (SUBTLEX's dominant-POS data), or keep closed-class spellings out of
   open-class tables.
 - **High floors (5+):** verbs spelled like modals ("wills") and first names (Al, Jack) still get
-  through.
+  through. Small frames (weather, dummy that-clause, transitive-into-gerund) run out of verbs, so
+  those sentence shapes stop appearing.
 - **Unmatched words count as 0:** single-word genus names and drug brands (Cryptoprocta,
   Mevacor) stay in the noun table, but any floor drops them because SUBTLEX-US lacks them.
 - **a/an misses:** abbreviations (mph, nth) and a few other words (Oneida, yttrium).

@@ -57,7 +57,7 @@ type Verbs struct {
 }
 
 // LoadVerbs parses verb morphology TOML: a `doubled` list of bases whose final
-// consonant doubles before -ed, and `[[irregular]]` paradigms.
+// consonant doubles before -ed and -ing, and `[[irregular]]` paradigms.
 func LoadVerbs(r io.Reader) (*Verbs, error) {
 	var f struct {
 		Doubled   []string    `toml:"doubled"`
