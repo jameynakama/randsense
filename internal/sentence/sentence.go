@@ -56,7 +56,7 @@ type leafInfo struct {
 	gender      string       // pronouns
 	plural      string       // nouns: irregular plural, if any
 	pluralLemma bool         // nouns: the lemma is already plural ("Rastas")
-	separable   bool         // verbs: a pronoun object goes before the particle ("look it up")
+	separable   bool         // verbs: the object can go after the first word ("look it up")
 }
 
 // agreement is the person and number a verb agrees with, and the gender a

@@ -39,7 +39,9 @@ Don't reopen these without new evidence.
   "broke even ugly"). Exclude those lemma-frame pairs using `mislabeled` in `oewn/frames.go`; each
   lemma keeps its other frames. A frame code with too many mislabeled lemmas stays unmapped: the
   bare-infinitive codes (`via-inf`, `vtaa-inf`, `vii-inf`) list allow, permit and induce alongside
-  let, make and have ("allowed him go"), so only the to-infinitive codes are used.
+  let, make and have ("allowed him go"), so only the to-infinitive codes are used. The bar for
+  `mislabeled` is no grammatical reading at all, counting "in order to" readings and archaic or
+  dialect uses: "found her to devour", "learned us to", "pray me to" and "tipped her to" stay.
 - **Separable verbs are syntax only.** `data/lexicon/separable_verbs.toml` lists multiword
   verbs whose object goes after the head verb ("look it up", "set the goose on fire"). An idiom
   is listed only when the other order breaks the syntax, never to keep its meaning.
