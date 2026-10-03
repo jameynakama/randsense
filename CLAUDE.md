@@ -46,20 +46,19 @@ Don't reopen these without new evidence.
 
 ## Roadmap
 
-1. **Reflexives after prepositions** ("talked to himself"), once reflexive objects read well.
-2. **Pronoun objects of separable phrasal verbs** go after the particle ("fought off itself",
+1. **Pronoun objects of separable phrasal verbs** go after the particle ("fought off itself",
    "tip off us") when they must go before it. The fix needs to know which multiword verbs are
    separable.
-3. **Roman-numeral adjectives** (lxxxi, ixl). A naive regex would also hit "mix".
-4. **Curation loop, after a frontend exists.**
+2. **Roman-numeral adjectives** (lxxxi, ixl). A naive regex would also hit "mix".
+3. **Curation loop, after a frontend exists.**
    - **Voting:** an anonymous endpoint; anyone can vote, and votes only flag words for review.
    - **Admin:** a rudimentary UI for one admin to sort by votes and disable or remove entries.
      No user accounts. psql on the server was rejected as the admin UX.
    - **Prerequisite:** ingest currently truncates and reloads, which would wipe `active`,
      `vote_count` and corrections to the heuristic `nouns.plural` flag. That flag misfires on
      Taos, Sauternes and tabes.
-5. **LLM batch labeling** for curation.
-6. **More sentence types:**
+4. **LLM batch labeling** for curation.
+5. **More sentence types:**
    - passive voice, from transitive frames only; `verb_morphology.toml` already has past
      participles
    - questions

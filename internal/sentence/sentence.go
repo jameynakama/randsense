@@ -22,13 +22,14 @@ import (
 
 // Agreement relies on these grammar symbols. An NP followed by a VP among its
 // siblings is that VP's subject: its pronouns are nominative and the VP's
-// verbs and reflexives agree with it. An NP's person and number come from its
-// pronoun, its determiner, or, for "NP Conjunction NP", the coordination.
-// Verbs under an InfVP stay in their base form and verbs under a GerVP take
-// -ing, up to any clause nested inside them.
+// verbs and reflexives agree with it, including reflexives in a PP. An NP's
+// person and number come from its pronoun, its determiner, or, for "NP
+// Conjunction NP", the coordination. Verbs under an InfVP stay in their base
+// form and verbs under a GerVP take -ing, up to any clause nested inside them.
 const (
 	nounPhrase       = "NP"
 	verbPhrase       = "VP"
+	prepPhrase       = "PP"
 	infinitivePhrase = "InfVP"
 	gerundPhrase     = "GerVP"
 )
@@ -371,9 +372,10 @@ func (gen *generator) npAgreement(n *grammar.Node) agreement {
 // agreeWithSubjects conjugates verbs for the sentence tense and fills
 // reflexives, both agreeing with the nearest NP before them among their
 // siblings, or third singular if there is none. A VP passes its subject's
-// agreement down to the words inside it, so a reflexive in an infinitive
-// agrees with the object before it ("urge her to devour herself"). Verbs in
-// an infinitive keep their base form; verbs in a gerund take -ing.
+// agreement down to the words inside it, and so does a PP, so a reflexive in
+// an infinitive or a PP agrees with the object before it ("urge her to devour
+// herself", "send the goose to itself"). Verbs in an infinitive keep their
+// base form; verbs in a gerund take -ing.
 func (gen *generator) agreeWithSubjects(n *grammar.Node, agr agreement, form verbForm) error {
 	for _, c := range n.Children {
 		if c.Symbol == nounPhrase {
@@ -401,7 +403,7 @@ func (gen *generator) agreeWithSubjects(n *grammar.Node, agr agreement, form ver
 		}
 		var err error
 		switch c.Symbol {
-		case verbPhrase:
+		case verbPhrase, prepPhrase:
 			err = gen.agreeWithSubjects(c, agr, form)
 		case infinitivePhrase:
 			err = gen.agreeWithSubjects(c, agr, base)

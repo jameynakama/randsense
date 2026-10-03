@@ -59,8 +59,8 @@ POST /api/v1/sentences/realize[?commonness=N] -> {text, tree}
 
 `realize` takes a tree in the shape `random` returns and fills it with fresh words, so a specific
 construction can be checked without fishing for it. Leaves must be parts of speech, optionally
-qualified as in `grammar.toml`. Agreement depends on the `NP`, `VP`, `InfVP` and `GerVP` symbols,
-as it does there. Bodies are capped at 64 KiB. A slot no word fits, such as a frame with no verbs
+qualified as in `grammar.toml`. Agreement depends on the symbol names its header lists, as it does
+there. Bodies are capped at 64 KiB. A slot no word fits, such as a frame with no verbs
 above the floor, returns 422.
 
 ```bash

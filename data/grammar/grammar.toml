@@ -11,12 +11,12 @@
 # "Preposition:with" is always "with", as "Complementizer:whether" is
 # "whether" and "Pronoun:it" is "it". "Pronoun:genitive" takes a genitive
 # pronoun ("mine") and "Pronoun:reflexive" a reflexive ("herself"), which
-# agrees like a verb, so it belongs in a VP and never in an NP. Unqualified
-# slots take any word.
+# agrees like a verb, so it belongs in a VP or PP and never in an NP.
+# Unqualified slots take any word.
 #
-# Agreement depends on four symbol names, NP, VP, InfVP and GerVP: an NP
+# Agreement depends on five symbol names, NP, VP, PP, InfVP and GerVP: an NP
 # followed by a VP among its siblings is the subject (nominative pronouns, and
-# the VP's verbs and reflexives agree with it). An NP's person and number come from its
+# the VP's verbs and reflexives, including those in a PP, agree with it). An NP's person and number come from its
 # Pronoun, its Determiner, or "NP Conjunction NP" coordination. Verbs under an
 # InfVP keep their base form and verbs under a GerVP take -ing, up to any
 # clause nested inside them.
@@ -113,8 +113,18 @@ weight = 0.25
 
 [[rule]]
 symbol = "VP"
+expansion = ["Verb:intransitive-on", "Preposition:on", "Pronoun:reflexive"]
+weight = 0.05
+
+[[rule]]
+symbol = "VP"
 expansion = ["Verb:intransitive-to", "Preposition:to", "NP"]
 weight = 0.25
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:intransitive-to", "Preposition:to", "Pronoun:reflexive"]
+weight = 0.05
 
 [[rule]]
 symbol = "VP"
@@ -123,8 +133,18 @@ weight = 0.25
 
 [[rule]]
 symbol = "VP"
+expansion = ["Verb:transitive-from", "NP", "Preposition:from", "Pronoun:reflexive"]
+weight = 0.05
+
+[[rule]]
+symbol = "VP"
 expansion = ["Verb:transitive-of", "NP", "Preposition:of", "NP"]
 weight = 0.25
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:transitive-of", "NP", "Preposition:of", "Pronoun:reflexive"]
+weight = 0.05
 
 [[rule]]
 symbol = "VP"
@@ -133,13 +153,28 @@ weight = 0.25
 
 [[rule]]
 symbol = "VP"
+expansion = ["Verb:transitive-on", "NP", "Preposition:on", "Pronoun:reflexive"]
+weight = 0.05
+
+[[rule]]
+symbol = "VP"
 expansion = ["Verb:transitive-to", "NP", "Preposition:to", "NP"]
 weight = 0.25
 
 [[rule]]
 symbol = "VP"
+expansion = ["Verb:transitive-to", "NP", "Preposition:to", "Pronoun:reflexive"]
+weight = 0.05
+
+[[rule]]
+symbol = "VP"
 expansion = ["Verb:transitive-with", "NP", "Preposition:with", "NP"]
 weight = 0.25
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:transitive-with", "NP", "Preposition:with", "Pronoun:reflexive"]
+weight = 0.05
 
 [[rule]]
 symbol = "VP"
@@ -206,6 +241,11 @@ expansion = ["VP"]
 [[rule]]
 symbol = "PP"
 expansion = ["Preposition", "NP"]
+
+[[rule]]
+symbol = "PP"
+expansion = ["Preposition", "Pronoun:reflexive"]
+weight = 0.1
 
 [[rule]]
 symbol = "ADJ"

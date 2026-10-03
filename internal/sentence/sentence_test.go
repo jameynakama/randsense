@@ -736,6 +736,34 @@ func TestRealizeReflexiveInInfinitiveAgreesWithObject(t *testing.T) {
 	assertExactly(t, seen, "These geese give her to give herself.", "These geese gave her to give herself.")
 }
 
+func TestRealizeReflexiveInPrepositionalPhrase(t *testing.T) {
+	reflexivePP := func() *grammar.Node { return node("PP", leaf("Preposition"), leaf("Pronoun:reflexive")) }
+	tests := []struct {
+		name  string
+		build func() *grammar.Node
+		want  []string
+	}{
+		{"agrees with the subject", func() *grammar.Node {
+			return node("S", node("NP", leaf("Pronoun")), node("VP", leaf("Verb:intransitive-pp"), reflexivePP()))
+		}, []string{"She gives under herself.", "She gave under herself."}},
+		{"agrees with an object before it", func() *grammar.Node {
+			return node("S", node("NP", leaf("Pronoun")), node("VP", leaf("Verb:transitive-pp"), detNoun(), reflexivePP()))
+		}, []string{"She gives these geese under themselves.", "She gave these geese under themselves."}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			seen := realized(t, tc.build, func() *fakeQuerier {
+				q := newFake(store.Determiner{Lemma: "these", Number: "plural"})
+				q.pronouns["nominative"] = store.Pronoun{Lemma: "she", Person: 3, Number: "singular", Gender: "fem"}
+				return q
+			}, 20)
+
+			assertExactly(t, seen, tc.want...)
+		})
+	}
+}
+
 func TestRealizeReflexiveAfterCoordinatedSubjectTakesLowestPerson(t *testing.T) {
 	you := store.Pronoun{Lemma: "you", Person: 2, Number: "singular", Gender: "epicene"}
 	she := store.Pronoun{Lemma: "she", Person: 3, Number: "singular", Gender: "fem"}
