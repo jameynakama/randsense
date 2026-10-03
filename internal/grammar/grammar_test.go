@@ -2,6 +2,7 @@ package grammar_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
@@ -110,6 +111,15 @@ func TestLoadRejectsInvalidGrammar(t *testing.T) {
 			expansion = ["Noun", "Conjunction:transitive", "Noun"]
 			`,
 			`"Conjunction:transitive"`,
+		},
+		{
+			"preposition that no frame fixes",
+			`
+			[[rule]]
+			symbol = "S"
+			expansion = ["Noun", "Verb", "Preposition:under", "Noun"]
+			`,
+			`"Preposition:under"`,
 		},
 		{
 			"conjunction type on a verb",
@@ -270,6 +280,18 @@ func TestProjectGrammarLoadsAndExpands(t *testing.T) {
 		if _, err := g.Expand(rng); err != nil {
 			t.Fatalf("Expand: %v", err)
 		}
+	}
+}
+
+func TestLoadAcceptsEveryFixedPrepositionFrame(t *testing.T) {
+	for frame, prep := range grammar.FixedPrepositions {
+		t.Run(string(frame), func(t *testing.T) {
+			mustLoad(t, fmt.Sprintf(`
+			[[rule]]
+			symbol = "S"
+			expansion = ["Noun", "Verb:%s", "Noun", "Preposition:%s", "Noun"]
+			`, frame, prep))
+		})
 	}
 }
 

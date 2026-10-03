@@ -198,6 +198,9 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 		w, err := q.GetRandomDeterminer(ctx)
 		return w.Lemma, leafInfo{number: w.Number}, err
 	case grammar.Preposition:
+		if prep := n.Qualifier(); prep != "" {
+			return prep, leafInfo{}, nil
+		}
 		w, err := q.GetRandomPreposition(ctx)
 		return w.Lemma, leafInfo{}, err
 	case grammar.Pronoun:

@@ -35,7 +35,8 @@ const (
 var allPOS = []POS{Noun, Verb, Adjective, Adverb, Determiner, Preposition, Pronoun, Conjunction, Comma}
 
 // Frame is a verb's complement structure. A grammar can require one on a
-// verb slot: "Verb:transitive".
+// verb slot: "Verb:transitive". A fixed-preposition frame ("transitive-with")
+// needs its preposition spelled out in the grammar: "Preposition:with".
 type Frame string
 
 const (
@@ -44,7 +45,25 @@ const (
 	Ditransitive   Frame = "ditransitive"
 	IntransitivePP Frame = "intransitive-pp"
 	TransitivePP   Frame = "transitive-pp"
+	IntransitiveOn Frame = "intransitive-on"
+	IntransitiveTo Frame = "intransitive-to"
+	TransitiveFrom Frame = "transitive-from"
+	TransitiveOf   Frame = "transitive-of"
+	TransitiveOn   Frame = "transitive-on"
+	TransitiveTo   Frame = "transitive-to"
+	TransitiveWith Frame = "transitive-with"
 )
+
+// FixedPrepositions maps each fixed-preposition frame to its preposition.
+var FixedPrepositions = map[Frame]string{
+	IntransitiveOn: "on",
+	IntransitiveTo: "to",
+	TransitiveFrom: "from",
+	TransitiveOf:   "of",
+	TransitiveOn:   "on",
+	TransitiveTo:   "to",
+	TransitiveWith: "with",
+}
 
 // Conjunction qualifiers: what a conjunction slot joins. "np" conjunctions
 // (and, or) can join noun phrases.
@@ -55,8 +74,14 @@ const (
 )
 
 // qualifiers lists what each POS can be qualified with ("Verb:transitive").
+// A qualified preposition is that word: "Preposition:with" is always "with".
 var qualifiers = map[POS][]string{
-	Verb:        {string(Intransitive), string(Transitive), string(Ditransitive), string(IntransitivePP), string(TransitivePP)},
+	Verb: {
+		string(Intransitive), string(Transitive), string(Ditransitive), string(IntransitivePP), string(TransitivePP),
+		string(IntransitiveOn), string(IntransitiveTo), string(TransitiveFrom), string(TransitiveOf),
+		string(TransitiveOn), string(TransitiveTo), string(TransitiveWith),
+	},
+	Preposition: {"from", "of", "on", "to", "with"},
 	Conjunction: {Coordinating, Subordinating, JoinsNPs},
 }
 

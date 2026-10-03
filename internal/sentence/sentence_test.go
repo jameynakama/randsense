@@ -431,6 +431,35 @@ func TestGeneratePicksVerbWithRequiredFrame(t *testing.T) {
 	}
 }
 
+func TestGenerateFillsFixedPrepositionFromItsQualifier(t *testing.T) {
+	g := mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["NP", "VP"]
+
+	[[rule]]
+	symbol = "NP"
+	expansion = ["Determiner", "Noun"]
+
+	[[rule]]
+	symbol = "VP"
+	expansion = ["Verb:transitive-with", "NP", "Preposition:with", "NP"]
+	`)
+	q := newFake(store.Determiner{Lemma: "this", Number: "singular"})
+
+	s, err := sentence.Generate(context.Background(), q, g, loadVerbs(t), newRNG(), 0)
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+
+	if q.frame != "transitive-with" {
+		t.Errorf("expected a verb lookup for frame transitive-with; got %q", q.frame)
+	}
+	if s.Text != "This goose gives this goose with this goose." && s.Text != "This goose gave this goose with this goose." {
+		t.Errorf("expected This goose gives/gave this goose with this goose.; got %q", s.Text)
+	}
+}
+
 // leaf and node build trees for Realize.
 func leaf(symbol string) *grammar.Node { return &grammar.Node{Symbol: symbol} }
 

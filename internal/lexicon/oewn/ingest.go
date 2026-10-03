@@ -105,7 +105,7 @@ func ingestEntry(ctx context.Context, q *store.Queries, e Entry, stats *Stats) e
 		}
 		stats.Nouns++
 	case "v":
-		frames, err := verbFramesJSON(e.Frames)
+		frames, err := verbFramesJSON(e.Lemma, e.Frames)
 		if err != nil {
 			return err
 		}
@@ -159,6 +159,6 @@ func nounInflectionsJSON(forms []string) ([]byte, error) {
 	return json.Marshal(map[string]string{"plural": forms[0]})
 }
 
-func verbFramesJSON(codes []string) ([]byte, error) {
-	return json.Marshal(MapFrames(codes))
+func verbFramesJSON(lemma string, codes []string) ([]byte, error) {
+	return json.Marshal(MapFrames(lemma, codes))
 }

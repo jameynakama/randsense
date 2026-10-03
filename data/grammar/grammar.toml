@@ -3,8 +3,9 @@
 # grammar.POS (Noun, Verb, Determiner, ..., and Comma for punctuation); any
 # other symbol needs rules. Verb and Conjunction slots can be qualified (see
 # grammar.qualifiers): "Verb:transitive" requires that frame, and
-# "Conjunction:np" an and/or that can join noun phrases. Unqualified slots
-# take any word.
+# "Conjunction:np" an and/or that can join noun phrases. A fixed-preposition
+# frame ("Verb:transitive-with") needs its preposition spelled out, and
+# "Preposition:with" is always "with". Unqualified slots take any word.
 #
 # Agreement depends on two symbol names, NP and VP: an NP followed by a VP
 # among its siblings is the subject (nominative pronouns, and the VP's verbs
@@ -70,6 +71,41 @@ expansion = ["Verb:transitive-pp", "NP", "PP"]
 symbol = "VP"
 expansion = ["Verb:ditransitive", "NP", "NP"]
 weight = 0.5
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:intransitive-on", "Preposition:on", "NP"]
+weight = 0.25
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:intransitive-to", "Preposition:to", "NP"]
+weight = 0.25
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:transitive-from", "NP", "Preposition:from", "NP"]
+weight = 0.25
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:transitive-of", "NP", "Preposition:of", "NP"]
+weight = 0.25
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:transitive-on", "NP", "Preposition:on", "NP"]
+weight = 0.25
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:transitive-to", "NP", "Preposition:to", "NP"]
+weight = 0.25
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:transitive-with", "NP", "Preposition:with", "NP"]
+weight = 0.25
 
 [[rule]]
 symbol = "VP"
