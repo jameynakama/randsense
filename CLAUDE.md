@@ -56,6 +56,11 @@ Don't reopen these without new evidence.
      `vote_count` and corrections to the heuristic `nouns.plural` flag. That flag misfires on
      Taos, Sauternes and tabes.
 5. **LLM batch labeling** for curation.
+6. **More sentence types:**
+   - passive voice, from transitive frames only; `verb_morphology.toml` already has past
+     participles
+   - questions
+   - conditionals
 
 ## Known quirks
 
