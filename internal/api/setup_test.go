@@ -39,6 +39,9 @@ func getDBConn(ctx context.Context, dbURL string) *pgxpool.Pool {
 
 func TestMain(m *testing.M) {
 	testDBURL := getRequiredEnvVar("TEST_DATABASE_URL")
+	// Own database so this package can't drop one another package is using
+	// when `go test ./...` runs packages in parallel.
+	testDBURL = swapDBName(testDBURL, getDBName(testDBURL)+"_api")
 	testDBName := getDBName(testDBURL)
 
 	ctx := context.Background()

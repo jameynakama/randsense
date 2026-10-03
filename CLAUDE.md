@@ -39,10 +39,9 @@ Don't reopen these without new evidence.
   lemma keeps its other frames. A frame code with too many mislabeled lemmas stays unmapped: the
   bare-infinitive codes (`via-inf`, `vtaa-inf`, `vii-inf`) list allow, permit and induce alongside
   let, make and have ("allowed him go"), so only the to-infinitive codes are used.
-- **Shared test database.** `internal/api` and `internal/lexicon/oewn` drop and recreate the same
-  `TEST_DATABASE_URL` database. Leave it until it causes failures. If parallel `go test ./...`
-  flakes with drop/create errors, give each package its own database, as `closedclass` and
-  `subtlex` do.
+- **One test database per package.** `go test ./...` runs packages in parallel, and each
+  database-backed package drops and recreates its database. Each derives its own name from
+  `TEST_DATABASE_URL` with a package suffix (`_api`, `_oewn`); a new one needs its own.
 
 ## Roadmap
 

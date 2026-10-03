@@ -91,8 +91,9 @@ and refuses to start if either is invalid.
 
 ## Tests
 
-Integration tests hit a real ephemeral database. Set `TEST_DATABASE_URL` in `.env` pointing at
-the same Postgres instance -- the suite creates and drops the test DB automatically.
+Integration tests hit real ephemeral databases. Set `TEST_DATABASE_URL` in `.env` pointing at
+the same Postgres instance -- each package creates and drops its own database, named from it with a
+package suffix (`randsense_test_api`), so packages can run in parallel.
 
 ```bash
 just test
