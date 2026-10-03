@@ -18,8 +18,10 @@ Don't reopen these without new evidence.
 - **Morphology source.** The NLM SPECIALIST lexicon from the previous Django app has a structural
   medical bias that filtering can't remove, so it supplies only morphology:
   `data/lexicon/verb_morphology.toml` comes from its `<variants>` lines (irreg, regd).
-  Hand-curated morphology goes in `verb_morphology_curated.toml`, never the extracted file, so
-  curation stays separable for the compiled lexicon.
+- **Curation never edits source data.** OEWN, SUBTLEX-US and the SPECIALIST extraction stay as
+  shipped. Hand curation lives in its own discoverable places, so the compiled lexicon can tell
+  sourced from curated: `verb_morphology_curated.toml`, `separable_verbs.toml`,
+  `closed_class.toml`, and `mislabeled` in `oewn/frames.go`.
 - **Re-extraction.** If more morphology is needed, re-extract from SPECIALIST; the extraction
   script was throwaway.
 - **No ProperNoun slot.** OEWN has dropped nearly all named entities, so capitalized nouns are
