@@ -10,7 +10,8 @@ import (
 )
 
 const testVerbs = `
-doubled = ["stop", "refer"]
+doubled = ["stop", "refer", "stir"]
+compounds = ["test drive", "stir fry"]
 
 [[irregular]]
 base = "eat"
@@ -114,6 +115,9 @@ func TestConjugate(t *testing.T) {
 		{"take care of", morph.Present, morph.Third, morph.Singular, "takes care of"},
 		{"test drive", morph.Present, morph.Third, morph.Singular, "test drives"},
 		{"call into question", morph.Present, morph.Third, morph.Singular, "calls into question"},
+		{"flow from", morph.Present, morph.Third, morph.Singular, "flows from"},
+		{"talk turkey", morph.Past, morph.Third, morph.Singular, "talked turkey"},
+		{"stir fry", morph.Present, morph.Third, morph.Singular, "stir fries"},
 		{"go ballistic", morph.Past, morph.Third, morph.Singular, "went ballistic"},
 		{"go ballistic", morph.Present, morph.Third, morph.Singular, "goes ballistic"},
 		{"stop dead", morph.Present, morph.Third, morph.Singular, "stops dead"},
@@ -148,6 +152,7 @@ func TestParticiple(t *testing.T) {
 		{"give up", "giving up"},
 		{"take care of", "taking care of"},
 		{"test drive", "test driving"},
+		{"talk turkey", "talking turkey"},
 		{"go ballistic", "going ballistic"},
 		{"spoon-feed", "spoon-feeding"},
 	}
@@ -263,5 +268,36 @@ func TestProjectVerbMorphologyLoads(t *testing.T) {
 	}
 	if got := v.Participle("singe"); got != "singeing" {
 		t.Errorf("expected singeing; got %q", got)
+	}
+}
+
+func TestLoadVerbsMergesFiles(t *testing.T) {
+	v, err := morph.LoadVerbs(strings.NewReader(`doubled = ["stop"]`), strings.NewReader(`
+	doubled = ["pig"]
+
+	[[irregular]]
+	base = "wine and dine"
+	third = "wines and dines"
+	past = "wined and dined"
+	past_participle = "wined and dined"
+	present_participle = "wining and dining"
+	`))
+	if err != nil {
+		t.Fatalf("LoadVerbs: %v", err)
+	}
+
+	for lemma, want := range map[string]string{"stop": "stopped", "pig": "pigged", "wine and dine": "wined and dined"} {
+		if got := v.Conjugate(lemma, morph.Past, morph.Third, morph.Singular); got != want {
+			t.Errorf("%s: expected %q; got %q", lemma, want, got)
+		}
+	}
+	if got := v.Participle("wine and dine"); got != "wining and dining" {
+		t.Errorf("expected wining and dining; got %q", got)
+	}
+}
+
+func TestLoadVerbsRejectsBadTOMLInAnyFile(t *testing.T) {
+	if _, err := morph.LoadVerbs(strings.NewReader(`doubled = []`), strings.NewReader(`doubled = [`)); err == nil {
+		t.Error("expected an error")
 	}
 }

@@ -400,18 +400,11 @@ func (gen *generator) agreeWithSubjects(n *grammar.Node, agr agreement, form ver
 			c.Lemma, c.Word = w.Lemma, w.Lemma
 		}
 		if len(c.Children) == 0 && c.POS() == grammar.Verb {
-			// A separable verb leads with its verb ("tickles pink"), which
-			// morph can't always tell from the lemma alone.
-			lemma, rest := c.Lemma, ""
-			if gen.leaves[c].separable {
-				lemma, rest, _ = strings.Cut(c.Lemma, " ")
-				rest = " " + rest
-			}
 			switch form {
 			case finite:
-				c.Word = gen.verbs.Conjugate(lemma, gen.tense, agr.person, agr.number) + rest
+				c.Word = gen.verbs.Conjugate(c.Lemma, gen.tense, agr.person, agr.number)
 			case gerund:
-				c.Word = gen.verbs.Participle(lemma) + rest
+				c.Word = gen.verbs.Participle(c.Lemma)
 			}
 		}
 		var err error

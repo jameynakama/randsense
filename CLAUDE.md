@@ -18,6 +18,8 @@ Don't reopen these without new evidence.
 - **Morphology source.** The NLM SPECIALIST lexicon from the previous Django app has a structural
   medical bias that filtering can't remove, so it supplies only morphology:
   `data/lexicon/verb_morphology.toml` comes from its `<variants>` lines (irreg, regd).
+  Hand-curated morphology goes in `verb_morphology_curated.toml`, never the extracted file, so
+  curation stays separable for the compiled lexicon.
 - **Re-extraction.** If more morphology is needed, re-extract from SPECIALIST; the extraction
   script was throwaway.
 - **No ProperNoun slot.** OEWN has dropped nearly all named entities, so capitalized nouns are
@@ -51,8 +53,11 @@ Don't reopen these without new evidence.
 
 ## Roadmap
 
-1. **Idioms with a broken object frame** ("find fault", "pull wires", "give birth") can't take a
-   direct object in any order. Add those lemma-frame pairs to `mislabeled`.
+1. **Idioms with a broken object frame.** OEWN marks "give birth", "find fault" and "pull wires"
+   transitive, which gives "gave birth the goose". Each idiom needs a label: keep the frame,
+   drop object frames (keeping "she gave birth"), or move it to a fixed-preposition frame ("gave
+   birth to mud"). Some prepositions ("find fault with", "take kindly to") would need new
+   frames. Keep the idioms themselves.
 2. **Roman-numeral adjectives** (lxxxi, ixl). A naive regex would also hit "mix".
 3. **Curation loop, after a frontend exists.**
    - **Voting:** an anonymous endpoint; anyone can vote, and votes only flag words for review.

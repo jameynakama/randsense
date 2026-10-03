@@ -16,6 +16,7 @@ import (
 const (
 	grammarPath = "data/grammar/grammar.toml"
 	verbsPath   = "data/lexicon/verb_morphology.toml"
+	curatedPath = "data/lexicon/verb_morphology_curated.toml"
 )
 
 type config struct {
@@ -76,10 +77,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("open %s: %v", verbsPath, err)
 	}
-	v, err := morph.LoadVerbs(vf)
-	vf.Close()
+	cf, err := os.Open(curatedPath)
 	if err != nil {
-		log.Fatalf("load %s: %v", verbsPath, err)
+		log.Fatalf("open %s: %v", curatedPath, err)
+	}
+	v, err := morph.LoadVerbs(vf, cf)
+	vf.Close()
+	cf.Close()
+	if err != nil {
+		log.Fatalf("load verb morphology: %v", err)
 	}
 
 	routerCfg := api.RouterConfig{Queries: store.New(db), Grammar: g, Verbs: v}

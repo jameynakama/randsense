@@ -86,8 +86,8 @@ including every multiword lemma, count as 0, so any floor above 0 drops them.
 `data/subtlex-us/subtlex-us-pos.tsv.gz` is derived from the SUBTLEX-US part-of-speech workbook by
 `data/subtlex-us/convert.py`, which documents how to regenerate it.
 
-The server loads `data/grammar/grammar.toml` and `data/lexicon/verb_morphology.toml` at startup
-and refuses to start if either is invalid.
+The server loads `data/grammar/grammar.toml` and the two `data/lexicon/verb_morphology*.toml` files
+at startup and refuses to start if any is invalid.
 
 ## Tests
 

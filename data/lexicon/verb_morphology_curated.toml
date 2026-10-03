@@ -1,0 +1,98 @@
+# Hand-curated verb morphology, kept apart from verb_morphology.toml, which is
+# extracted from SPECIALIST. Fix a verb the extraction gets wrong here.
+
+# Verbs whose final consonant doubles before -ed and -ing, missing from
+# SPECIALIST.
+doubled = ["pig"]
+
+# Multi-word verbs inflected on their last word ("test drives"). Every other
+# multi-word verb is inflected on its first ("talks turkey").
+compounds = [
+  "bar hop",
+  "bar mitzvah",
+  "barrage jam",
+  "bat mitzvah",
+  "belly dance",
+  "black market",
+  "black marketeer",
+  "blanket jam",
+  "body guard",
+  "break dance",
+  "bullet vote",
+  "carpet bomb",
+  "cell phone",
+  "center punch",
+  "cold work",
+  "contra danse",
+  "crash land",
+  "cross examine",
+  "cross question",
+  "date stamp",
+  "deep freeze",
+  "dip solder",
+  "double birdie",
+  "double bogey",
+  "double crochet",
+  "double cross",
+  "double dye",
+  "double stitch",
+  "double tongue",
+  "dry clean",
+  "factor analyse",
+  "factor analyze",
+  "fast dye",
+  "figure skate",
+  "folk dance",
+  "fund raise",
+  "gold plate",
+  "goose step",
+  "hang glide",
+  "hard surface",
+  "hugger mugger",
+  "ice skate",
+  "island hop",
+  "letter bomb",
+  "lock pick",
+  "machine gun",
+  "machine wash",
+  "mercy kill",
+  "net fish",
+  "oven broil",
+  "pan roast",
+  "peer review",
+  "point jam",
+  "purl stitch",
+  "roller skate",
+  "sand cast",
+  "scotch tape",
+  "shell stitch",
+  "single crochet",
+  "single stitch",
+  "ski jump",
+  "skin pop",
+  "sky dive",
+  "slam dance",
+  "speed skate",
+  "spot jam",
+  "spot promote",
+  "square dance",
+  "stage direct",
+  "steam clean",
+  "stir fry",
+  "strip mine",
+  "surface mine",
+  "tap dance",
+  "tape record",
+  "test drive",
+  "test fly",
+  "tumble dry",
+  "water ski",
+]
+
+# Multi-word lemmas whose words all inflect.
+[[irregular]]
+base = "wine and dine"
+third = "wines and dines"
+past = "wined and dined"
+past_participle = "wined and dined"
+present_participle = "wining and dining"

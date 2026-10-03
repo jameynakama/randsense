@@ -34,10 +34,7 @@ const (
 	Plural   Number = "plural"
 )
 
-// particles end phrasal verbs, or follow the verb of an idiom, whose first
-// word carries the inflection ("culls out", "takes care of", "calls into
-// question"). They also mark where a multi-word noun's head ends ("talks of
-// the town").
+// particles mark where a multi-word noun's head ends ("talks of the town").
 var particles = []string{
 	"about", "across", "after", "along", "apart", "around", "aside", "away", "back",
 	"by", "down", "for", "forth", "in", "into", "of", "off", "on", "out", "over",
@@ -55,35 +52,45 @@ type irregular struct {
 type Verbs struct {
 	irregular map[string]irregular
 	doubled   map[string]bool
+	compounds map[string]bool
 }
 
 // LoadVerbs parses verb morphology TOML: a `doubled` list of bases whose final
-// consonant doubles before -ed and -ing, and `[[irregular]]` paradigms.
-func LoadVerbs(r io.Reader) (*Verbs, error) {
-	var f struct {
-		Doubled   []string    `toml:"doubled"`
-		Irregular []irregular `toml:"irregular"`
-	}
-	if _, err := toml.NewDecoder(r).Decode(&f); err != nil {
-		return nil, fmt.Errorf("morph: decode toml: %w", err)
-	}
-
-	v := &Verbs{irregular: map[string]irregular{}, doubled: map[string]bool{}}
-	for _, b := range f.Doubled {
-		v.doubled[b] = true
-	}
-	for _, irr := range f.Irregular {
-		v.irregular[irr.Base] = irr
+// consonant doubles before -ed and -ing, a `compounds` list of multi-word verbs
+// inflected on their last word, and `[[irregular]]` paradigms, which may be
+// whole multi-word lemmas ("wine and dine"). Later files add to earlier ones.
+func LoadVerbs(rs ...io.Reader) (*Verbs, error) {
+	v := &Verbs{irregular: map[string]irregular{}, doubled: map[string]bool{}, compounds: map[string]bool{}}
+	for _, r := range rs {
+		var f struct {
+			Doubled   []string    `toml:"doubled"`
+			Compounds []string    `toml:"compounds"`
+			Irregular []irregular `toml:"irregular"`
+		}
+		if _, err := toml.NewDecoder(r).Decode(&f); err != nil {
+			return nil, fmt.Errorf("morph: decode toml: %w", err)
+		}
+		for _, b := range f.Doubled {
+			v.doubled[b] = true
+		}
+		for _, c := range f.Compounds {
+			v.compounds[c] = true
+		}
+		for _, irr := range f.Irregular {
+			v.irregular[irr.Base] = irr
+		}
 	}
 	return v, nil
 }
 
 // Conjugate inflects a verb lemma for tense and subject person and number. In a
-// multi-word lemma only the head word changes: the first word of a phrasal
-// verb, of an idiom whose second word is a particle ("calls into question"),
-// or of an idiom led by a verb in the data ("went ballistic", "stops dead"),
-// otherwise the last ("test drives").
+// multi-word lemma only the head word changes: the first ("culls out", "talks
+// turkey"), or the last in a compound ("test drives"). A lemma with its own
+// irregular paradigm changes whole ("wined and dined").
 func (v *Verbs) Conjugate(lemma string, t Tense, p Person, n Number) string {
+	if _, ok := v.irregular[lemma]; ok {
+		return v.conjugateWord(lemma, t, p, n)
+	}
 	words := strings.Fields(lemma)
 	head := v.head(words)
 	words[head] = v.conjugateWord(words[head], t, p, n)
@@ -93,6 +100,9 @@ func (v *Verbs) Conjugate(lemma string, t Tense, p Person, n Number) string {
 // Participle gives a verb lemma's -ing form, changing the same head word as
 // Conjugate ("giving up").
 func (v *Verbs) Participle(lemma string) string {
+	if _, ok := v.irregular[lemma]; ok {
+		return v.participleWord(lemma)
+	}
 	words := strings.Fields(lemma)
 	head := v.head(words)
 	words[head] = v.participleWord(words[head])
@@ -100,12 +110,10 @@ func (v *Verbs) Participle(lemma string) string {
 }
 
 func (v *Verbs) head(words []string) int {
-	_, irregular := v.irregular[words[0]]
-	if irregular || v.doubled[words[0]] || slices.Contains(particles, words[len(words)-1]) ||
-		(len(words) > 1 && slices.Contains(particles, words[1])) {
-		return 0
+	if v.compounds[strings.Join(words, " ")] {
+		return len(words) - 1
 	}
-	return len(words) - 1
+	return 0
 }
 
 func (v *Verbs) participleWord(w string) string {
