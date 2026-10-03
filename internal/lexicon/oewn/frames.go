@@ -9,9 +9,9 @@ import (
 
 // frameCodes maps OEWN subcat codes to the frames the grammar uses. The codes
 // also encode subject animacy (Somebody/Something), which is dropped on
-// purpose: only the complement structure matters. Codes not listed
-// (infinitives, adjectives, dummy subjects, and fixed prepositions with a
-// single sense) are unsupported and dropped.
+// purpose: only the complement structure matters. Codes not listed (bare and
+// whether-infinitives, adjectives, dummy subjects, and fixed prepositions
+// with a single sense) are unsupported and dropped.
 var frameCodes = map[string]grammar.Frame{
 	"via":           grammar.Intransitive,
 	"vii":           grammar.Intransitive,
@@ -36,6 +36,8 @@ var frameCodes = map[string]grammar.Frame{
 	"vtaa-with":     grammar.TransitiveWith,
 	"vtai-with":     grammar.TransitiveWith,
 	"via-that":      grammar.ThatClause,
+	"via-to-inf":    grammar.ToInfinitive,
+	"vtaa-to-inf":   grammar.TransitiveToInfinitive,
 }
 
 // MapFrames converts a verb's subcat codes to sorted, unique frame names. It

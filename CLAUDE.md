@@ -32,6 +32,9 @@ Don't reopen these without new evidence.
 - **Rare words are a feature.** `commonness` is a per-request floor, never an ingest filter.
   Frequency comes from SUBTLEX-US counts per part of speech; plain word-form counts let common
   spellings pass in rare roles (verb "baby", noun "meet").
+- **No bare infinitives.** OEWN's bare-infinitive codes (`via-inf`, `vtaa-inf`, `vii-inf`) are
+  mislabeled: alongside let, make and have they list allow, permit and induce ("allowed him
+  go"). Only the to-infinitive codes are used.
 - **Shared test database.** `internal/api` and `internal/lexicon/oewn` drop and recreate the same
   `TEST_DATABASE_URL` database. Leave it until it causes failures. If parallel `go test ./...`
   flakes with drop/create errors, give each package its own database, as `closedclass` and
@@ -40,7 +43,7 @@ Don't reopen these without new evidence.
 ## Roadmap
 
 1. **Verb frames outside `grammar.Frame`**, which need nested clauses or other new slots:
-   - infinitive
+   - whether + infinitive ("wonders whether to go")
    - gerund
    - adjective complement
    - dummy subject ("It is raining")

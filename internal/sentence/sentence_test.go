@@ -663,6 +663,29 @@ func TestRealizeThatClauseHasItsOwnSubject(t *testing.T) {
 	assertExactly(t, seen, "These geese give that she gives.", "These geese gave that she gave.")
 }
 
+func TestRealizeInfinitiveKeepsBaseFormAfterAccusativeObject(t *testing.T) {
+	seen := realized(t, func() *grammar.Node {
+		inf := node("InfVP", leaf("To"), node("VP", leaf("Verb:intransitive")))
+		return node("S", detNoun(), node("VP", leaf("Verb:transitive-to-infinitive"), node("NP", leaf("Pronoun")), inf))
+	}, func() *fakeQuerier {
+		return newFake(store.Determiner{Lemma: "this", Number: "singular"})
+	}, 20)
+
+	assertExactly(t, seen, "This goose gives her to give.", "This goose gave her to give.")
+}
+
+func TestRealizeClauseInsideInfinitiveIsFinite(t *testing.T) {
+	seen := realized(t, func() *grammar.Node {
+		embedded := node("Clause", node("NP", leaf("Pronoun")), node("VP", leaf("Verb:intransitive")))
+		says := node("VP", leaf("Verb:that-clause"), leaf("Complementizer"), embedded)
+		return node("S", detNoun(), node("VP", leaf("Verb:to-infinitive"), node("InfVP", leaf("To"), says)))
+	}, func() *fakeQuerier {
+		return newFake(store.Determiner{Lemma: "this", Number: "singular"})
+	}, 20)
+
+	assertExactly(t, seen, "This goose gives to give that she gives.", "This goose gave to give that she gave.")
+}
+
 func TestGenerateJoinsClausesWithTypedConjunctionsInOneTense(t *testing.T) {
 	clauses := `
 	[[rule]]

@@ -25,9 +25,10 @@ func TestMapFrames(t *testing.T) {
 		{"transitive fixed prepositions", "devour", []string{"vtai-to", "vtai-from", "vtaa-with", "vtai-with", "vtaa-of", "vtai-on"},
 			[]string{"transitive-from", "transitive-of", "transitive-on", "transitive-to", "transitive-with"}},
 		{"that-clause", "devour", []string{"via-that"}, []string{"that-clause"}},
+		{"to-infinitives", "devour", []string{"via-to-inf", "vtaa-to-inf"}, []string{"to-infinitive", "transitive-to-infinitive"}},
 		{"preposition already in lemma", "bet on", []string{"via", "via-on-inanim", "vtai-on"}, []string{"intransitive"}},
 		{"preposition only inside lemma", "hand onto", []string{"vtai-on"}, []string{"transitive-on"}},
-		{"mixed, sorted", "devour", []string{"vtai-pp", "via", "vtaa", "via-to-inf"}, []string{"intransitive", "transitive", "transitive-pp"}},
+		{"mixed, sorted", "devour", []string{"vtai-pp", "via", "vtaa", "via-inf"}, []string{"intransitive", "transitive", "transitive-pp"}},
 	}
 
 	for _, tc := range tests {

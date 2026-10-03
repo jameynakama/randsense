@@ -23,10 +23,12 @@ import (
 // Agreement relies on these grammar symbols. An NP followed by a VP among its
 // siblings is that VP's subject: its pronouns are nominative and the VP's
 // verbs agree with it. An NP's person and number come from its pronoun, its
-// determiner, or, for "NP Conjunction NP", the coordination.
+// determiner, or, for "NP Conjunction NP", the coordination. Verbs under an
+// InfVP stay in their base form, up to any clause nested inside it.
 const (
-	nounPhrase = "NP"
-	verbPhrase = "VP"
+	nounPhrase       = "NP"
+	verbPhrase       = "VP"
+	infinitivePhrase = "InfVP"
 )
 
 // Sentence is a generated sentence and the parse tree it was built from.
@@ -112,7 +114,7 @@ func Realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *mo
 		return nil, fmt.Errorf("Realize: %w", err)
 	}
 	gen.agreeNouns(tree)
-	gen.agreeVerbs(tree, thirdSingular)
+	gen.agreeVerbs(tree, thirdSingular, false)
 
 	leaves := leafNodes(tree)
 	words := make([]string, len(leaves))
@@ -237,6 +239,8 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 		return ",", leafInfo{}, nil
 	case grammar.Complementizer:
 		return "that", leafInfo{}, nil
+	case grammar.To:
+		return "to", leafInfo{}, nil
 	default: // Conjunction: Load guarantees every leaf is a POS.
 		var w store.Conjunction
 		var err error
@@ -323,18 +327,22 @@ func (gen *generator) npAgreement(n *grammar.Node) agreement {
 // agreeVerbs conjugates verbs for the sentence tense and the agreement of the
 // nearest NP before them among their siblings, or third singular if there is
 // none. A VP passes its subject's agreement down to the verbs inside it.
-func (gen *generator) agreeVerbs(n *grammar.Node, agr agreement) {
+// Verbs in an infinitive keep their base form.
+func (gen *generator) agreeVerbs(n *grammar.Node, agr agreement, infinitive bool) {
 	for _, c := range n.Children {
 		if c.Symbol == nounPhrase {
 			agr = gen.agr[c]
 		}
-		if len(c.Children) == 0 && c.POS() == grammar.Verb {
+		if len(c.Children) == 0 && c.POS() == grammar.Verb && !infinitive {
 			c.Word = gen.verbs.Conjugate(c.Lemma, gen.tense, agr.person, agr.number)
 		}
-		if c.Symbol == verbPhrase {
-			gen.agreeVerbs(c, agr)
-		} else {
-			gen.agreeVerbs(c, thirdSingular)
+		switch c.Symbol {
+		case verbPhrase:
+			gen.agreeVerbs(c, agr, infinitive)
+		case infinitivePhrase:
+			gen.agreeVerbs(c, agr, true)
+		default:
+			gen.agreeVerbs(c, thirdSingular, false)
 		}
 	}
 }

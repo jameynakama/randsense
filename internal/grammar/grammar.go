@@ -32,9 +32,11 @@ const (
 	Comma POS = "Comma"
 	// Complementizer introduces a that-clause and is always "that".
 	Complementizer POS = "Complementizer"
+	// To marks an infinitive and is always "to".
+	To POS = "To"
 )
 
-var allPOS = []POS{Noun, Verb, Adjective, Adverb, Determiner, Preposition, Pronoun, Conjunction, Comma, Complementizer}
+var allPOS = []POS{Noun, Verb, Adjective, Adverb, Determiner, Preposition, Pronoun, Conjunction, Comma, Complementizer, To}
 
 // Frame is a verb's complement structure. A grammar can require one on a
 // verb slot: "Verb:transitive". A fixed-preposition frame ("transitive-with")
@@ -55,6 +57,10 @@ const (
 	TransitiveTo   Frame = "transitive-to"
 	TransitiveWith Frame = "transitive-with"
 	ThatClause     Frame = "that-clause"
+	ToInfinitive   Frame = "to-infinitive"
+	// TransitiveToInfinitive has an object before its infinitive: "urge her
+	// to go".
+	TransitiveToInfinitive Frame = "transitive-to-infinitive"
 )
 
 // FixedPrepositions maps each fixed-preposition frame to its preposition.
@@ -83,6 +89,7 @@ var qualifiers = map[POS][]string{
 		string(Intransitive), string(Transitive), string(Ditransitive), string(IntransitivePP), string(TransitivePP),
 		string(IntransitiveOn), string(IntransitiveTo), string(TransitiveFrom), string(TransitiveOf),
 		string(TransitiveOn), string(TransitiveTo), string(TransitiveWith), string(ThatClause),
+		string(ToInfinitive), string(TransitiveToInfinitive),
 	},
 	Preposition: {"from", "of", "on", "to", "with"},
 	Conjunction: {Coordinating, Subordinating, JoinsNPs},

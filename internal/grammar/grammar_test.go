@@ -303,6 +303,14 @@ func TestLoadAcceptsThatClause(t *testing.T) {
 	`)
 }
 
+func TestLoadAcceptsToInfinitives(t *testing.T) {
+	mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["Verb:to-infinitive", "To", "Verb", "Verb:transitive-to-infinitive", "Noun", "To", "Verb"]
+	`)
+}
+
 func TestLeafWithFrame(t *testing.T) {
 	g := mustLoad(t, `
 	[[rule]]
