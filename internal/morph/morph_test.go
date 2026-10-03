@@ -41,6 +41,13 @@ past_participle = "gone"
 present_participle = "going"
 
 [[irregular]]
+base = "panic"
+third = "panics"
+past = "panicked"
+past_participle = "panicked"
+present_participle = "panicking"
+
+[[irregular]]
 base = "feed"
 third = "feeds"
 past = "fed"
@@ -116,6 +123,37 @@ func TestConjugate(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.lemma+"/"+tc.want, func(t *testing.T) {
 			if got := v.Conjugate(tc.lemma, tc.tense, tc.person, tc.number); got != tc.want {
+				t.Errorf("expected %q; got %q", tc.want, got)
+			}
+		})
+	}
+}
+
+func TestParticiple(t *testing.T) {
+	v := loadVerbs(t)
+	tests := []struct {
+		lemma string
+		want  string
+	}{
+		{"walk", "walking"},
+		{"stop", "stopping"},
+		{"bake", "baking"},
+		{"see", "seeing"},
+		{"dye", "dyeing"},
+		{"hoe", "hoeing"},
+		{"die", "dying"},
+		{"be", "being"},
+		{"panic", "panicking"},
+		{"give up", "giving up"},
+		{"take care of", "taking care of"},
+		{"test drive", "test driving"},
+		{"go ballistic", "going ballistic"},
+		{"spoon-feed", "spoon-feeding"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.lemma, func(t *testing.T) {
+			if got := v.Participle(tc.lemma); got != tc.want {
 				t.Errorf("expected %q; got %q", tc.want, got)
 			}
 		})
@@ -221,5 +259,8 @@ func TestProjectVerbMorphologyLoads(t *testing.T) {
 	}
 	if got := v.Conjugate("prefer", morph.Past, morph.Third, morph.Singular); got != "preferred" {
 		t.Errorf("expected preferred; got %q", got)
+	}
+	if got := v.Participle("singe"); got != "singeing" {
+		t.Errorf("expected singeing; got %q", got)
 	}
 }

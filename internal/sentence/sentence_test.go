@@ -139,6 +139,7 @@ func loadVerbs(t *testing.T) *morph.Verbs {
 	base = "give"
 	third = "gives"
 	past = "gave"
+	present_participle = "giving"
 	`))
 	if err != nil {
 		t.Fatalf("LoadVerbs: %v", err)
@@ -695,6 +696,30 @@ func TestRealizeWhetherInfinitive(t *testing.T) {
 	}, 20)
 
 	assertExactly(t, seen, "This goose gives whether to give.", "This goose gave whether to give.")
+}
+
+func TestRealizeGerundAfterAccusativeObject(t *testing.T) {
+	seen := realized(t, func() *grammar.Node {
+		ger := node("GerVP", node("VP", leaf("Verb:intransitive")))
+		vp := node("VP", leaf("Verb:transitive-into-gerund"), node("NP", leaf("Pronoun")), leaf("Preposition:into"), ger)
+		return node("S", detNoun(), vp)
+	}, func() *fakeQuerier {
+		return newFake(store.Determiner{Lemma: "this", Number: "singular"})
+	}, 20)
+
+	assertExactly(t, seen, "This goose gives her into giving.", "This goose gave her into giving.")
+}
+
+func TestRealizeClauseInsideGerundIsFinite(t *testing.T) {
+	seen := realized(t, func() *grammar.Node {
+		embedded := node("Clause", node("NP", leaf("Pronoun")), node("VP", leaf("Verb:intransitive")))
+		says := node("VP", leaf("Verb:that-clause"), leaf("Complementizer"), embedded)
+		return node("S", detNoun(), node("VP", leaf("Verb:gerund"), node("GerVP", says)))
+	}, func() *fakeQuerier {
+		return newFake(store.Determiner{Lemma: "this", Number: "singular"})
+	}, 20)
+
+	assertExactly(t, seen, "This goose gives giving that she gives.", "This goose gave giving that she gave.")
 }
 
 func TestGenerateJoinsClausesWithTypedConjunctionsInOneTense(t *testing.T) {

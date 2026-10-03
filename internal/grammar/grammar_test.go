@@ -328,6 +328,14 @@ func TestLoadAcceptsWhetherInfinitive(t *testing.T) {
 	`)
 }
 
+func TestLoadAcceptsGerund(t *testing.T) {
+	mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["Noun", "Verb:gerund", "Verb"]
+	`)
+}
+
 func TestLeafWithFrame(t *testing.T) {
 	g := mustLoad(t, `
 	[[rule]]

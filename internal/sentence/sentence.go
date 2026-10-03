@@ -24,11 +24,22 @@ import (
 // siblings is that VP's subject: its pronouns are nominative and the VP's
 // verbs agree with it. An NP's person and number come from its pronoun, its
 // determiner, or, for "NP Conjunction NP", the coordination. Verbs under an
-// InfVP stay in their base form, up to any clause nested inside it.
+// InfVP stay in their base form and verbs under a GerVP take -ing, up to any
+// clause nested inside them.
 const (
 	nounPhrase       = "NP"
 	verbPhrase       = "VP"
 	infinitivePhrase = "InfVP"
+	gerundPhrase     = "GerVP"
+)
+
+// verbForm is how agreeVerbs inflects the verbs in a phrase.
+type verbForm int
+
+const (
+	finite verbForm = iota
+	base
+	gerund
 )
 
 // Sentence is a generated sentence and the parse tree it was built from.
@@ -114,7 +125,7 @@ func Realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *mo
 		return nil, fmt.Errorf("Realize: %w", err)
 	}
 	gen.agreeNouns(tree)
-	gen.agreeVerbs(tree, thirdSingular, false)
+	gen.agreeVerbs(tree, thirdSingular, finite)
 
 	leaves := leafNodes(tree)
 	words := make([]string, len(leaves))
@@ -330,22 +341,29 @@ func (gen *generator) npAgreement(n *grammar.Node) agreement {
 // agreeVerbs conjugates verbs for the sentence tense and the agreement of the
 // nearest NP before them among their siblings, or third singular if there is
 // none. A VP passes its subject's agreement down to the verbs inside it.
-// Verbs in an infinitive keep their base form.
-func (gen *generator) agreeVerbs(n *grammar.Node, agr agreement, infinitive bool) {
+// Verbs in an infinitive keep their base form; verbs in a gerund take -ing.
+func (gen *generator) agreeVerbs(n *grammar.Node, agr agreement, form verbForm) {
 	for _, c := range n.Children {
 		if c.Symbol == nounPhrase {
 			agr = gen.agr[c]
 		}
-		if len(c.Children) == 0 && c.POS() == grammar.Verb && !infinitive {
-			c.Word = gen.verbs.Conjugate(c.Lemma, gen.tense, agr.person, agr.number)
+		if len(c.Children) == 0 && c.POS() == grammar.Verb {
+			switch form {
+			case finite:
+				c.Word = gen.verbs.Conjugate(c.Lemma, gen.tense, agr.person, agr.number)
+			case gerund:
+				c.Word = gen.verbs.Participle(c.Lemma)
+			}
 		}
 		switch c.Symbol {
 		case verbPhrase:
-			gen.agreeVerbs(c, agr, infinitive)
+			gen.agreeVerbs(c, agr, form)
 		case infinitivePhrase:
-			gen.agreeVerbs(c, agr, true)
+			gen.agreeVerbs(c, agr, base)
+		case gerundPhrase:
+			gen.agreeVerbs(c, agr, gerund)
 		default:
-			gen.agreeVerbs(c, thirdSingular, false)
+			gen.agreeVerbs(c, thirdSingular, finite)
 		}
 	}
 }

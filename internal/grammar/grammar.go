@@ -63,6 +63,10 @@ const (
 	// to go".
 	TransitiveToInfinitive Frame = "transitive-to-infinitive"
 	WhetherInfinitive      Frame = "whether-infinitive"
+	Gerund                 Frame = "gerund"
+	// TransitiveIntoGerund has an object and "into" before its gerund:
+	// "coax her into going".
+	TransitiveIntoGerund Frame = "transitive-into-gerund"
 )
 
 // FixedPrepositions maps each fixed-preposition frame to its preposition.
@@ -74,6 +78,8 @@ var FixedPrepositions = map[Frame]string{
 	TransitiveOn:   "on",
 	TransitiveTo:   "to",
 	TransitiveWith: "with",
+
+	TransitiveIntoGerund: "into",
 }
 
 // Conjunction qualifiers: what a conjunction slot joins. "np" conjunctions
@@ -92,8 +98,9 @@ var qualifiers = map[POS][]string{
 		string(IntransitiveOn), string(IntransitiveTo), string(TransitiveFrom), string(TransitiveOf),
 		string(TransitiveOn), string(TransitiveTo), string(TransitiveWith), string(ThatClause),
 		string(ToInfinitive), string(TransitiveToInfinitive), string(WhetherInfinitive),
+		string(Gerund), string(TransitiveIntoGerund),
 	},
-	Preposition:    {"from", "of", "on", "to", "with"},
+	Preposition:    {"from", "into", "of", "on", "to", "with"},
 	Complementizer: {"whether"},
 	Conjunction:    {Coordinating, Subordinating, JoinsNPs},
 }

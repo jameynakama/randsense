@@ -44,9 +44,10 @@ var particles = []string{
 }
 
 type irregular struct {
-	Base  string `toml:"base"`
-	Third string `toml:"third"`
-	Past  string `toml:"past"`
+	Base              string `toml:"base"`
+	Third             string `toml:"third"`
+	Past              string `toml:"past"`
+	PresentParticiple string `toml:"present_participle"`
 }
 
 // Verbs holds the verb data the spelling rules can't derive.
@@ -82,13 +83,50 @@ func LoadVerbs(r io.Reader) (*Verbs, error) {
 // dead"), otherwise the last ("test drives").
 func (v *Verbs) Conjugate(lemma string, t Tense, p Person, n Number) string {
 	words := strings.Fields(lemma)
-	head := len(words) - 1
-	_, irregular := v.irregular[words[0]]
-	if irregular || v.doubled[words[0]] || slices.Contains(particles, words[head]) {
-		head = 0
-	}
+	head := v.head(words)
 	words[head] = v.conjugateWord(words[head], t, p, n)
 	return strings.Join(words, " ")
+}
+
+// Participle gives a verb lemma's -ing form, changing the same head word as
+// Conjugate ("giving up").
+func (v *Verbs) Participle(lemma string) string {
+	words := strings.Fields(lemma)
+	head := v.head(words)
+	words[head] = v.participleWord(words[head])
+	return strings.Join(words, " ")
+}
+
+func (v *Verbs) head(words []string) int {
+	_, irregular := v.irregular[words[0]]
+	if irregular || v.doubled[words[0]] || slices.Contains(particles, words[len(words)-1]) {
+		return 0
+	}
+	return len(words) - 1
+}
+
+func (v *Verbs) participleWord(w string) string {
+	irr, ok := v.irregular[w]
+	if ok {
+		return irr.PresentParticiple
+	}
+	if i := strings.LastIndex(w, "-"); i >= 0 && !v.doubled[w] {
+		return w[:i+1] + v.participleWord(w[i+1:])
+	}
+	switch {
+	case w == "be":
+		return "being"
+	case v.doubled[w]:
+		return w + w[len(w)-1:] + "ing"
+	case strings.HasSuffix(w, "ie"):
+		return w[:len(w)-2] + "ying"
+	case hasAnySuffix(w, "ee", "oe", "ye"):
+		return w + "ing"
+	case strings.HasSuffix(w, "e"):
+		return w[:len(w)-1] + "ing"
+	default:
+		return w + "ing"
+	}
 }
 
 func (v *Verbs) conjugateWord(w string, t Tense, p Person, n Number) string {

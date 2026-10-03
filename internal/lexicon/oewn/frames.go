@@ -39,14 +39,23 @@ var frameCodes = map[string]grammar.Frame{
 	"via-to-inf":      grammar.ToInfinitive,
 	"vtaa-to-inf":     grammar.TransitiveToInfinitive,
 	"via-whether-inf": grammar.WhetherInfinitive,
+	"via-ger":         grammar.Gerund,
+	"vtaa-into-ger":   grammar.TransitiveIntoGerund,
 }
 
 // mislabeled lists lemmas OEWN gives a frame they can't take ("shaped
-// whether to sing"). They keep their other frames.
+// whether to sing", "hoped singing"). They keep their other frames.
 var mislabeled = map[grammar.Frame][]string{
 	grammar.WhetherInfinitive: {
 		"foreordain", "influence", "mold", "moot", "predestine", "predetermine", "preordain", "regulate", "shape",
 	},
+	grammar.Gerund: {
+		"abstain", "approach", "await", "bask", "call back", "call up", "dabble", "desist", "die", "expect",
+		"follow", "hold back", "help oneself", "hope", "lay on the line", "look", "mulct", "plan",
+		"play around", "project", "put on the line", "refrain", "retrieve", "scheme", "smatter",
+		"supplicate", "think", "wait",
+	},
+	grammar.TransitiveIntoGerund: {"talk out of"},
 }
 
 // MapFrames converts a verb's subcat codes to sorted, unique frame names. It
