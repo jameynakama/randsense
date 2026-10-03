@@ -1,12 +1,13 @@
 # Weighted grammar for sentence generation. Weights are relative among a
 # symbol's rules and default to 1. Terminals are the POS names in
 # grammar.POS (Noun, Verb, Determiner, ..., Comma for punctuation, and
-# Complementizer and To, which are always "that" and "to"); any other symbol
-# needs rules. Verb and Conjunction slots can be qualified (see
+# Complementizer and To, which are "that" and "to"); any other symbol needs
+# rules. Verb and Conjunction slots can be qualified (see
 # grammar.qualifiers): "Verb:transitive" requires that frame, and
 # "Conjunction:np" an and/or that can join noun phrases. A fixed-preposition
 # frame ("Verb:transitive-with") needs its preposition spelled out, and
-# "Preposition:with" is always "with". Unqualified slots take any word.
+# "Preposition:with" is always "with", as "Complementizer:whether" is
+# "whether". Unqualified slots take any word.
 #
 # Agreement depends on three symbol names, NP, VP and InfVP: an NP followed by
 # a VP among its siblings is the subject (nominative pronouns, and the VP's
@@ -128,6 +129,11 @@ weight = 0.35
 symbol = "VP"
 expansion = ["Verb:transitive-to-infinitive", "NP", "InfVP"]
 weight = 0.25
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:whether-infinitive", "Complementizer:whether", "InfVP"]
+weight = 0.15
 
 [[rule]]
 symbol = "VP"

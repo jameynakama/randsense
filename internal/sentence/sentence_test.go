@@ -686,6 +686,17 @@ func TestRealizeClauseInsideInfinitiveIsFinite(t *testing.T) {
 	assertExactly(t, seen, "This goose gives to give that she gives.", "This goose gave to give that she gave.")
 }
 
+func TestRealizeWhetherInfinitive(t *testing.T) {
+	seen := realized(t, func() *grammar.Node {
+		inf := node("InfVP", leaf("To"), node("VP", leaf("Verb:intransitive")))
+		return node("S", detNoun(), node("VP", leaf("Verb:whether-infinitive"), leaf("Complementizer:whether"), inf))
+	}, func() *fakeQuerier {
+		return newFake(store.Determiner{Lemma: "this", Number: "singular"})
+	}, 20)
+
+	assertExactly(t, seen, "This goose gives whether to give.", "This goose gave whether to give.")
+}
+
 func TestGenerateJoinsClausesWithTypedConjunctionsInOneTense(t *testing.T) {
 	clauses := `
 	[[rule]]

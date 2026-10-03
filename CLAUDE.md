@@ -43,7 +43,6 @@ Don't reopen these without new evidence.
 ## Roadmap
 
 1. **Verb frames outside `grammar.Frame`**, which need nested clauses or other new slots:
-   - whether + infinitive ("wonders whether to go")
    - gerund
    - adjective complement
    - dummy subject ("It is raining")

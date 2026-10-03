@@ -9,35 +9,44 @@ import (
 
 // frameCodes maps OEWN subcat codes to the frames the grammar uses. The codes
 // also encode subject animacy (Somebody/Something), which is dropped on
-// purpose: only the complement structure matters. Codes not listed (bare and
-// whether-infinitives, adjectives, dummy subjects, and fixed prepositions
+// purpose: only the complement structure matters. Codes not listed (bare
+// infinitives, adjectives, dummy subjects, and fixed prepositions
 // with a single sense) are unsupported and dropped.
 var frameCodes = map[string]grammar.Frame{
-	"via":           grammar.Intransitive,
-	"vii":           grammar.Intransitive,
-	"vibody":        grammar.Intransitive,
-	"vtaa":          grammar.Transitive,
-	"vtai":          grammar.Transitive,
-	"vtia":          grammar.Transitive,
-	"vtii":          grammar.Transitive,
-	"ditransitive":  grammar.Ditransitive,
-	"via-pp":        grammar.IntransitivePP,
-	"vii-pp":        grammar.IntransitivePP,
-	"vtaa-pp":       grammar.TransitivePP,
-	"vtai-pp":       grammar.TransitivePP,
-	"via-on-anim":   grammar.IntransitiveOn,
-	"via-on-inanim": grammar.IntransitiveOn,
-	"via-to":        grammar.IntransitiveTo,
-	"vii-to":        grammar.IntransitiveTo,
-	"vtai-from":     grammar.TransitiveFrom,
-	"vtaa-of":       grammar.TransitiveOf,
-	"vtai-on":       grammar.TransitiveOn,
-	"vtai-to":       grammar.TransitiveTo,
-	"vtaa-with":     grammar.TransitiveWith,
-	"vtai-with":     grammar.TransitiveWith,
-	"via-that":      grammar.ThatClause,
-	"via-to-inf":    grammar.ToInfinitive,
-	"vtaa-to-inf":   grammar.TransitiveToInfinitive,
+	"via":             grammar.Intransitive,
+	"vii":             grammar.Intransitive,
+	"vibody":          grammar.Intransitive,
+	"vtaa":            grammar.Transitive,
+	"vtai":            grammar.Transitive,
+	"vtia":            grammar.Transitive,
+	"vtii":            grammar.Transitive,
+	"ditransitive":    grammar.Ditransitive,
+	"via-pp":          grammar.IntransitivePP,
+	"vii-pp":          grammar.IntransitivePP,
+	"vtaa-pp":         grammar.TransitivePP,
+	"vtai-pp":         grammar.TransitivePP,
+	"via-on-anim":     grammar.IntransitiveOn,
+	"via-on-inanim":   grammar.IntransitiveOn,
+	"via-to":          grammar.IntransitiveTo,
+	"vii-to":          grammar.IntransitiveTo,
+	"vtai-from":       grammar.TransitiveFrom,
+	"vtaa-of":         grammar.TransitiveOf,
+	"vtai-on":         grammar.TransitiveOn,
+	"vtai-to":         grammar.TransitiveTo,
+	"vtaa-with":       grammar.TransitiveWith,
+	"vtai-with":       grammar.TransitiveWith,
+	"via-that":        grammar.ThatClause,
+	"via-to-inf":      grammar.ToInfinitive,
+	"vtaa-to-inf":     grammar.TransitiveToInfinitive,
+	"via-whether-inf": grammar.WhetherInfinitive,
+}
+
+// mislabeled lists lemmas OEWN gives a frame they can't take ("shaped
+// whether to sing"). They keep their other frames.
+var mislabeled = map[grammar.Frame][]string{
+	grammar.WhetherInfinitive: {
+		"foreordain", "influence", "mold", "moot", "predestine", "predetermine", "preordain", "regulate", "shape",
+	},
 }
 
 // MapFrames converts a verb's subcat codes to sorted, unique frame names. It
@@ -48,7 +57,7 @@ func MapFrames(lemma string, codes []string) []string {
 	frames := []string{}
 	for _, c := range codes {
 		f, ok := frameCodes[c]
-		if !ok || slices.Contains(frames, string(f)) {
+		if !ok || slices.Contains(frames, string(f)) || slices.Contains(mislabeled[f], lemma) {
 			continue
 		}
 		if prep, fixed := grammar.FixedPrepositions[f]; fixed && strings.HasSuffix(lemma, " "+prep) {

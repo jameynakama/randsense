@@ -122,6 +122,15 @@ func TestLoadRejectsInvalidGrammar(t *testing.T) {
 			`"Preposition:under"`,
 		},
 		{
+			"complementizer other than whether",
+			`
+			[[rule]]
+			symbol = "S"
+			expansion = ["Noun", "Verb", "Complementizer:if", "Verb"]
+			`,
+			`"Complementizer:if"`,
+		},
+		{
 			"conjunction type on a verb",
 			`
 			[[rule]]
@@ -308,6 +317,14 @@ func TestLoadAcceptsToInfinitives(t *testing.T) {
 	[[rule]]
 	symbol = "S"
 	expansion = ["Verb:to-infinitive", "To", "Verb", "Verb:transitive-to-infinitive", "Noun", "To", "Verb"]
+	`)
+}
+
+func TestLoadAcceptsWhetherInfinitive(t *testing.T) {
+	mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["Noun", "Verb:whether-infinitive", "Complementizer:whether", "To", "Verb"]
 	`)
 }
 

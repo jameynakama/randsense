@@ -238,6 +238,9 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 	case grammar.Comma:
 		return ",", leafInfo{}, nil
 	case grammar.Complementizer:
+		if word := n.Qualifier(); word != "" {
+			return word, leafInfo{}, nil
+		}
 		return "that", leafInfo{}, nil
 	case grammar.To:
 		return "to", leafInfo{}, nil

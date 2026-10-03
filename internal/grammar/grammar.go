@@ -30,7 +30,8 @@ const (
 	Conjunction POS = "Conjunction"
 	// Comma is punctuation, not a word: it isn't filled from the lexicon.
 	Comma POS = "Comma"
-	// Complementizer introduces a that-clause and is always "that".
+	// Complementizer introduces a clause or infinitive. It is "that" unless
+	// qualified: "Complementizer:whether" is always "whether".
 	Complementizer POS = "Complementizer"
 	// To marks an infinitive and is always "to".
 	To POS = "To"
@@ -61,6 +62,7 @@ const (
 	// TransitiveToInfinitive has an object before its infinitive: "urge her
 	// to go".
 	TransitiveToInfinitive Frame = "transitive-to-infinitive"
+	WhetherInfinitive      Frame = "whether-infinitive"
 )
 
 // FixedPrepositions maps each fixed-preposition frame to its preposition.
@@ -89,10 +91,11 @@ var qualifiers = map[POS][]string{
 		string(Intransitive), string(Transitive), string(Ditransitive), string(IntransitivePP), string(TransitivePP),
 		string(IntransitiveOn), string(IntransitiveTo), string(TransitiveFrom), string(TransitiveOf),
 		string(TransitiveOn), string(TransitiveTo), string(TransitiveWith), string(ThatClause),
-		string(ToInfinitive), string(TransitiveToInfinitive),
+		string(ToInfinitive), string(TransitiveToInfinitive), string(WhetherInfinitive),
 	},
-	Preposition: {"from", "of", "on", "to", "with"},
-	Conjunction: {Coordinating, Subordinating, JoinsNPs},
+	Preposition:    {"from", "of", "on", "to", "with"},
+	Complementizer: {"whether"},
+	Conjunction:    {Coordinating, Subordinating, JoinsNPs},
 }
 
 func isPOS(symbol string) bool {
