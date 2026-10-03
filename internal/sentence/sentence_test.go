@@ -744,6 +744,31 @@ func TestGeneratePredicatesAdjectiveOfObject(t *testing.T) {
 	}
 }
 
+func TestGenerateWeatherVerbTakesDummyIt(t *testing.T) {
+	var q *fakeQuerier
+	seen := texts(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["Pronoun:it", "Verb:weather"]
+	`, func() *fakeQuerier { q = newFake(); return q }, 20)
+
+	assertExactly(t, seen, "It gives.", "It gave.")
+	if q.frame != "weather" {
+		t.Errorf("expected a verb lookup for frame weather; got %q", q.frame)
+	}
+}
+
+func TestRealizeDummyThatClause(t *testing.T) {
+	seen := realized(t, func() *grammar.Node {
+		embedded := node("Clause", detNoun(), node("VP", leaf("Verb:intransitive")))
+		return node("S", leaf("Pronoun:it"), leaf("Verb:dummy-that-clause"), leaf("Complementizer"), embedded)
+	}, func() *fakeQuerier {
+		return newFake(store.Determiner{Lemma: "these", Number: "plural"})
+	}, 20)
+
+	assertExactly(t, seen, "It gives that these geese give.", "It gave that these geese gave.")
+}
+
 func TestGenerateJoinsClausesWithTypedConjunctionsInOneTense(t *testing.T) {
 	clauses := `
 	[[rule]]

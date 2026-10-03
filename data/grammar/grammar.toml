@@ -7,7 +7,7 @@
 # "Conjunction:np" an and/or that can join noun phrases. A fixed-preposition
 # frame ("Verb:transitive-with") needs its preposition spelled out, and
 # "Preposition:with" is always "with", as "Complementizer:whether" is
-# "whether". Unqualified slots take any word.
+# "whether" and "Pronoun:it" is "it". Unqualified slots take any word.
 #
 # Agreement depends on four symbol names, NP, VP, InfVP and GerVP: an NP
 # followed by a VP among its siblings is the subject (nominative pronouns, and
@@ -32,6 +32,16 @@ expansion = ["Clause", "Conjunction:subordinating", "Clause"]
 [[rule]]
 symbol = "Clause"
 expansion = ["NP", "VP"]
+
+[[rule]]
+symbol = "Clause"
+expansion = ["Pronoun:it", "Verb:weather"]
+weight = 0.04
+
+[[rule]]
+symbol = "Clause"
+expansion = ["Pronoun:it", "Verb:dummy-that-clause", "Complementizer", "Clause"]
+weight = 0.04
 
 [[rule]]
 symbol = "NP"

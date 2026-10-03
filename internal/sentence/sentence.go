@@ -240,6 +240,9 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 		w, err := q.GetRandomPreposition(ctx)
 		return w.Lemma, leafInfo{}, err
 	case grammar.Pronoun:
+		if word := n.Qualifier(); word != "" {
+			return word, leafInfo{number: string(morph.Singular), person: morph.Third}, nil
+		}
 		pronounCase := "accusative"
 		if subject {
 			pronounCase = "nominative"

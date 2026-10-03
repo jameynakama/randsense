@@ -70,6 +70,9 @@ const (
 	// Adjective complements: "seem ugly", "consider her ugly".
 	AdjectiveComplement           Frame = "adjective"
 	TransitiveAdjectiveComplement Frame = "transitive-adjective"
+	// Dummy-subject frames take "Pronoun:it": "it rains", "it seems that...".
+	Weather         Frame = "weather"
+	DummyThatClause Frame = "dummy-that-clause"
 )
 
 // FixedPrepositions maps each fixed-preposition frame to its preposition.
@@ -94,7 +97,8 @@ const (
 )
 
 // qualifiers lists what each POS can be qualified with ("Verb:transitive").
-// A qualified preposition is that word: "Preposition:with" is always "with".
+// A qualified preposition, complementizer or pronoun is that word:
+// "Preposition:with" is always "with".
 var qualifiers = map[POS][]string{
 	Verb: {
 		string(Intransitive), string(Transitive), string(Ditransitive), string(IntransitivePP), string(TransitivePP),
@@ -103,7 +107,9 @@ var qualifiers = map[POS][]string{
 		string(ToInfinitive), string(TransitiveToInfinitive), string(WhetherInfinitive),
 		string(Gerund), string(TransitiveIntoGerund),
 		string(AdjectiveComplement), string(TransitiveAdjectiveComplement),
+		string(Weather), string(DummyThatClause),
 	},
+	Pronoun:        {"it"},
 	Preposition:    {"from", "into", "of", "on", "to", "with"},
 	Complementizer: {"whether"},
 	Conjunction:    {Coordinating, Subordinating, JoinsNPs},

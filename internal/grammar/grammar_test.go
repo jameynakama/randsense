@@ -131,6 +131,15 @@ func TestLoadRejectsInvalidGrammar(t *testing.T) {
 			`"Complementizer:if"`,
 		},
 		{
+			"pronoun other than it",
+			`
+			[[rule]]
+			symbol = "S"
+			expansion = ["Pronoun:she", "Verb"]
+			`,
+			`"Pronoun:she"`,
+		},
+		{
 			"conjunction type on a verb",
 			`
 			[[rule]]
@@ -341,6 +350,14 @@ func TestLoadAcceptsAdjectiveComplements(t *testing.T) {
 	[[rule]]
 	symbol = "S"
 	expansion = ["Noun", "Verb:adjective", "Adjective", "Verb:transitive-adjective", "Noun", "Adjective"]
+	`)
+}
+
+func TestLoadAcceptsDummySubjects(t *testing.T) {
+	mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["Pronoun:it", "Verb:weather", "Pronoun:it", "Verb:dummy-that-clause", "Complementizer", "Noun", "Verb"]
 	`)
 }
 
