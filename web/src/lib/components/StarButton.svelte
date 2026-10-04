@@ -5,31 +5,41 @@
 
 	// Read from storage after hydration, so the server's HTML (never starred)
 	// matches what the browser hydrates.
-	// eslint-disable-next-line svelte/prefer-writable-derived
 	let starred = $state(false);
 	let busy = $state(false);
 	let problem = $state('');
 
 	$effect(() => {
 		starred = isStarred(id);
+		problem = '';
 	});
 
 	async function toggle() {
+		if (busy) return;
+		// The page can show another sentence before the answer arrives, so the
+		// answer is applied to the sentence it was for.
+		const target = id;
+		const starring = !starred;
 		busy = true;
 		problem = '';
 		try {
-			const res = await fetch(`/api/v1/sentences/${id}/stars`, {
-				method: starred ? 'DELETE' : 'POST',
+			const res = await fetch(`/api/v1/sentences/${target}/stars`, {
+				method: starring ? 'POST' : 'DELETE',
 				headers: { 'X-Voter': voterToken() }
 			});
 			if (!res.ok) throw new Error(`status ${res.status}`);
-			count = ((await res.json()) as { count: number }).count;
-			starred = !starred;
-			setStarred(id, starred);
+			const answer = ((await res.json()) as { count: number }).count;
+			setStarred(target, starring);
+			if (id === target) {
+				count = answer;
+				starred = starring;
+			}
 		} catch {
-			problem = starred
-				? 'Couldn’t remove your star. Try again.'
-				: 'Couldn’t save your star. Try again.';
+			if (id === target) {
+				problem = starring
+					? 'Couldn’t save your star. Try again.'
+					: 'Couldn’t remove your star. Try again.';
+			}
 		} finally {
 			busy = false;
 		}

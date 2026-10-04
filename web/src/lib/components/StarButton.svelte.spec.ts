@@ -11,7 +11,10 @@ const answer = (count: number, status = 200) =>
 
 describe('StarButton', () => {
 	beforeEach(() => localStorage.clear());
-	afterEach(() => vi.unstubAllGlobals());
+	afterEach(() => {
+		vi.unstubAllGlobals();
+		vi.restoreAllMocks();
+	});
 
 	it('stars with the voter token and shows the new count', async () => {
 		const fetch = vi.fn(async () => answer(3));
@@ -74,5 +77,55 @@ describe('StarButton', () => {
 
 		await expect.element(page.getByRole('button', { name: 'Star, 3 stars' })).toBeInTheDocument();
 		expect(fetch).toHaveBeenCalledOnce();
+	});
+
+	it('sends one request for two clicks in the same moment', async () => {
+		const fetch = vi.fn(() => new Promise<Response>(() => {}));
+		vi.stubGlobal('fetch', fetch);
+		render(StarButton, { id: 'aaaaaaaa', count: 2 });
+		const button = page.getByRole('button', { name: 'Star, 2 stars' }).element() as HTMLElement;
+
+		// Both clicks land before the button can re-render as disabled.
+		button.click();
+		button.click();
+
+		expect(fetch).toHaveBeenCalledOnce();
+	});
+
+	it('applies a late answer to the sentence it was for', async () => {
+		let release!: () => void;
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(() => new Promise<Response>((r) => (release = () => r(answer(3)))))
+		);
+		const { rerender } = render(StarButton, { id: 'aaaaaaaa', count: 2 });
+
+		await page.getByRole('button', { name: 'Star, 2 stars' }).click();
+		await rerender({ id: 'bbbbbbbb', count: 5 });
+		release();
+
+		await vi.waitFor(() =>
+			expect(JSON.parse(localStorage.getItem('randsense:starred')!)).toEqual(['aaaaaaaa'])
+		);
+		await expect
+			.element(page.getByRole('button', { name: 'Star, 5 stars' }))
+			.toHaveAttribute('aria-pressed', 'false');
+	});
+
+	it('still stars when storage refuses writes', async () => {
+		vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+			throw new DOMException('full', 'QuotaExceededError');
+		});
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => answer(3))
+		);
+		render(StarButton, { id: 'aaaaaaaa', count: 2 });
+
+		await page.getByRole('button', { name: 'Star, 2 stars' }).click();
+
+		await expect
+			.element(page.getByRole('button', { name: 'Star, 3 stars' }))
+			.toHaveAttribute('aria-pressed', 'true');
 	});
 });

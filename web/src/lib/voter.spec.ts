@@ -46,3 +46,19 @@ describe('without usable browser storage', () => {
 		expect(isStarred('cccccccc')).toBe(true);
 	});
 });
+
+describe('storage that refuses writes', () => {
+	it('keeps the token and stars in memory instead', () => {
+		const full = {
+			getItem: () => null,
+			setItem: () => {
+				throw new DOMException('full', 'QuotaExceededError');
+			}
+		};
+
+		const first = voterToken(full);
+		expect(voterToken(full)).toBe(first);
+		setStarred('dddddddd', true, full);
+		expect(isStarred('dddddddd', full)).toBe(true);
+	});
+});
