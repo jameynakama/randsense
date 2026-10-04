@@ -6,3 +6,8 @@ RETURNING *;
 -- name: GetSentence :one
 SELECT * FROM sentences
 WHERE id = $1;
+
+-- name: ListSentences :many
+SELECT * FROM sentences
+ORDER BY created_at DESC, id DESC
+LIMIT @page_limit OFFSET @page_offset;

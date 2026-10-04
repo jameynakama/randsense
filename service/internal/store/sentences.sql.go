@@ -59,3 +59,41 @@ func (q *Queries) InsertSentence(ctx context.Context, arg InsertSentenceParams) 
 	)
 	return i, err
 }
+
+const listSentences = `-- name: ListSentences :many
+SELECT id, text, tree, commonness, star_count, created_at FROM sentences
+ORDER BY created_at DESC, id DESC
+LIMIT $2 OFFSET $1
+`
+
+type ListSentencesParams struct {
+	PageOffset int32 `db:"page_offset" json:"page_offset"`
+	PageLimit  int32 `db:"page_limit" json:"page_limit"`
+}
+
+func (q *Queries) ListSentences(ctx context.Context, arg ListSentencesParams) ([]Sentence, error) {
+	rows, err := q.db.Query(ctx, listSentences, arg.PageOffset, arg.PageLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Sentence
+	for rows.Next() {
+		var i Sentence
+		if err := rows.Scan(
+			&i.ID,
+			&i.Text,
+			&i.Tree,
+			&i.Commonness,
+			&i.StarCount,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

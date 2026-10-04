@@ -45,6 +45,7 @@ type Querier interface {
 	ListDeterminers(ctx context.Context) ([]Determiner, error)
 	ListPrepositions(ctx context.Context) ([]Preposition, error)
 	ListPronouns(ctx context.Context) ([]Pronoun, error)
+	ListSentences(ctx context.Context, arg ListSentencesParams) ([]Sentence, error)
 	// A lemma is plural if it ends in -s and its singular (minus -s, or minus
 	// -es) is also a lemma ("Rastas"/"Rasta", "eyeglasses"/"eyeglass"). Short
 	// words and -ss/-us/-is endings ("Ms", "Mass", "Pus") are left singular.

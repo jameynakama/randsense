@@ -8,9 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jameynakama/randsense/internal/api"
 	"github.com/jameynakama/randsense/internal/grammar"
-	"github.com/jameynakama/randsense/internal/morph"
 	"github.com/jameynakama/randsense/internal/store"
 )
 
@@ -25,19 +23,6 @@ expansion = ["NP", "Verb"]
 symbol = "NP"
 expansion = ["Determiner", "Noun"]
 `
-
-func newTestServer(t *testing.T) *httptest.Server {
-	t.Helper()
-	g, err := grammar.Load(strings.NewReader(testGrammar))
-	if err != nil {
-		t.Fatalf("grammar.Load: %v", err)
-	}
-	v, err := morph.LoadVerbs(strings.NewReader(""))
-	if err != nil {
-		t.Fatalf("morph.LoadVerbs: %v", err)
-	}
-	return httptest.NewServer(api.NewRouter(api.RouterConfig{Queries: store.New(testPool), Grammar: g, Verbs: v}))
-}
 
 func seedWords(t *testing.T) {
 	t.Helper()

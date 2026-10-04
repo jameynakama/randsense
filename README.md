@@ -59,7 +59,11 @@ GET /health
 GET /api/v1/words/random?pos=noun|verb|adjective|adverb[&commonness=N]
 GET /api/v1/sentences/random[?commonness=N]   -> {id, text, tree, star_count, created_at}
 POST /api/v1/sentences/realize[?commonness=N] -> {text, tree}
+GET /api/v1/sentences[?limit=30&offset=0]     -> [{id, text, tree, star_count, created_at}]
+GET /api/v1/sentences/{id}                    -> {id, text, tree, star_count, created_at}
 ```
+
+List endpoints return newest first, `limit` 1 to 100 (default 30).
 
 `random` saves each sentence it returns and allows any origin, so other sites can embed it.
 `realize` saves nothing.

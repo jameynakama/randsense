@@ -12,6 +12,11 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/jameynakama/randsense/internal/api"
+	"github.com/jameynakama/randsense/internal/grammar"
+	"github.com/jameynakama/randsense/internal/morph"
+	"github.com/jameynakama/randsense/internal/store"
 )
 
 // savedTree is a stored tree, "this goose , devours", with its comma leaf
@@ -87,4 +92,28 @@ func decode(t *testing.T, resp *http.Response, status int, v any) {
 	if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
+}
+
+// newServer serves the API with cfg, filling in the test grammar and verbs,
+// and testPool unless cfg has its own queries.
+func newServer(t *testing.T, cfg api.RouterConfig) *httptest.Server {
+	t.Helper()
+	g, err := grammar.Load(strings.NewReader(testGrammar))
+	if err != nil {
+		t.Fatalf("grammar.Load: %v", err)
+	}
+	v, err := morph.LoadVerbs(strings.NewReader(""))
+	if err != nil {
+		t.Fatalf("morph.LoadVerbs: %v", err)
+	}
+	if cfg.Queries == nil {
+		cfg.Queries = store.New(testPool)
+	}
+	cfg.Grammar, cfg.Verbs = g, v
+	return httptest.NewServer(api.NewRouter(cfg))
+}
+
+func newTestServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	return newServer(t, api.RouterConfig{})
 }

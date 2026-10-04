@@ -16,7 +16,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var testPool *pgxpool.Pool
+var (
+	testPool  *pgxpool.Pool
+	testDBURL string
+)
 
 func getRequiredEnvVar(key string) string {
 	v := os.Getenv(key)
@@ -38,7 +41,7 @@ func getDBConn(ctx context.Context, dbURL string) *pgxpool.Pool {
 }
 
 func TestMain(m *testing.M) {
-	testDBURL := getRequiredEnvVar("TEST_DATABASE_URL")
+	testDBURL = getRequiredEnvVar("TEST_DATABASE_URL")
 	// Own database so this package can't drop one another package is using
 	// when `go test ./...` runs packages in parallel.
 	testDBURL = swapDBName(testDBURL, getDBName(testDBURL)+"_api")

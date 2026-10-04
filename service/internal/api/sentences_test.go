@@ -4,7 +4,9 @@ import (
 	"context"
 	"net/http"
 	"regexp"
+	"slices"
 	"testing"
+	"time"
 
 	"github.com/jameynakama/randsense/internal/api"
 )
@@ -60,4 +62,68 @@ func TestRealizedSentenceIsNotSaved(t *testing.T) {
 	if n != 0 {
 		t.Errorf("saved sentences: got %d, want 0", n)
 	}
+}
+
+func TestListSentencesNewestFirst(t *testing.T) {
+	resetSentences(t)
+	t0 := time.Now().Add(-time.Hour)
+	insertSentence(t, "aaaaaaaa", t0)
+	insertSentence(t, "bbbbbbbb", t0.Add(time.Second))
+	insertSentence(t, "cccccccc", t0.Add(2*time.Second))
+	// Same time as cccccccc: the id breaks the tie.
+	insertSentence(t, "dddddddd", t0.Add(2*time.Second))
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	tests := []struct {
+		query string
+		want  []string
+	}{
+		{"", []string{"dddddddd", "cccccccc", "bbbbbbbb", "aaaaaaaa"}},
+		{"?limit=2&offset=1", []string{"cccccccc", "bbbbbbbb"}},
+		{"?offset=4", []string{}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.query, func(t *testing.T) {
+			var body []api.SentenceResponse
+			decode(t, call(t, srv, http.MethodGet, "/api/v1/sentences"+tc.query, "", nil), http.StatusOK, &body)
+
+			if body == nil {
+				t.Fatal("body: got null, want an array")
+			}
+			got := make([]string, len(body))
+			for i, s := range body {
+				got[i] = s.ID
+			}
+			if !slices.Equal(got, tc.want) {
+				t.Errorf("ids: got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestListSentencesRejectsBadPages(t *testing.T) {
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	for _, q := range []string{"limit=0", "limit=101", "limit=ten", "offset=-1", "offset=1.5", "offset=99999999999"} {
+		t.Run(q, func(t *testing.T) {
+			decode(t, call(t, srv, http.MethodGet, "/api/v1/sentences?"+q, "", nil), http.StatusBadRequest, nil)
+		})
+	}
+}
+
+func TestGetSentence(t *testing.T) {
+	resetSentences(t)
+	insertSentence(t, "aaaaaaaa", time.Now())
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	var body api.SentenceResponse
+	decode(t, call(t, srv, http.MethodGet, "/api/v1/sentences/aaaaaaaa", "", nil), http.StatusOK, &body)
+	if body.ID != "aaaaaaaa" || body.Text != "This goose, devours." {
+		t.Errorf("body: got %+v, want aaaaaaaa", body)
+	}
+
+	decode(t, call(t, srv, http.MethodGet, "/api/v1/sentences/zzzzzzzz", "", nil), http.StatusNotFound, nil)
 }
