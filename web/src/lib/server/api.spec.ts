@@ -1,12 +1,10 @@
 import { isHttpError } from '@sveltejs/kit';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { load } from './+page.server';
-
-type Event = Parameters<typeof load>[0];
+import { getJSON } from './api';
 
 async function statusFor(fetch: typeof globalThis.fetch): Promise<number> {
 	try {
-		await load({ params: { id: 'aaaaaaaa' }, fetch } as unknown as Event);
+		await getJSON(fetch, '/api/v1/sentences/aaaaaaaa');
 	} catch (e) {
 		if (isHttpError(e)) return e.status;
 		throw e;
@@ -14,10 +12,20 @@ async function statusFor(fetch: typeof globalThis.fetch): Promise<number> {
 	return 200;
 }
 
-describe('permalink load', () => {
+describe('getJSON', () => {
 	afterEach(() => vi.restoreAllMocks());
 
-	it('is a 404 for an unknown sentence', async () => {
+	it('reads the API at API_ORIGIN', async () => {
+		const fetch = vi.fn(async () => new Response('{"id": "aaaaaaaa"}'));
+
+		expect(await getJSON(fetch, '/api/v1/sentences/aaaaaaaa')).toEqual({ id: 'aaaaaaaa' });
+		expect(fetch).toHaveBeenCalledWith(
+			'http://localhost:8080/api/v1/sentences/aaaaaaaa',
+			expect.anything()
+		);
+	});
+
+	it('is a 404 for something that is not there', async () => {
 		expect(await statusFor(async () => new Response('{}', { status: 404 }))).toBe(404);
 	});
 
