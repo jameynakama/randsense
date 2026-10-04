@@ -1,30 +1,21 @@
 <script lang="ts">
-	import { tick } from 'svelte';
+	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import Sentence, { wordId } from '#lib/components/Sentence.svelte';
-	import StarButton from '#lib/components/StarButton.svelte';
-	import Structure from '#lib/components/Structure.svelte';
-	import WordCard from '#lib/components/WordCard.svelte';
-	import { leaves } from '#lib/tree.js';
+	import SentenceView from '#lib/components/SentenceView.svelte';
+	import { subscribe } from '#lib/stream.js';
 
 	let { data } = $props();
 
-	// Both reset when the page moves to another sentence.
-	let selected = $derived.by<number | null>(() => {
-		void data.sentence.id;
-		return null;
-	});
+	// Resets when the page moves to another sentence.
 	let stars = $derived(data.sentence.star_count);
-	const selectedPath = $derived(
-		selected === null ? null : leaves(data.sentence.tree)[selected].path
-	);
 
-	async function closeCard() {
-		const opener = selected;
-		selected = null;
-		await tick();
-		if (opener !== null) document.getElementById(wordId(data.sentence.id, opener))?.focus();
-	}
+	onMount(() =>
+		subscribe({
+			onStars: (e) => {
+				if (e.id === data.sentence.id) stars = e.count;
+			}
+		})
+	);
 </script>
 
 <svelte:head>
@@ -39,20 +30,4 @@
 
 <h1 class="visually-hidden">A random sentence</h1>
 
-<Sentence sentence={data.sentence} bind:selected />
-
-<div class="actions">
-	<StarButton id={data.sentence.id} bind:count={stars} />
-</div>
-
-{#if selected !== null}
-	<WordCard tree={data.sentence.tree} index={selected} onclose={closeCard} />
-{/if}
-
-<Structure tree={data.sentence.tree} {selectedPath} open />
-
-<style>
-	.actions {
-		margin-block: 1.5rem;
-	}
-</style>
+<SentenceView sentence={data.sentence} bind:count={stars} />
