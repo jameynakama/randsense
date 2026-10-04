@@ -25,7 +25,7 @@ loop), and the compiled lexicon. These come later and nothing here should block 
 
 ## Repository
 
-Rename the GitHub repo `randsense-service` to `randsense` and make it a monorepo:
+The GitHub repo `randsense` is a monorepo:
 
 ```
 randsense/
@@ -317,8 +317,6 @@ The exact rates are set in the nginx config at deploy time.
 
 The backend (stages 1 to 5) is built. What remains, in order, each stage ending working and
 committed:
-
-- The GitHub rename of `randsense-service` to `randsense`, left over from stage 1.
 
 6. SvelteKit app: scaffold, sentence component, home page with live feed, permalink, stars page,
    flag form. Accessibility and small screens (above) are part of each component as it's built,
