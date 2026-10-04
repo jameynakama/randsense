@@ -53,6 +53,29 @@ body {
 	cursor: progress;
 }
 
+/* A list of sentences that link to their permalinks, each with its star
+   button: the home page's feed and the stars page. */
+.sentence-list {
+	padding: 0;
+	list-style: none;
+	font-size: 1.25rem;
+}
+
+.sentence-list li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem 1rem;
+	padding-block: 0.75rem;
+	border-block-end: 1px solid #ddd;
+}
+
+.sentence-list a {
+	color: var(--outline);
+	overflow-wrap: anywhere;
+}
+
 .visually-hidden {
 	position: absolute;
 	inline-size: 1px;

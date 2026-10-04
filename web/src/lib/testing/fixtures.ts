@@ -55,3 +55,8 @@ export const sentence: Sentence = {
 		features: { tense: 'past', commonness: 0 }
 	}
 };
+
+// another is the fixture sentence under a different id and text.
+export function another(id: string, text: string): Sentence {
+	return { ...structuredClone(sentence), id, text };
+}
