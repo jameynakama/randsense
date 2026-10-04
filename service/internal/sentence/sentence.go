@@ -159,6 +159,7 @@ func Realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *mo
 		words[i] = l.Word
 		if t, ok := text[l]; ok {
 			words[i] = t
+			l.Display = t
 		}
 	}
 

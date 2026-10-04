@@ -380,7 +380,7 @@ func TestRealizeSentenceRecomputesPostedFeatures(t *testing.T) {
 	// apply. Filling replaces a leaf's and an NP's features, but nothing
 	// else touches a VP's.
 	tree := `{"symbol": "S", "features": {"tense": "future", "commonness": 6}, "children": [
-		{"symbol": "NP", "children": [{"symbol": "Determiner"}, {"symbol": "Noun"}]},
+		{"symbol": "NP", "children": [{"symbol": "Determiner"}, {"symbol": "Noun", "display": "stale"}]},
 		{"symbol": "VP", "features": {"gender": "stale"}, "children": [{"symbol": "Verb"}]}
 	]}`
 	resp := postTree(t, srv, "", tree)
@@ -403,5 +403,8 @@ func TestRealizeSentenceRecomputesPostedFeatures(t *testing.T) {
 	}
 	if g := body.Tree.Children[1].Features.Gender; g != "" {
 		t.Errorf("VP gender: got %q, want none", g)
+	}
+	if d := body.Tree.Children[0].Children[1].Display; d != "" {
+		t.Errorf("noun display: got %q, want none", d)
 	}
 }

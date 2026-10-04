@@ -288,10 +288,14 @@ type Features struct {
 // Node is one constituent of a parse tree. A leaf's Symbol is a POS,
 // optionally qualified ("Verb:transitive"). Once the leaf is filled from
 // the lexicon, Lemma is the dictionary form and Word the inflected one.
+// Display is how the leaf is written in the sentence when that differs
+// from Word: a separable verb split around its object ("looked" and
+// "her up").
 type Node struct {
 	Symbol   string   `json:"symbol"`
 	Lemma    string   `json:"lemma,omitempty"`
 	Word     string   `json:"word,omitempty"`
+	Display  string   `json:"display,omitempty"`
 	Features Features `json:"features,omitzero"`
 	Children []*Node  `json:"children,omitempty"`
 }

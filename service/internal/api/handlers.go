@@ -155,7 +155,7 @@ func (h *Handler) realizeSentence(w http.ResponseWriter, r *http.Request) {
 }
 
 func clearWords(n *grammar.Node) {
-	n.Lemma, n.Word, n.Features = "", "", grammar.Features{}
+	n.Lemma, n.Word, n.Display, n.Features = "", "", "", grammar.Features{}
 	for _, c := range n.Children {
 		clearWords(c)
 	}

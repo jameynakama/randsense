@@ -1217,3 +1217,24 @@ func TestGenerateRejectsMalformedVerbFrames(t *testing.T) {
 		t.Errorf("expected an error naming give; got %v", err)
 	}
 }
+
+func TestRealizeShowsSplitSeparableVerbOnItsLeaves(t *testing.T) {
+	q := newFake()
+	q.pronouns["nominative"] = store.Pronoun{Lemma: "she", Person: 3, Number: "singular", Gender: "fem"}
+	q.framed = &store.Verb{Lemma: "look up", Separable: true}
+	tree := node("S", node("NP", leaf("Pronoun")), node("VP", leaf("Verb:transitive"), node("NP", leaf("Pronoun"))))
+
+	if _, err := sentence.Realize(context.Background(), q, tree, loadVerbs(t), newRNG(), 0); err != nil {
+		t.Fatalf("Realize: %v", err)
+	}
+
+	subject := tree.Children[0].Children[0]
+	verb, object := tree.Children[1].Children[0], tree.Children[1].Children[1].Children[0]
+	head, _, _ := strings.Cut(verb.Word, " ")
+	if verb.Display != head || object.Display != "her up" {
+		t.Errorf("expected displays %q and \"her up\"; got %q and %q", head, verb.Display, object.Display)
+	}
+	if subject.Display != "" {
+		t.Errorf("expected no display on an unsplit word; got %q", subject.Display)
+	}
+}
