@@ -1,34 +1,49 @@
 package api
 
 import (
+	"cmp"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/jameynakama/randsense/internal/grammar"
+	"github.com/jameynakama/randsense/internal/live"
 	"github.com/jameynakama/randsense/internal/morph"
 	"github.com/jameynakama/randsense/internal/store"
 )
+
+// defaultKeepalive is how often an idle stream sends a comment, so proxies
+// don't close it.
+const defaultKeepalive = 25 * time.Second
 
 type RouterConfig struct {
 	Queries *store.Queries
 	Grammar *grammar.Grammar
 	Verbs   *morph.Verbs
+	// Keepalive overrides defaultKeepalive.
+	Keepalive time.Duration
 }
 
 type Handler struct {
-	queries *store.Queries
-	grammar *grammar.Grammar
-	verbs   *morph.Verbs
+	queries   *store.Queries
+	grammar   *grammar.Grammar
+	verbs     *morph.Verbs
+	hub       *live.Hub
+	keepalive time.Duration
 }
 
 func NewRouter(cfg RouterConfig) http.Handler {
+	hub := live.NewHub()
+	go hub.Run()
 	h := &Handler{
-		queries: cfg.Queries,
-		grammar: cfg.Grammar,
-		verbs:   cfg.Verbs,
+		queries:   cfg.Queries,
+		grammar:   cfg.Grammar,
+		verbs:     cfg.Verbs,
+		hub:       hub,
+		keepalive: cmp.Or(cfg.Keepalive, defaultKeepalive),
 	}
 
 	r := chi.NewRouter()
@@ -42,6 +57,7 @@ func NewRouter(cfg RouterConfig) http.Handler {
 		r.Get("/words/random", h.randomWord)
 		r.Get("/sentences", h.listSentences)
 		r.Get("/sentences/random", h.randomSentence)
+		r.Get("/sentences/stream", h.stream)
 		r.Post("/sentences/realize", h.realizeSentence)
 		r.Get("/sentences/{id}", h.getSentence)
 		r.Post("/sentences/{id}/stars", h.addStar)

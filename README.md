@@ -65,7 +65,12 @@ POST   /api/v1/sentences/{id}/stars           -> {count}   (X-Voter: <uuid>)
 DELETE /api/v1/sentences/{id}/stars           -> {count}   (X-Voter: <uuid>)
 GET    /api/v1/stars[?limit&offset]           -> [sentence] starred by X-Voter, newest star first
 POST   /api/v1/sentences/{id}/flags           {comment, word_index?} -> 201 {id}
+GET    /api/v1/sentences/stream               Server-Sent Events: sentence, stars
 ```
+
+The stream sends `sentence` (the full sentence) whenever `random` saves one and `stars`
+(`{id, count}`) after every star or unstar, even one that leaves the count unchanged, with a `:`
+keepalive every 25 seconds. It doesn't replay missed events.
 
 The voter token is a random UUID the browser keeps. Starring and unstarring are idempotent.
 

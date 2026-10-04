@@ -47,7 +47,8 @@ func (h *Handler) changeStar(w http.ResponseWriter, r *http.Request, change func
 		writeError(w, http.StatusBadRequest, badVoter)
 		return
 	}
-	count, err := change(r.Context(), chi.URLParam(r, "id"), v)
+	id := chi.URLParam(r, "id")
+	count, err := change(r.Context(), id, v)
 	var pgErr *pgconn.PgError
 	if errors.Is(err, pgx.ErrNoRows) || (errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation) {
 		writeNotFound(w)
@@ -58,6 +59,7 @@ func (h *Handler) changeStar(w http.ResponseWriter, r *http.Request, change func
 		writeError(w, http.StatusInternalServerError, "server error")
 		return
 	}
+	h.publish("stars", StarsEvent{ID: id, Count: count})
 	writeJSON(w, http.StatusOK, map[string]int32{"count": count})
 }
 

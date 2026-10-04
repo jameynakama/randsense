@@ -113,7 +113,9 @@ func (h *Handler) randomSentence(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "server error")
 		return
 	}
-	writeJSON(w, http.StatusOK, sentenceResponse(saved))
+	resp := sentenceResponse(saved)
+	h.publish("sentence", resp)
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // maxTreeBytes caps a realize request body, since every leaf is a lookup.
