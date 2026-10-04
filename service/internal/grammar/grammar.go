@@ -321,6 +321,18 @@ func (n *Node) Leaves() []POS {
 	return leaves
 }
 
+// LeafNodes returns the tree's leaves in sentence order.
+func (n *Node) LeafNodes() []*Node {
+	if len(n.Children) == 0 {
+		return []*Node{n}
+	}
+	var leaves []*Node
+	for _, c := range n.Children {
+		leaves = append(leaves, c.LeafNodes()...)
+	}
+	return leaves
+}
+
 // Validate reports whether the tree could have been expanded from some
 // grammar: every leaf is a POS, optionally qualified, and no inner node is.
 func (n *Node) Validate() error {

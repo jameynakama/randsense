@@ -150,7 +150,7 @@ func Realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *mo
 
 	text := map[*grammar.Node]string{}
 	gen.separateParticles(tree, text)
-	leaves := leafNodes(tree)
+	leaves := tree.LeafNodes()
 	words := make([]string, len(leaves))
 	for i, l := range leaves {
 		if l.Lemma == "a" && l.POS() == grammar.Determiner && i+1 < len(leaves) {
@@ -486,7 +486,7 @@ func (gen *generator) separateParticles(n *grammar.Node, text map[*grammar.Node]
 		head, rest, _ := strings.Cut(c.Word, " ")
 		obj := pronounObject(n.Children[i+1])
 		if obj == nil && strings.Contains(rest, " ") && n.Children[i+1].Symbol == nounPhrase {
-			leaves := leafNodes(n.Children[i+1])
+			leaves := n.Children[i+1].LeafNodes()
 			obj = leaves[len(leaves)-1]
 		}
 		if obj != nil {
@@ -506,17 +506,6 @@ func pronounObject(n *grammar.Node) *grammar.Node {
 		return n.Children[0]
 	}
 	return nil
-}
-
-func leafNodes(n *grammar.Node) []*grammar.Node {
-	if len(n.Children) == 0 {
-		return []*grammar.Node{n}
-	}
-	var leaves []*grammar.Node
-	for _, c := range n.Children {
-		leaves = append(leaves, leafNodes(c)...)
-	}
-	return leaves
 }
 
 // format joins words into a sentence: commas attached to the word before,

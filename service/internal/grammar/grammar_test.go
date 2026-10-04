@@ -469,3 +469,15 @@ func TestNodeKeepsZeroCommonness(t *testing.T) {
 		t.Errorf("expected %s; got %s", want, b)
 	}
 }
+
+func TestLeafNodesAreInSentenceOrder(t *testing.T) {
+	det, noun, verb := &grammar.Node{Symbol: "Determiner"}, &grammar.Node{Symbol: "Noun"}, &grammar.Node{Symbol: "Verb"}
+	tree := &grammar.Node{Symbol: "S", Children: []*grammar.Node{
+		{Symbol: "NP", Children: []*grammar.Node{det, noun}},
+		verb,
+	}}
+
+	if got := tree.LeafNodes(); !slices.Equal(got, []*grammar.Node{det, noun, verb}) {
+		t.Errorf("expected determiner, noun, verb; got %v", got)
+	}
+}

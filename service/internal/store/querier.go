@@ -39,6 +39,7 @@ type Querier interface {
 	InsertAdverb(ctx context.Context, arg InsertAdverbParams) error
 	InsertConjunction(ctx context.Context, arg InsertConjunctionParams) error
 	InsertDeterminer(ctx context.Context, arg InsertDeterminerParams) error
+	InsertFlag(ctx context.Context, arg InsertFlagParams) (int64, error)
 	InsertNoun(ctx context.Context, arg InsertNounParams) error
 	InsertPreposition(ctx context.Context, lemma string) error
 	InsertPronoun(ctx context.Context, arg InsertPronounParams) error

@@ -64,9 +64,14 @@ GET /api/v1/sentences/{id}                    -> {id, text, tree, star_count, cr
 POST   /api/v1/sentences/{id}/stars           -> {count}   (X-Voter: <uuid>)
 DELETE /api/v1/sentences/{id}/stars           -> {count}   (X-Voter: <uuid>)
 GET    /api/v1/stars[?limit&offset]           -> [sentence] starred by X-Voter, newest star first
+POST   /api/v1/sentences/{id}/flags           {comment, word_index?} -> 201 {id}
 ```
 
 The voter token is a random UUID the browser keeps. Starring and unstarring are idempotent.
+
+A flag's comment is 10 to 1,000 characters after trimming. `word_index` counts the tree's leaves
+from 0, commas included; a comma can't be flagged, and without an index the flag is for the
+whole sentence.
 
 List endpoints return newest first, `limit` 1 to 100 (default 30).
 
