@@ -155,6 +155,8 @@ package suffix (`randsense_test_api`), so packages can run in parallel.
 
 `just test-fe` runs the web e2e tests against the Go server and the dev database, starting the
 server if it isn't running, so they save sentences and stars there.
+Parallel workers share a live feed of 30 sentences, so e2e tests must not assert sentence
+positions. Generate only a few sentences per test; star existing sentences when many are needed.
 
 ```bash
 just test
