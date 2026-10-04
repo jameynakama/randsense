@@ -57,8 +57,9 @@ Don't reopen these without new evidence.
 
 1. **Frontend and saved sentences.** Designed in
    `docs/superpowers/specs/2026-10-03-frontend-design.md`: monorepo move, saved sentences, live
-   feed over SSE, permalinks, stars, flags and a single-admin flag viewer. Build it in the
-   spec's stage order.
+   feed over SSE, permalinks, stars, flags and a single-admin flag viewer. The backend is
+   built; the spec's "Build order" lists what remains, starting with the GitHub rename and then
+   the SvelteKit app.
 2. **Idioms with a broken object frame.** OEWN marks "give birth", "find fault" and "pull wires"
    transitive, which gives "gave birth the goose". Each idiom needs a label: keep the frame,
    drop object frames (keeping "she gave birth"), or move it to a fixed-preposition frame ("gave

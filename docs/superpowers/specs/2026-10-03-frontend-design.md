@@ -35,10 +35,8 @@ randsense/
   CLAUDE.md, README.md, docs/
 ```
 
-Move the Go code with `git mv` in one commit before any other change, so history follows the
-files. The Go module path stays `github.com/jameynakama/randsense`. The Justfile gets `run-be`
-(today's `run`), `run-fe`, and `run`, which starts both. Other recipes follow the same pattern
-(`test-be`, `test-fe`, `test`).
+The Go module path stays `github.com/jameynakama/randsense`. The root Justfile pairs recipes:
+`run-be` and `run-fe`, with `run` starting both, and likewise `test-be`, `test-fe` and `test`.
 
 A monorepo was chosen because one developer changes the API and the frontend together.
 
@@ -306,10 +304,7 @@ The exact rates are set in the nginx config at deploy time.
 ## Testing
 
 - **Go:** the existing style. Real-Postgres integration tests, one database per package (a new
-  database-backed package needs its own suffix), and 100% coverage as the goal. Add N+1 tests for
-  the list endpoints, hub unit tests (broadcast, dropping slow clients, cleanup on disconnect), a
-  stream test over a real HTTP connection, and auth tests (wrong password, tampered cookie, expired
-  cookie).
+  database-backed package needs its own suffix), and 100% coverage as the goal.
 - **Web:** Vitest for logic (tree helpers, role detection, the voter token) and Playwright for the
   main flows: generate, star, flag a word, a feed update arriving over SSE, and admin login.
   Playwright runs axe (`@axe-core/playwright`) on every page and its key open states (word card,
@@ -320,20 +315,14 @@ The exact rates are set in the nginx config at deploy time.
 
 ## Build order
 
-Each stage ends working and committed.
+The backend (stages 1 to 5) is built. What remains, in order, each stage ending working and
+committed:
 
-1. Monorepo move, Justfile recipes, doc paths, GitHub rename.
-2. Tree features (see "Tree data"), then saved sentences: migration, short IDs, saving on
-   `random`, the list and single-sentence endpoints. Features come first so every saved tree
-   has them.
-3. Stars and flags endpoints.
-4. SSE hub and stream endpoint, and broadcasting from `random` and the star endpoints.
-5. Admin auth and admin endpoints, and `just hash-password`.
+- The GitHub rename of `randsense-service` to `randsense`, left over from stage 1.
+
 6. SvelteKit app: scaffold, sentence component, home page with live feed, permalink, stars page,
    flag form. Accessibility and small screens (above) are part of each component as it's built,
    with the axe and phone-viewport tests starting with the scaffold.
 7. Admin UI, under the same accessibility and small-screen rules.
 8. Deployment: the nginx site config (routing, SSE settings, rate limits), two systemd units, and
    a build-and-deploy recipe.
-
-Stages 2 to 5 are backend only and can be tried with `curl` and `http` as they land.
