@@ -41,7 +41,7 @@ func TestPublishReachesEverySubscriber(t *testing.T) {
 	}
 }
 
-// Review Focus 2: a stalled client mustn't stall publishing.
+// A stalled client mustn't stall publishing.
 func TestPublishDropsASubscriberThatFallsBehind(t *testing.T) {
 	h := newHub()
 	slow, _ := h.Subscribe()

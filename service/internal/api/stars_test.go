@@ -74,7 +74,7 @@ func TestStarsRejectBadRequests(t *testing.T) {
 	decode(t, call(t, srv, http.MethodGet, "/api/v1/stars", "", nil), http.StatusBadRequest, nil)
 }
 
-// Review Focus 1: a double-click or racing voters.
+// A double-click or racing voters.
 func TestConcurrentStarsKeepTheCountRight(t *testing.T) {
 	tests := []struct {
 		name  string

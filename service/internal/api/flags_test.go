@@ -82,7 +82,6 @@ func TestFlagSentenceOrWord(t *testing.T) {
 	}
 }
 
-// Review Focus 3.
 func TestFlagRejectsBadWordIndexes(t *testing.T) {
 	resetSentences(t)
 	insertSentence(t, "aaaaaaaa", time.Now())
@@ -102,7 +101,7 @@ func TestFlagRejectsBadWordIndexes(t *testing.T) {
 	}
 }
 
-// Review Focus 4: characters after trimming, not bytes.
+// Characters after trimming, not bytes.
 func TestFlagCommentLength(t *testing.T) {
 	resetSentences(t)
 	insertSentence(t, "aaaaaaaa", time.Now())
