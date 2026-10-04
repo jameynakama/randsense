@@ -58,5 +58,10 @@ generate:
 ingest:
     go run ./cmd/ingest
 
+# Print a bcrypt hash of a typed password, for ADMIN_PASSWORD_HASH
+[working-directory: 'service']
+hash-password:
+    go run ./cmd/hashpassword
+
 @get num="1" commonness="0":
     for i in $(seq {{ num }}); do printf '%s: ' "$i"; http http://localhost:8080/api/v1/sentences/random?commonness={{ commonness }} | jq .text; done

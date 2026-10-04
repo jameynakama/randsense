@@ -19,10 +19,20 @@ import (
 // don't close it.
 const defaultKeepalive = 25 * time.Second
 
+// AdminConfig is how the single admin logs in.
+type AdminConfig struct {
+	PasswordHash  []byte // bcrypt
+	SessionSecret []byte // HMAC key for session cookies
+	// InsecureCookies lets the session cookie work over plain http, for
+	// development.
+	InsecureCookies bool
+}
+
 type RouterConfig struct {
 	Queries *store.Queries
 	Grammar *grammar.Grammar
 	Verbs   *morph.Verbs
+	Admin   AdminConfig
 	// Keepalive overrides defaultKeepalive.
 	Keepalive time.Duration
 }
@@ -31,6 +41,7 @@ type Handler struct {
 	queries   *store.Queries
 	grammar   *grammar.Grammar
 	verbs     *morph.Verbs
+	admin     AdminConfig
 	hub       *live.Hub
 	keepalive time.Duration
 }
@@ -42,6 +53,7 @@ func NewRouter(cfg RouterConfig) http.Handler {
 		queries:   cfg.Queries,
 		grammar:   cfg.Grammar,
 		verbs:     cfg.Verbs,
+		admin:     cfg.Admin,
 		hub:       hub,
 		keepalive: cmp.Or(cfg.Keepalive, defaultKeepalive),
 	}
@@ -64,6 +76,15 @@ func NewRouter(cfg RouterConfig) http.Handler {
 		r.Delete("/sentences/{id}/stars", h.removeStar)
 		r.Post("/sentences/{id}/flags", h.flagSentence)
 		r.Get("/stars", h.listStars)
+		r.Route("/admin", func(r chi.Router) {
+			r.Post("/login", h.login)
+			r.Group(func(r chi.Router) {
+				r.Use(h.requireAdmin)
+				r.Post("/logout", h.logout)
+				r.Get("/flags", h.listFlags)
+				r.Get("/flagged-words", h.listFlaggedWords)
+			})
+		})
 	})
 
 	return r

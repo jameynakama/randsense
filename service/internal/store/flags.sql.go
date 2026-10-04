@@ -37,3 +37,99 @@ func (q *Queries) InsertFlag(ctx context.Context, arg InsertFlagParams) (int64, 
 	err := row.Scan(&id)
 	return id, err
 }
+
+const listFlaggedWords = `-- name: ListFlaggedWords :many
+SELECT lemma, pos, count(*) AS count
+FROM flags
+WHERE lemma IS NOT NULL
+GROUP BY lemma, pos
+ORDER BY count DESC, lemma, pos
+LIMIT $2 OFFSET $1
+`
+
+type ListFlaggedWordsParams struct {
+	PageOffset int32 `db:"page_offset" json:"page_offset"`
+	PageLimit  int32 `db:"page_limit" json:"page_limit"`
+}
+
+type ListFlaggedWordsRow struct {
+	Lemma pgtype.Text `db:"lemma" json:"lemma"`
+	Pos   pgtype.Text `db:"pos" json:"pos"`
+	Count int64       `db:"count" json:"count"`
+}
+
+func (q *Queries) ListFlaggedWords(ctx context.Context, arg ListFlaggedWordsParams) ([]ListFlaggedWordsRow, error) {
+	rows, err := q.db.Query(ctx, listFlaggedWords, arg.PageOffset, arg.PageLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListFlaggedWordsRow
+	for rows.Next() {
+		var i ListFlaggedWordsRow
+		if err := rows.Scan(&i.Lemma, &i.Pos, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listFlags = `-- name: ListFlags :many
+SELECT flags.id, flags.sentence_id, flags.word_index, flags.lemma, flags.pos, flags.comment, flags.created_at,
+       sentences.text AS sentence_text, sentences.tree AS sentence_tree
+FROM flags
+JOIN sentences ON sentences.id = flags.sentence_id
+ORDER BY flags.created_at DESC, flags.id DESC
+LIMIT $2 OFFSET $1
+`
+
+type ListFlagsParams struct {
+	PageOffset int32 `db:"page_offset" json:"page_offset"`
+	PageLimit  int32 `db:"page_limit" json:"page_limit"`
+}
+
+type ListFlagsRow struct {
+	ID           int64              `db:"id" json:"id"`
+	SentenceID   string             `db:"sentence_id" json:"sentence_id"`
+	WordIndex    pgtype.Int4        `db:"word_index" json:"word_index"`
+	Lemma        pgtype.Text        `db:"lemma" json:"lemma"`
+	Pos          pgtype.Text        `db:"pos" json:"pos"`
+	Comment      string             `db:"comment" json:"comment"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	SentenceText string             `db:"sentence_text" json:"sentence_text"`
+	SentenceTree []byte             `db:"sentence_tree" json:"sentence_tree"`
+}
+
+func (q *Queries) ListFlags(ctx context.Context, arg ListFlagsParams) ([]ListFlagsRow, error) {
+	rows, err := q.db.Query(ctx, listFlags, arg.PageOffset, arg.PageLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListFlagsRow
+	for rows.Next() {
+		var i ListFlagsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SentenceID,
+			&i.WordIndex,
+			&i.Lemma,
+			&i.Pos,
+			&i.Comment,
+			&i.CreatedAt,
+			&i.SentenceText,
+			&i.SentenceTree,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

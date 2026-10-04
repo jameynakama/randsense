@@ -11,6 +11,7 @@ import (
 	"github.com/jameynakama/randsense/internal/grammar"
 	"github.com/jameynakama/randsense/internal/morph"
 	"github.com/jameynakama/randsense/internal/store"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -20,8 +21,11 @@ const (
 )
 
 type config struct {
-	databaseURL string
-	port        string
+	databaseURL       string
+	port              string
+	adminPasswordHash string
+	sessionSecret     string
+	insecureCookies   bool
 }
 
 func loadConfig() config {
@@ -42,13 +46,22 @@ func loadConfig() config {
 	}
 
 	return config{
-		databaseURL: required("DATABASE_URL"),
-		port:        withDefault("PORT", "8080"),
+		databaseURL:       required("DATABASE_URL"),
+		port:              withDefault("PORT", "8080"),
+		adminPasswordHash: required("ADMIN_PASSWORD_HASH"),
+		sessionSecret:     required("SESSION_SECRET"),
+		insecureCookies:   os.Getenv("INSECURE_COOKIES") == "true",
 	}
 }
 
 func main() {
 	cfg := loadConfig()
+	if _, err := bcrypt.Cost([]byte(cfg.adminPasswordHash)); err != nil {
+		log.Fatalf("ADMIN_PASSWORD_HASH must be a bcrypt hash (single-quote it in .env so its $s survive): %v", err)
+	}
+	if len(cfg.sessionSecret) < 32 {
+		log.Fatal("SESSION_SECRET must be at least 32 bytes")
+	}
 
 	ctx := context.Background()
 
@@ -88,7 +101,14 @@ func main() {
 		log.Fatalf("load verb morphology: %v", err)
 	}
 
-	routerCfg := api.RouterConfig{Queries: store.New(db), Grammar: g, Verbs: v}
+	routerCfg := api.RouterConfig{
+		Queries: store.New(db), Grammar: g, Verbs: v,
+		Admin: api.AdminConfig{
+			PasswordHash:    []byte(cfg.adminPasswordHash),
+			SessionSecret:   []byte(cfg.sessionSecret),
+			InsecureCookies: cfg.insecureCookies,
+		},
+	}
 	r := api.NewRouter(routerCfg)
 
 	log.Printf("starting server at http://localhost:%s", cfg.port)

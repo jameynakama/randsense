@@ -50,6 +50,7 @@ Server starts on `http://localhost:8080` (or `PORT` from `.env`).
 | `just migrate-up`               | Apply pending migrations                 |
 | `just migrate-down [n]`         | Roll back n migrations (default 1)       |
 | `just generate`                 | Regenerate sqlc types after query changes|
+| `just hash-password`            | Print a bcrypt hash for `ADMIN_PASSWORD_HASH` |
 | `just ingest`                   | Load OEWN, SUBTLEX-US and the `service/data/lexicon/` lists |
 
 ## API
@@ -66,11 +67,20 @@ DELETE /api/v1/sentences/{id}/stars           -> {count}   (X-Voter: <uuid>)
 GET    /api/v1/stars[?limit&offset]           -> [sentence] starred by X-Voter, newest star first
 POST   /api/v1/sentences/{id}/flags           {comment, word_index?} -> 201 {id}
 GET    /api/v1/sentences/stream               Server-Sent Events: sentence, stars
+POST   /api/v1/admin/login                    {password} -> 204 + session cookie
+POST   /api/v1/admin/logout                   -> 204
+GET    /api/v1/admin/flags[?limit&offset]     -> [{id, word_index, lemma, pos, comment, created_at, sentence: {id, text, tree}}]
+GET    /api/v1/admin/flagged-words[?limit&offset] -> [{lemma, pos, count}]
 ```
 
 The stream sends `sentence` (the full sentence) whenever `random` saves one and `stars`
 (`{id, count}`) after every star or unstar, even one that leaves the count unchanged, with a `:`
 keepalive every 25 seconds. It doesn't replay missed events.
+
+There's one admin and no user table. `ADMIN_PASSWORD_HASH` holds a bcrypt hash (`just
+hash-password` makes one) and `SESSION_SECRET` (32+ bytes) signs the 14-day session cookie, so
+changing either and restarting logs everyone out. Every `/admin` route but `login` needs the
+cookie. `INSECURE_COOKIES=true` drops the cookie's `Secure` flag for plain-http development.
 
 The voter token is a random UUID the browser keeps. Starring and unstarring are idempotent.
 

@@ -47,6 +47,8 @@ type Querier interface {
 	InsertVerb(ctx context.Context, arg InsertVerbParams) error
 	ListConjunctions(ctx context.Context) ([]Conjunction, error)
 	ListDeterminers(ctx context.Context) ([]Determiner, error)
+	ListFlaggedWords(ctx context.Context, arg ListFlaggedWordsParams) ([]ListFlaggedWordsRow, error)
+	ListFlags(ctx context.Context, arg ListFlagsParams) ([]ListFlagsRow, error)
 	ListPrepositions(ctx context.Context) ([]Preposition, error)
 	ListPronouns(ctx context.Context) ([]Pronoun, error)
 	ListSentences(ctx context.Context, arg ListSentencesParams) ([]Sentence, error)

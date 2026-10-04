@@ -13,7 +13,10 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/jameynakama/randsense/internal/api"
+	"github.com/jameynakama/randsense/internal/auth"
 	"github.com/jameynakama/randsense/internal/grammar"
 	"github.com/jameynakama/randsense/internal/morph"
 	"github.com/jameynakama/randsense/internal/store"
@@ -109,6 +112,13 @@ func newServer(t *testing.T, cfg api.RouterConfig) *httptest.Server {
 	if cfg.Queries == nil {
 		cfg.Queries = store.New(testPool)
 	}
+	if cfg.Admin.PasswordHash == nil {
+		hash, err := bcrypt.GenerateFromPassword([]byte(testPassword), bcrypt.MinCost)
+		if err != nil {
+			t.Fatalf("bcrypt: %v", err)
+		}
+		cfg.Admin = api.AdminConfig{PasswordHash: hash, SessionSecret: testSecret, InsecureCookies: cfg.Admin.InsecureCookies}
+	}
 	cfg.Grammar, cfg.Verbs = g, v
 	return httptest.NewServer(api.NewRouter(cfg))
 }
@@ -116,4 +126,15 @@ func newServer(t *testing.T, cfg api.RouterConfig) *httptest.Server {
 func newTestServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	return newServer(t, api.RouterConfig{})
+}
+
+const testPassword = "correct horse battery"
+
+var testSecret = []byte("test-session-secret-32-bytes-xxx")
+
+// adminCookie is a session cookie, as a Cookie header, that's valid until
+// expires.
+func adminCookie(expires time.Time) http.Header {
+	c := &http.Cookie{Name: auth.CookieName, Value: auth.NewSession(testSecret, expires)}
+	return http.Header{"Cookie": {c.String()}}
 }

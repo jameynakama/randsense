@@ -64,6 +64,20 @@ var listEndpoints = []struct {
 			mustExec(t, "INSERT INTO stars (sentence_id, voter) VALUES ($1, $2)", id, voterA)
 		}
 	}},
+	{"admin flags", "/api/v1/admin/flags", adminCookie(time.Now().Add(time.Hour)), func(t *testing.T, n int) {
+		for range n {
+			id := nextID()
+			insertSentence(t, id, time.Now())
+			mustExec(t, "INSERT INTO flags (sentence_id, comment) VALUES ($1, 'a long enough comment')", id)
+		}
+	}},
+	{"flagged words", "/api/v1/admin/flagged-words", adminCookie(time.Now().Add(time.Hour)), func(t *testing.T, n int) {
+		id := nextID()
+		insertSentence(t, id, time.Now())
+		for range n {
+			mustExec(t, "INSERT INTO flags (sentence_id, word_index, lemma, pos, comment) VALUES ($1, 1, $2, 'Noun', 'a long enough comment')", id, nextID())
+		}
+	}},
 }
 
 func TestListEndpointsRunOneQueryWhateverTheRowCount(t *testing.T) {
