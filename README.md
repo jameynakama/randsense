@@ -61,7 +61,12 @@ GET /api/v1/sentences/random[?commonness=N]   -> {id, text, tree, star_count, cr
 POST /api/v1/sentences/realize[?commonness=N] -> {text, tree}
 GET /api/v1/sentences[?limit=30&offset=0]     -> [{id, text, tree, star_count, created_at}]
 GET /api/v1/sentences/{id}                    -> {id, text, tree, star_count, created_at}
+POST   /api/v1/sentences/{id}/stars           -> {count}   (X-Voter: <uuid>)
+DELETE /api/v1/sentences/{id}/stars           -> {count}   (X-Voter: <uuid>)
+GET    /api/v1/stars[?limit&offset]           -> [sentence] starred by X-Voter, newest star first
 ```
+
+The voter token is a random UUID the browser keeps. Starring and unstarring are idempotent.
 
 List endpoints return newest first, `limit` 1 to 100 (default 30).
 

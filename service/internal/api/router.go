@@ -44,6 +44,9 @@ func NewRouter(cfg RouterConfig) http.Handler {
 		r.Get("/sentences/random", h.randomSentence)
 		r.Post("/sentences/realize", h.realizeSentence)
 		r.Get("/sentences/{id}", h.getSentence)
+		r.Post("/sentences/{id}/stars", h.addStar)
+		r.Delete("/sentences/{id}/stars", h.removeStar)
+		r.Get("/stars", h.listStars)
 	})
 
 	return r

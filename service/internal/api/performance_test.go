@@ -57,6 +57,13 @@ var listEndpoints = []struct {
 			insertSentence(t, nextID(), time.Now())
 		}
 	}},
+	{"starred sentences", "/api/v1/stars", http.Header{"X-Voter": {voterA}}, func(t *testing.T, n int) {
+		for range n {
+			id := nextID()
+			insertSentence(t, id, time.Now())
+			mustExec(t, "INSERT INTO stars (sentence_id, voter) VALUES ($1, $2)", id, voterA)
+		}
+	}},
 }
 
 func TestListEndpointsRunOneQueryWhateverTheRowCount(t *testing.T) {

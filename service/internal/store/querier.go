@@ -9,6 +9,9 @@ import (
 )
 
 type Querier interface {
+	// One statement, so star_count and stars change together. Starring twice
+	// inserts nothing and adds 0. An unknown sentence fails the foreign key.
+	AddStar(ctx context.Context, arg AddStarParams) (int32, error)
 	CountAdjectives(ctx context.Context) (int64, error)
 	CountAdverbs(ctx context.Context) (int64, error)
 	CountNouns(ctx context.Context) (int64, error)
@@ -46,10 +49,13 @@ type Querier interface {
 	ListPrepositions(ctx context.Context) ([]Preposition, error)
 	ListPronouns(ctx context.Context) ([]Pronoun, error)
 	ListSentences(ctx context.Context, arg ListSentencesParams) ([]Sentence, error)
+	ListStarredSentences(ctx context.Context, arg ListStarredSentencesParams) ([]Sentence, error)
 	// A lemma is plural if it ends in -s and its singular (minus -s, or minus
 	// -es) is also a lemma ("Rastas"/"Rasta", "eyeglasses"/"eyeglass"). Short
 	// words and -ss/-us/-is endings ("Ms", "Mass", "Pus") are left singular.
 	MarkPluralNouns(ctx context.Context) (int64, error)
+	// An unknown sentence returns no rows.
+	RemoveStar(ctx context.Context, arg RemoveStarParams) (int32, error)
 	// Words are lowercase, so only lowercase lemmas match.
 	SetAdjectiveFrequencies(ctx context.Context, arg SetAdjectiveFrequenciesParams) (int64, error)
 	// Words are lowercase, so only lowercase lemmas match.
