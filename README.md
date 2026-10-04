@@ -67,6 +67,13 @@ qualified as in `grammar.toml`. Agreement depends on the symbol names its header
 there. Bodies are capped at 64 KiB. A slot no word fits, such as a frame with no verbs
 above the floor, returns 422.
 
+Every node in a returned tree may carry a `features` object with what generation worked out:
+the root's `tense` and `commonness`; an NP's `person` and `number`; a noun's `number`; a verb's
+`form` (`finite`, `base` or `gerund`), `frames` (every frame its lemma has) and `separable`,
+plus `tense`, `person` and `number` when it's finite; a pronoun's `case`, `person`, `number`
+and `gender`; a determiner's `type` and `number`. Content words carry their Zipf `frequency`
+when SUBTLEX-US has it. Empty fields are omitted.
+
 ```bash
 echo '{"symbol": "S", "children": [
   {"symbol": "NP", "children": [{"symbol": "Pronoun"}]},

@@ -385,3 +385,38 @@ func TestRealizeSentenceRejectsBadRequests(t *testing.T) {
 		})
 	}
 }
+
+func TestRealizeSentenceRecomputesPostedFeatures(t *testing.T) {
+	seedWords(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	// As if copied from a saved sentence, with features that no longer
+	// apply. Filling replaces a leaf's and an NP's features, but nothing
+	// else touches a VP's.
+	tree := `{"symbol": "S", "features": {"tense": "future", "commonness": 6}, "children": [
+		{"symbol": "NP", "children": [{"symbol": "Determiner"}, {"symbol": "Noun"}]},
+		{"symbol": "VP", "features": {"gender": "stale"}, "children": [{"symbol": "Verb"}]}
+	]}`
+	resp := postTree(t, srv, "", tree)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status: got %d, want 200", resp.StatusCode)
+	}
+	var body struct {
+		Tree grammar.Node `json:"tree"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+
+	if tense := body.Tree.Features.Tense; tense != "present" && tense != "past" {
+		t.Errorf("tense: got %q, want present or past", tense)
+	}
+	if c := body.Tree.Features.Commonness; c == nil || *c != 0 {
+		t.Errorf("commonness: got %v, want 0", c)
+	}
+	if g := body.Tree.Children[1].Features.Gender; g != "" {
+		t.Errorf("VP gender: got %q, want none", g)
+	}
+}

@@ -447,3 +447,25 @@ func TestLoadAcceptsConjunctionTypesAndComma(t *testing.T) {
 		})
 	}
 }
+
+func TestNodeOmitsEmptyFeatures(t *testing.T) {
+	b, err := json.Marshal(&grammar.Node{Symbol: "Comma", Lemma: ",", Word: ","})
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+
+	if want := `{"symbol":"Comma","lemma":",","word":","}`; string(b) != want {
+		t.Errorf("expected %s; got %s", want, b)
+	}
+}
+
+func TestNodeKeepsZeroCommonness(t *testing.T) {
+	b, err := json.Marshal(&grammar.Node{Symbol: "S", Features: grammar.Features{Commonness: new(0.0)}})
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+
+	if want := `{"symbol":"S","features":{"commonness":0}}`; string(b) != want {
+		t.Errorf("expected %s; got %s", want, b)
+	}
+}

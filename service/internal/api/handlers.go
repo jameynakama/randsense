@@ -102,7 +102,7 @@ func (h *Handler) randomSentence(w http.ResponseWriter, r *http.Request) {
 const maxTreeBytes = 64 << 10
 
 // realizeSentence fills a posted tree, in the shape randomSentence returns,
-// with words. Any words already in the tree are replaced.
+// with words. Any words and features already in the tree are replaced.
 func (h *Handler) realizeSentence(w http.ResponseWriter, r *http.Request) {
 	c, err := commonness(r)
 	if err != nil {
@@ -135,7 +135,7 @@ func (h *Handler) realizeSentence(w http.ResponseWriter, r *http.Request) {
 }
 
 func clearWords(n *grammar.Node) {
-	n.Lemma, n.Word = "", ""
+	n.Lemma, n.Word, n.Features = "", "", grammar.Features{}
 	for _, c := range n.Children {
 		clearWords(c)
 	}

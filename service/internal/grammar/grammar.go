@@ -262,14 +262,38 @@ func (g *Grammar) productiveSymbols() map[string]bool {
 	return productive
 }
 
+// Features is what generation worked out about a node, for readers digging
+// into the tree. Which fields a node gets depends on what it is; empty
+// ones are omitted.
+type Features struct {
+	Tense string `json:"tense,omitempty"`
+	// Commonness is the root's commonness floor. It's a pointer because 0
+	// is a floor too.
+	Commonness *float64 `json:"commonness,omitempty"`
+	// Form is a verb's: "finite", "base" or "gerund".
+	Form   string `json:"form,omitempty"`
+	Person int    `json:"person,omitempty"`
+	Number string `json:"number,omitempty"`
+	Case   string `json:"case,omitempty"`
+	Gender string `json:"gender,omitempty"`
+	// Type is a determiner's: "definite", "demonstrative" and so on.
+	Type string `json:"type,omitempty"`
+	// Frames is every frame a verb's lemma has, not just its slot's.
+	Frames    []string `json:"frames,omitempty"`
+	Separable bool     `json:"separable,omitempty"`
+	// Frequency is the word's SUBTLEX-US Zipf value, absent when it has none.
+	Frequency *float64 `json:"frequency,omitempty"`
+}
+
 // Node is one constituent of a parse tree. A leaf's Symbol is a POS,
 // optionally qualified ("Verb:transitive"). Once the leaf is filled from
 // the lexicon, Lemma is the dictionary form and Word the inflected one.
 type Node struct {
-	Symbol   string  `json:"symbol"`
-	Lemma    string  `json:"lemma,omitempty"`
-	Word     string  `json:"word,omitempty"`
-	Children []*Node `json:"children,omitempty"`
+	Symbol   string   `json:"symbol"`
+	Lemma    string   `json:"lemma,omitempty"`
+	Word     string   `json:"word,omitempty"`
+	Features Features `json:"features,omitzero"`
+	Children []*Node  `json:"children,omitempty"`
 }
 
 // POS is a leaf's part of speech, without any frame qualifier.

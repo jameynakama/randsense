@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"maps"
 	"math/rand/v2"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -131,7 +133,7 @@ func (f *fakeQuerier) GetRandomNoun(_ context.Context, commonness float64) (stor
 
 func (f *fakeQuerier) GetRandomVerb(_ context.Context, commonness float64) (store.Verb, error) {
 	f.commonness = append(f.commonness, commonness)
-	return store.Verb{Lemma: "devour"}, f.err
+	return store.Verb{Lemma: "devour", Frames: []byte(`["transitive"]`)}, f.err
 }
 
 func (f *fakeQuerier) GetRandomVerbWithFrame(_ context.Context, arg store.GetRandomVerbWithFrameParams) (store.Verb, error) {
@@ -141,9 +143,14 @@ func (f *fakeQuerier) GetRandomVerbWithFrame(_ context.Context, arg store.GetRan
 		return store.Verb{}, pgx.ErrNoRows
 	}
 	if f.framed != nil {
-		return *f.framed, f.err
+		v := *f.framed
+		// Tests set framed for its lemma; a row always has frames.
+		if v.Frames == nil {
+			v.Frames = []byte(`["transitive"]`)
+		}
+		return v, f.err
 	}
-	return store.Verb{Lemma: "give"}, f.err
+	return store.Verb{Lemma: "give", Frames: []byte(`["transitive"]`)}, f.err
 }
 
 func (f *fakeQuerier) GetRandomAdjective(_ context.Context, commonness float64) (store.Adjective, error) {
@@ -1076,5 +1083,137 @@ func TestGenerateJoinsClausesWithTypedConjunctionsInOneTense(t *testing.T) {
 				t.Errorf("expected conjunction types [%s]; got %v", tc.conjType, q.conjTypes)
 			}
 		})
+	}
+}
+
+func zipf(t *testing.T, v string) pgtype.Numeric {
+	t.Helper()
+	var n pgtype.Numeric
+	if err := n.Scan(v); err != nil {
+		t.Fatalf("Scan %q: %v", v, err)
+	}
+	return n
+}
+
+func TestRealizeRecordsFeatures(t *testing.T) {
+	q := newFake(store.Determiner{Lemma: "these", Type: "demonstrative", Number: "plural"})
+	q.noun = &store.Noun{Lemma: "goose", Inflections: []byte(`{"plural":"geese"}`), Frequency: zipf(t, "4.5")}
+	q.framed = &store.Verb{Lemma: "look up", Frames: []byte(`["transitive","intransitive"]`), Separable: true, Frequency: zipf(t, "3.25")}
+	tree := node("S", detNoun(), node("VP", leaf("Verb:transitive"), leaf("Pronoun:reflexive")))
+
+	if _, err := sentence.Realize(context.Background(), q, tree, loadVerbs(t), newRNG(), 2.5); err != nil {
+		t.Fatalf("Realize: %v", err)
+	}
+
+	tense := tree.Features.Tense
+	if tense != "present" && tense != "past" {
+		t.Errorf("expected root tense present or past; got %q", tense)
+	}
+	if c := tree.Features.Commonness; c == nil || *c != 2.5 {
+		t.Errorf("expected root commonness 2.5; got %v", c)
+	}
+	np, vp := tree.Children[0], tree.Children[1]
+	tests := []struct {
+		name string
+		got  grammar.Features
+		want grammar.Features
+	}{
+		{"NP", np.Features, grammar.Features{Person: 3, Number: "plural"}},
+		{"determiner", np.Children[0].Features, grammar.Features{Type: "demonstrative", Number: "plural"}},
+		{"noun", np.Children[1].Features, grammar.Features{Number: "plural", Frequency: new(4.5)}},
+		{"verb", vp.Children[0].Features, grammar.Features{
+			Tense: tense, Form: "finite", Person: 3, Number: "plural",
+			Frames: []string{"transitive", "intransitive"}, Separable: true, Frequency: new(3.25),
+		}},
+		{"reflexive", vp.Children[1].Features, grammar.Features{Case: "reflexive", Person: 3, Number: "plural", Gender: "epicene"}},
+	}
+	for _, tc := range tests {
+		if !reflect.DeepEqual(tc.got, tc.want) {
+			t.Errorf("%s: expected %+v; got %+v", tc.name, tc.want, tc.got)
+		}
+	}
+}
+
+func TestRealizeRecordsNonFiniteVerbForms(t *testing.T) {
+	tests := []struct{ phrase, form string }{{"InfVP", "base"}, {"GerVP", "gerund"}}
+
+	for _, tc := range tests {
+		t.Run(tc.form, func(t *testing.T) {
+			inner := node("VP", leaf("Verb"))
+			tree := node("S", detNoun(), node("VP", leaf("Verb:to-infinitive"), node(tc.phrase, inner)))
+
+			if _, err := sentence.Realize(context.Background(), newFake(), tree, loadVerbs(t), newRNG(), 0); err != nil {
+				t.Fatalf("Realize: %v", err)
+			}
+
+			// No tense, person or number: a non-finite verb agrees with nothing.
+			want := grammar.Features{Form: tc.form, Frames: []string{"transitive"}}
+			if got := inner.Children[0].Features; !reflect.DeepEqual(got, want) {
+				t.Errorf("expected %+v; got %+v", want, got)
+			}
+		})
+	}
+}
+
+func TestRealizeRecordsPronounFeatures(t *testing.T) {
+	q := newFake()
+	q.pronouns["nominative"] = store.Pronoun{Lemma: "she", Person: 3, Number: "singular", Gender: "fem"}
+	q.pronouns["accusative"] = store.Pronoun{Lemma: "us", Person: 1, Number: "plural", Gender: "epicene"}
+	q.pronouns["genitive"] = store.Pronoun{Lemma: "mine", Person: 1, Number: "singular", Gender: "epicene"}
+	tree := node("S", node("NP", leaf("Pronoun")), node("VP", leaf("Verb:ditransitive"), node("NP", leaf("Pronoun")), leaf("Pronoun:genitive")))
+
+	if _, err := sentence.Realize(context.Background(), q, tree, loadVerbs(t), newRNG(), 0); err != nil {
+		t.Fatalf("Realize: %v", err)
+	}
+
+	vp := tree.Children[1]
+	genitive := vp.Children[2].Features
+	tests := []struct {
+		name string
+		got  grammar.Features
+		want grammar.Features
+	}{
+		{"subject", tree.Children[0].Children[0].Features, grammar.Features{Case: "nominative", Person: 3, Number: "singular", Gender: "fem"}},
+		{"object", vp.Children[1].Children[0].Features, grammar.Features{Case: "accusative", Person: 1, Number: "plural", Gender: "epicene"}},
+		// "Mine" stands for what is owned: third person, either number.
+		{"genitive", genitive, grammar.Features{Case: "genitive", Person: 3, Number: genitive.Number}},
+	}
+	for _, tc := range tests {
+		if !reflect.DeepEqual(tc.got, tc.want) {
+			t.Errorf("%s: expected %+v; got %+v", tc.name, tc.want, tc.got)
+		}
+	}
+	if genitive.Number != "singular" && genitive.Number != "plural" {
+		t.Errorf("genitive: expected number singular or plural; got %q", genitive.Number)
+	}
+}
+
+func TestRealizeGivesNoFeaturesToFixedWords(t *testing.T) {
+	tree := node("S", leaf("Comma"), leaf("To"), leaf("Complementizer"), leaf("Preposition:with"), leaf("Conjunction:nor"))
+
+	if _, err := sentence.Realize(context.Background(), newFake(), tree, loadVerbs(t), newRNG(), 0); err != nil {
+		t.Fatalf("Realize: %v", err)
+	}
+
+	for _, c := range tree.Children {
+		if !reflect.ValueOf(c.Features).IsZero() {
+			t.Errorf("%s: expected no features; got %+v", c.Symbol, c.Features)
+		}
+	}
+}
+
+func TestGenerateRejectsMalformedVerbFrames(t *testing.T) {
+	q := newFake()
+	q.framed = &store.Verb{Lemma: "give", Frames: []byte(`{"transitive":true}`)}
+	g := mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["Verb:transitive"]
+	`)
+
+	_, err := sentence.Generate(context.Background(), q, g, loadVerbs(t), newRNG(), 0)
+
+	if err == nil || !strings.Contains(err.Error(), `"give"`) {
+		t.Errorf("expected an error naming give; got %v", err)
 	}
 }

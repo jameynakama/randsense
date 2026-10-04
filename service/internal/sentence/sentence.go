@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/jameynakama/randsense/internal/grammar"
 	"github.com/jameynakama/randsense/internal/morph"
@@ -51,12 +52,23 @@ type Sentence struct {
 
 // leafInfo is what agreement needs from a leaf's lexicon row.
 type leafInfo struct {
-	number      string       // determiners: "singular", "plural" or "either"; pronouns: "singular" or "plural"
-	person      morph.Person // pronouns
-	gender      string       // pronouns
-	plural      string       // nouns: irregular plural, if any
-	pluralLemma bool         // nouns: the lemma is already plural ("Rastas")
-	separable   bool         // verbs: the object can go after the first word ("look it up")
+	number      string           // determiners: "singular", "plural" or "either"; pronouns: "singular" or "plural"
+	person      morph.Person     // pronouns
+	gender      string           // pronouns
+	plural      string           // nouns: irregular plural, if any
+	pluralLemma bool             // nouns: the lemma is already plural ("Rastas")
+	separable   bool             // verbs: the object can go after the first word ("look it up")
+	features    grammar.Features // what the tree shows about the word before agreement
+}
+
+// frequency is a word's Zipf frequency, or nil when SUBTLEX-US lacks it.
+func frequency(n pgtype.Numeric) *float64 {
+	if !n.Valid {
+		return nil
+	}
+	// A rounded NUMERIC always converts.
+	f, _ := n.Float64Value()
+	return &f.Float64
 }
 
 // agreement is the person and number a verb agrees with, and the gender a
@@ -133,6 +145,8 @@ func Realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *mo
 	if err := gen.agreeWithSubjects(tree, thirdSingular, finite); err != nil {
 		return nil, fmt.Errorf("Realize: %w", err)
 	}
+	tree.Features.Tense = string(gen.tense)
+	tree.Features.Commonness = &commonness
 
 	text := map[*grammar.Node]string{}
 	gen.separateParticles(tree, text)
@@ -205,6 +219,7 @@ func (gen *generator) fillLeaf(n *grammar.Node, pluralNoun, subject bool) error 
 		return fmt.Errorf("%s: %w", n.Symbol, err)
 	}
 	n.Lemma, n.Word = lemma, lemma
+	n.Features = info.features
 	gen.leaves[n] = info
 	return nil
 }
@@ -226,30 +241,46 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 		if err := json.Unmarshal(w.Inflections, &infl); err != nil {
 			return "", leafInfo{}, fmt.Errorf("noun %q inflections: %w", w.Lemma, err)
 		}
-		return w.Lemma, leafInfo{plural: infl.Plural, pluralLemma: w.Plural}, nil
+		return w.Lemma, leafInfo{
+			plural: infl.Plural, pluralLemma: w.Plural,
+			features: grammar.Features{Frequency: frequency(w.Frequency)},
+		}, nil
 	case grammar.Verb:
+		var w store.Verb
+		var err error
 		if frame := n.Qualifier(); frame != "" {
-			w, err := q.GetRandomVerbWithFrame(ctx, store.GetRandomVerbWithFrameParams{Frame: frame, Commonness: gen.commonness})
+			w, err = q.GetRandomVerbWithFrame(ctx, store.GetRandomVerbWithFrameParams{Frame: frame, Commonness: gen.commonness})
 			if errors.Is(err, pgx.ErrNoRows) {
 				err = fmt.Errorf("%w: %w", errEmptyFrame, err)
 			}
-			return w.Lemma, leafInfo{separable: w.Separable}, err
+		} else {
+			w, err = q.GetRandomVerb(ctx, gen.commonness)
 		}
-		w, err := q.GetRandomVerb(ctx, gen.commonness)
-		return w.Lemma, leafInfo{separable: w.Separable}, err
+		if err != nil {
+			return "", leafInfo{}, err
+		}
+		var frames []string
+		if err := json.Unmarshal(w.Frames, &frames); err != nil {
+			return "", leafInfo{}, fmt.Errorf("verb %q frames: %w", w.Lemma, err)
+		}
+		return w.Lemma, leafInfo{separable: w.Separable, features: grammar.Features{
+			Frames: frames, Separable: w.Separable, Frequency: frequency(w.Frequency),
+		}}, nil
 	case grammar.Adjective:
 		w, err := q.GetRandomAdjective(ctx, gen.commonness)
-		return w.Lemma, leafInfo{}, err
+		return w.Lemma, leafInfo{features: grammar.Features{Frequency: frequency(w.Frequency)}}, err
 	case grammar.Adverb:
 		w, err := q.GetRandomAdverb(ctx, gen.commonness)
-		return w.Lemma, leafInfo{}, err
+		return w.Lemma, leafInfo{features: grammar.Features{Frequency: frequency(w.Frequency)}}, err
 	case grammar.Determiner:
+		var w store.Determiner
+		var err error
 		if pluralNoun {
-			w, err := q.GetRandomDeterminerWithNumber(ctx, []string{"plural", "either"})
-			return w.Lemma, leafInfo{number: w.Number}, err
+			w, err = q.GetRandomDeterminerWithNumber(ctx, []string{"plural", "either"})
+		} else {
+			w, err = q.GetRandomDeterminer(ctx)
 		}
-		w, err := q.GetRandomDeterminer(ctx)
-		return w.Lemma, leafInfo{number: w.Number}, err
+		return w.Lemma, leafInfo{number: w.Number, features: grammar.Features{Type: w.Type, Number: w.Number}}, err
 	case grammar.Preposition:
 		if prep := n.Qualifier(); prep != "" {
 			return prep, leafInfo{}, nil
@@ -257,6 +288,10 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 		w, err := q.GetRandomPreposition(ctx)
 		return w.Lemma, leafInfo{}, err
 	case grammar.Pronoun:
+		pronounCase := "accusative"
+		if subject {
+			pronounCase = "nominative"
+		}
 		if n.Qualifier() == grammar.Genitive {
 			// "mine" stands for what is owned, not the owner, so it's third
 			// person of either number.
@@ -265,17 +300,19 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 			if gen.rng.IntN(2) == 1 {
 				number = morph.Plural
 			}
-			return w.Lemma, leafInfo{number: string(number), person: morph.Third}, err
+			return w.Lemma, leafInfo{number: string(number), person: morph.Third, features: grammar.Features{
+				Case: grammar.Genitive, Person: int(morph.Third), Number: string(number),
+			}}, err
 		}
 		if word := n.Qualifier(); word != "" {
-			return word, leafInfo{number: string(morph.Singular), person: morph.Third}, nil
-		}
-		pronounCase := "accusative"
-		if subject {
-			pronounCase = "nominative"
+			return word, leafInfo{number: string(morph.Singular), person: morph.Third, features: grammar.Features{
+				Case: pronounCase, Person: int(morph.Third), Number: string(morph.Singular),
+			}}, nil
 		}
 		w, err := q.GetRandomPronounWithCase(ctx, pronounCase)
-		return w.Lemma, leafInfo{number: w.Number, person: morph.Person(w.Person), gender: w.Gender}, err
+		return w.Lemma, leafInfo{number: w.Number, person: morph.Person(w.Person), gender: w.Gender, features: grammar.Features{
+			Case: pronounCase, Person: int(w.Person), Number: w.Number, Gender: w.Gender,
+		}}, err
 	case grammar.Comma:
 		return ",", leafInfo{}, nil
 	case grammar.Complementizer:
@@ -314,11 +351,14 @@ func (gen *generator) agreeNouns(n *grammar.Node) {
 
 	agr := gen.npAgreement(n)
 	gen.agr[n] = agr
-	if agr.number == morph.Plural {
-		for _, c := range n.Children {
-			if c.POS() == grammar.Noun && len(c.Children) == 0 && !gen.leaves[c].pluralLemma {
-				c.Word = morph.Pluralize(c.Lemma, gen.leaves[c].plural)
-			}
+	n.Features = grammar.Features{Person: int(agr.person), Number: string(agr.number)}
+	for _, c := range n.Children {
+		if c.POS() != grammar.Noun || len(c.Children) > 0 {
+			continue
+		}
+		c.Features.Number = string(agr.number)
+		if agr.number == morph.Plural && !gen.leaves[c].pluralLemma {
+			c.Word = morph.Pluralize(c.Lemma, gen.leaves[c].plural)
 		}
 	}
 }
@@ -398,13 +438,19 @@ func (gen *generator) agreeWithSubjects(n *grammar.Node, agr agreement, form ver
 				return fmt.Errorf("%s: %w", c.Symbol, err)
 			}
 			c.Lemma, c.Word = w.Lemma, w.Lemma
+			c.Features = grammar.Features{Case: grammar.Reflexive, Person: int(w.Person), Number: w.Number, Gender: w.Gender}
 		}
 		if len(c.Children) == 0 && c.POS() == grammar.Verb {
 			switch form {
 			case finite:
 				c.Word = gen.verbs.Conjugate(c.Lemma, gen.tense, agr.person, agr.number)
+				c.Features.Form, c.Features.Tense = "finite", string(gen.tense)
+				c.Features.Person, c.Features.Number = int(agr.person), string(agr.number)
+			case base:
+				c.Features.Form = "base"
 			case gerund:
 				c.Word = gen.verbs.Participle(c.Lemma)
+				c.Features.Form = "gerund"
 			}
 		}
 		var err error
