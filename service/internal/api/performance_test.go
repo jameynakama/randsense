@@ -102,3 +102,14 @@ func TestListEndpointsRunOneQueryWhateverTheRowCount(t *testing.T) {
 		})
 	}
 }
+
+func TestListEndpointsRejectBadPages(t *testing.T) {
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	for _, e := range listEndpoints {
+		t.Run(e.name, func(t *testing.T) {
+			decode(t, call(t, srv, http.MethodGet, e.path+"?limit=0", "", e.header), http.StatusBadRequest, nil)
+		})
+	}
+}
