@@ -59,6 +59,37 @@ describe('Feed', () => {
 		expect(texts()).toEqual([second.text, sentence.text]);
 	});
 
+	it('keeps a sentence that streams in while it catches up', async () => {
+		let release!: () => void;
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(
+				() =>
+					new Promise<Response>(
+						(r) =>
+							(release = () =>
+								r(
+									new Response(JSON.stringify([sentence]), {
+										headers: { 'Content-Type': 'application/json' }
+									})
+								))
+					)
+			)
+		);
+		render(Feed, { initial: [sentence] });
+		const source = FakeEventSource.latest!;
+
+		// The catch-up's page was read before the newer sentence was saved.
+		source.open();
+		source.emit('sentence', { ...second, created_at: '2026-10-04T12:00:00Z' });
+		await expect.element(page.getByRole('link', { name: second.text })).toBeInTheDocument();
+		release();
+
+		await new Promise((r) => setTimeout(r, 50));
+
+		expect(texts()).toEqual([second.text, sentence.text]);
+	});
+
 	it('holds new sentences while paused', async () => {
 		render(Feed, { initial: [sentence] });
 		const pause = page.getByRole('button', { name: 'Pause feed' });

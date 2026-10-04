@@ -3,7 +3,7 @@
 	import { flip } from 'svelte/animate';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { fly } from 'svelte/transition';
-	import { FEED_SIZE, prepend } from '#lib/feed.js';
+	import { catchUp, FEED_SIZE, prepend } from '#lib/feed.js';
 	import { subscribe, type StarsEvent } from '#lib/stream.js';
 	import type { Sentence } from '#lib/types.js';
 	import StarButton from './StarButton.svelte';
@@ -21,7 +21,7 @@
 
 	onMount(() =>
 		subscribe({
-			onOpen: catchUp,
+			onOpen: refresh,
 			onSentence: (s) => {
 				if (paused) pending = prepend(pending, [s]);
 				else feed = prepend(feed, [s]);
@@ -33,7 +33,7 @@
 		})
 	);
 
-	async function catchUp() {
+	async function refresh() {
 		let latest: Sentence[];
 		try {
 			const res = await fetch(`/api/v1/sentences?limit=${FEED_SIZE}`);
@@ -44,7 +44,7 @@
 			return;
 		}
 		if (!paused) {
-			feed = latest;
+			feed = catchUp(feed, latest);
 			return;
 		}
 		const unseen = latest.filter((s) => !feed.some((f) => f.id === s.id));
