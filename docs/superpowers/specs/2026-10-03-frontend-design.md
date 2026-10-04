@@ -208,13 +208,18 @@ What it was:
   also became "Thank you!".
 - Errors showed as bold red text.
 
-The new look, from that:
+The new look keeps the old palette, with darker shades where a color fails WCAG AA contrast on
+white:
 
 - white background, black body text
-- sentence words in `dodgerblue`, `hotpink` on hover or selection
-- the title and accents in `deeppink`
-- pill buttons with a `cornflowerblue` outline and `slategray` text, turning `cornflowerblue` on
-  hover, with no transform
+- sentence words in `dodgerblue` (3.2:1, which passes only as large text, so the sentence never
+  goes below 24 CSS px), turning `#C2185B` (5.9:1) on hover or selection in place of `hotpink`
+  (2.7:1)
+- the title in `deeppink` (3.6:1, large text only); smaller accents in `#C2185B`
+- pill buttons on white with a `royalblue` outline (4.9:1) and `slategray` text (4.1:1, so the
+  text stays at least 18.67 CSS px bold), the text turning `royalblue` on hover, with no
+  transform. `royalblue` replaces `cornflowerblue` (2.97:1)
+- feed and other normal-size text in black or `royalblue`, never `dodgerblue`
 - sentences set large (about 4rem on desktop), smaller on phones in a single column
 - one readable font for the UI and sentences, falling back to the system stack
 - the raw-JSON viewer is replaced by the word card and structure outline below
@@ -251,6 +256,42 @@ Used on the home and permalink pages.
 Each item shows the sentence text (linking to its permalink) and a star button with its count. New
 sentences slide in at the top, star counts update in place, and the list stays at 30.
 
+### Accessibility
+
+Meet WCAG 2.2 AA from the first component.
+
+- **Contrast:** the colors under "Look" are chosen to pass. Focus shows as a visible ring with at
+  least 3:1 contrast against the colors next to it, and is never removed.
+- **Keyboard:** everything works without a mouse. Words are native buttons in reading order.
+  Escape closes the word card and the flag form, and focus returns to what opened them.
+- **Screen readers:** the sentence's group is labeled with its full text, and each word button
+  with its word. Opening the word card moves focus to its heading. Star buttons use
+  `aria-pressed` and include the count in their name ("Star, 12 stars").
+- **Structure outline:** a nested list with expand and collapse buttons (`aria-expanded`), not an
+  ARIA tree widget. That's the simplest pattern that works.
+- **Admin tabs:** the full ARIA tabs pattern: tab and panel roles, labels, and arrow-key
+  movement between tabs.
+- **The live feed** updates by itself, so it has a pause control (WCAG 2.2.2), and new sentences
+  aren't read aloud one by one. A polite live region announces only the visitor's own generated
+  sentence.
+- **Motion:** the feed's slide-in and other transitions turn off under
+  `prefers-reduced-motion`.
+- **Forms:** the flag form and admin login have visible labels. Errors and the comment's
+  character count are tied to their fields with `aria-describedby`.
+- **Semantics:** one `h1` per page, landmarks (`header`, `main`, `nav`) and `lang="en"`.
+
+### Small screens
+
+Phones get the same features, laid out for one column and touch:
+
+- one column below about 640 CSS px; the sentence shrinks to no less than 24 CSS px
+- interactive targets at least 44 by 44 CSS px, words included (stricter than AA's 24), and
+  nothing that only works on hover
+- the word card opens as a bottom sheet on narrow screens
+- at 320 CSS px wide the page reflows with no horizontal scrolling, and text enlarges to 200%
+  without losing content. The structure outline narrows its indents to fit, and scrolls
+  sideways inside its own box only for a branch too deep to fit any other way
+
 ## Rate limits
 
 nginx `limit_req` per IP:
@@ -271,6 +312,11 @@ The exact rates are set in the nginx config at deploy time.
   cookie).
 - **Web:** Vitest for logic (tree helpers, role detection, the voter token) and Playwright for the
   main flows: generate, star, flag a word, a feed update arriving over SSE, and admin login.
+  Playwright runs axe (`@axe-core/playwright`) on every page and its key open states (word card,
+  flag form, structure outline) with no violations allowed, runs the main flows again in a
+  phone viewport (about 390 by 844), and walks one flow by keyboard alone: generate, open a word,
+  flag it. Axe can't prove conformance, so screen-reader behavior, reflow at 320 CSS px and 200%
+  text get a manual check before each stage ships.
 
 ## Build order
 
@@ -284,8 +330,9 @@ Each stage ends working and committed.
 4. SSE hub and stream endpoint, and broadcasting from `random` and the star endpoints.
 5. Admin auth and admin endpoints, and `just hash-password`.
 6. SvelteKit app: scaffold, sentence component, home page with live feed, permalink, stars page,
-   flag form.
-7. Admin UI.
+   flag form. Accessibility and small screens (above) are part of each component as it's built,
+   with the axe and phone-viewport tests starting with the scaffold.
+7. Admin UI, under the same accessibility and small-screen rules.
 8. Deployment: the nginx site config (routing, SSE settings, rate limits), two systemd units, and
    a build-and-deploy recipe.
 
