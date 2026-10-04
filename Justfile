@@ -47,7 +47,7 @@ run-fe:
 
 # Type-check, lint and run the web unit, component and e2e tests
 [working-directory: 'web']
-test-fe:
+test-fe: build-fe
     npm run check
     npm run lint
     npx vitest --run
