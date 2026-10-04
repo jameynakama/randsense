@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '@fontsource-variable/atkinson-hyperlegible-next';
 	import '../app.css';
+	import { page } from '$app/state';
 	import favicon from '#lib/assets/favicon.svg';
 
 	let { children } = $props();
@@ -12,6 +13,11 @@
 
 <header>
 	<a class="title" href="/">RandSense</a>
+	<nav aria-label="Main">
+		<a href="/stars" aria-current={page.url.pathname === '/stars' ? 'page' : undefined}
+			>Your stars</a
+		>
+	</nav>
 </header>
 
 <main>
@@ -29,6 +35,18 @@
 		font-size: 2.5rem;
 		font-weight: bold;
 		text-decoration: none;
+	}
+
+	nav a {
+		display: inline-block;
+		min-block-size: 44px;
+		line-height: 44px;
+		font-weight: bold;
+		color: var(--outline);
+	}
+
+	nav a[aria-current='page'] {
+		color: var(--accent);
 	}
 
 	main {
