@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"log"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jameynakama/randsense/internal/store"
@@ -79,4 +80,16 @@ func getAdverbRespFromStoreShape(a store.Adverb) WordResponse {
 		Active:      a.Active,
 		VoteCount:   int(a.VoteCount),
 	}
+}
+
+type SentenceResponse struct {
+	ID        string          `json:"id"`
+	Text      string          `json:"text"`
+	Tree      json.RawMessage `json:"tree"`
+	StarCount int32           `json:"star_count"`
+	CreatedAt time.Time       `json:"created_at"`
+}
+
+func sentenceResponse(s store.Sentence) SentenceResponse {
+	return SentenceResponse{ID: s.ID, Text: s.Text, Tree: s.Tree, StarCount: s.StarCount, CreatedAt: s.CreatedAt.Time}
 }

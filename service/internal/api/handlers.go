@@ -14,6 +14,7 @@ import (
 
 	"github.com/jameynakama/randsense/internal/grammar"
 	"github.com/jameynakama/randsense/internal/sentence"
+	"github.com/jameynakama/randsense/internal/store"
 )
 
 // maxCommonness is about the Zipf frequency of "the", the most common word.
@@ -81,7 +82,10 @@ func (h *Handler) randomWord(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// randomSentence generates a sentence, saves it and returns it. Any site
+// may call it: signatures on other sites embed it.
 func (h *Handler) randomSentence(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	c, err := commonness(r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -95,7 +99,21 @@ func (h *Handler) randomSentence(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "server error")
 		return
 	}
-	writeJSON(w, http.StatusOK, s)
+	tree, err := json.Marshal(s.Tree)
+	if err != nil {
+		log.Printf("randomSentence: %v", err)
+		writeError(w, http.StatusInternalServerError, "server error")
+		return
+	}
+	saved, err := insertWithNewID(newSentenceID, func(id string) (store.Sentence, error) {
+		return h.queries.InsertSentence(r.Context(), store.InsertSentenceParams{ID: id, Text: s.Text, Tree: tree, Commonness: c})
+	})
+	if err != nil {
+		log.Printf("randomSentence: save: %v", err)
+		writeError(w, http.StatusInternalServerError, "server error")
+		return
+	}
+	writeJSON(w, http.StatusOK, sentenceResponse(saved))
 }
 
 // maxTreeBytes caps a realize request body, since every leaf is a lookup.

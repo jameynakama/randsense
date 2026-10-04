@@ -30,6 +30,7 @@ type Querier interface {
 	GetRandomPronounWithCase(ctx context.Context, case_ string) (Pronoun, error)
 	GetRandomVerb(ctx context.Context, commonness float64) (Verb, error)
 	GetRandomVerbWithFrame(ctx context.Context, arg GetRandomVerbWithFrameParams) (Verb, error)
+	GetSentence(ctx context.Context, id string) (Sentence, error)
 	GetVerbByLemma(ctx context.Context, lemma string) (Verb, error)
 	InsertAdjective(ctx context.Context, arg InsertAdjectiveParams) error
 	InsertAdverb(ctx context.Context, arg InsertAdverbParams) error
@@ -38,6 +39,7 @@ type Querier interface {
 	InsertNoun(ctx context.Context, arg InsertNounParams) error
 	InsertPreposition(ctx context.Context, lemma string) error
 	InsertPronoun(ctx context.Context, arg InsertPronounParams) error
+	InsertSentence(ctx context.Context, arg InsertSentenceParams) (Sentence, error)
 	InsertVerb(ctx context.Context, arg InsertVerbParams) error
 	ListConjunctions(ctx context.Context) ([]Conjunction, error)
 	ListDeterminers(ctx context.Context) ([]Determiner, error)

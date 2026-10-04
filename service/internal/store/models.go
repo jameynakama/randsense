@@ -52,6 +52,16 @@ type Determiner struct {
 	Active bool   `db:"active" json:"active"`
 }
 
+type Flag struct {
+	ID         int64              `db:"id" json:"id"`
+	SentenceID string             `db:"sentence_id" json:"sentence_id"`
+	WordIndex  pgtype.Int4        `db:"word_index" json:"word_index"`
+	Lemma      pgtype.Text        `db:"lemma" json:"lemma"`
+	Pos        pgtype.Text        `db:"pos" json:"pos"`
+	Comment    string             `db:"comment" json:"comment"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
 type Noun struct {
 	ID          int64              `db:"id" json:"id"`
 	Lemma       string             `db:"lemma" json:"lemma"`
@@ -81,6 +91,21 @@ type Pronoun struct {
 	Number string `db:"number" json:"number"`
 	Gender string `db:"gender" json:"gender"`
 	Active bool   `db:"active" json:"active"`
+}
+
+type Sentence struct {
+	ID         string             `db:"id" json:"id"`
+	Text       string             `db:"text" json:"text"`
+	Tree       []byte             `db:"tree" json:"tree"`
+	Commonness pgtype.Numeric     `db:"commonness" json:"commonness"`
+	StarCount  int32              `db:"star_count" json:"star_count"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type Star struct {
+	SentenceID string             `db:"sentence_id" json:"sentence_id"`
+	Voter      string             `db:"voter" json:"voter"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
 type User struct {
