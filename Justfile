@@ -25,7 +25,7 @@ gotest args="":
 
 [working-directory: 'service']
 cover:
-    go test -coverprofile=coverage.out -coverpkg=./internal/api/...,./internal/grammar/...,./internal/lexicon/...,./internal/morph/...,./internal/sentence/...,./internal/live/... ./... && go tool cover -func=coverage.out
+    go test -coverprofile=coverage.out -coverpkg=./internal/api/...,./internal/grammar/...,./internal/lexicon/...,./internal/morph/...,./internal/sentence/...,./internal/live/...,./internal/auth/... ./... && go tool cover -func=coverage.out
 
 # Start the Go server with hot reload
 [working-directory: 'service']
