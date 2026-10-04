@@ -16,6 +16,9 @@ async function ownSentence(page: Page): Promise<string> {
 }
 
 test('greets a visitor with a fresh sentence that the feed shows too', async ({ page }) => {
+	// Other tests' sentences can fly into the feed at any moment, and axe
+	// would measure one mid-fade.
+	await page.emulateMedia({ reducedMotion: 'reduce' });
 	await page.goto('/');
 
 	await expect(inFeed(page, await ownSentence(page))).toBeVisible();
