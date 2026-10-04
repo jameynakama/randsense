@@ -54,6 +54,7 @@
 		background: var(--bg);
 		max-inline-size: 40rem;
 		margin-inline: auto;
+		overflow-wrap: anywhere;
 	}
 
 	h2 {
@@ -64,7 +65,7 @@
 
 	dl {
 		display: grid;
-		grid-template-columns: max-content 1fr;
+		grid-template-columns: auto minmax(0, 1fr);
 		gap: 0.25rem 1rem;
 	}
 
@@ -91,6 +92,16 @@
 	}
 
 	@media (max-width: 640px) {
+		/* Room to scroll everything above the sheet, and focus scrolled clear
+		   of it, so the sheet never hides a focused control. */
+		:global(html:has(.card)) {
+			scroll-padding-block-end: 60vh;
+		}
+
+		:global(body:has(.card)) {
+			padding-block-end: 60vh;
+		}
+
 		.card {
 			position: fixed;
 			inset-inline: 0;

@@ -1,5 +1,5 @@
 import { isHttpError } from '@sveltejs/kit';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { load } from './+page.server';
 
 type Event = Parameters<typeof load>[0];
@@ -15,6 +15,8 @@ async function statusFor(fetch: typeof globalThis.fetch): Promise<number> {
 }
 
 describe('permalink load', () => {
+	afterEach(() => vi.restoreAllMocks());
+
 	it('is a 404 for an unknown sentence', async () => {
 		expect(await statusFor(async () => new Response('{}', { status: 404 }))).toBe(404);
 	});
@@ -27,4 +29,16 @@ describe('permalink load', () => {
 		).toBe(502);
 		expect(await statusFor(async () => new Response('{}', { status: 500 }))).toBe(502);
 	});
+
+	it('is a 502 when the API accepts the request but never answers', async () => {
+		vi.spyOn(AbortSignal, 'timeout').mockReturnValue(AbortSignal.abort());
+		const hang = (_: unknown, init?: RequestInit) =>
+			new Promise<Response>((_, reject) => {
+				const signal = init?.signal;
+				if (signal?.aborted) reject(signal.reason);
+				signal?.addEventListener('abort', () => reject(signal.reason));
+			});
+
+		expect(await statusFor(hang as typeof globalThis.fetch)).toBe(502);
+	}, 2000);
 });

@@ -49,6 +49,9 @@ describe('StarButton', () => {
 			vi.fn(async () => answer(0, 500))
 		);
 		render(StarButton, { id: 'aaaaaaaa', count: 2 });
+		// Screen readers announce changes only to a live region that was
+		// already in the accessibility tree.
+		await expect.element(page.getByRole('status')).toBeInTheDocument();
 
 		await page.getByRole('button', { name: 'Star, 2 stars' }).click();
 

@@ -33,4 +33,15 @@ describe('WordCard', () => {
 		await userEvent.keyboard('{Escape}');
 		expect(onclose).toHaveBeenCalledOnce();
 	});
+
+	it('wraps a long word on a narrow phone instead of scrolling sideways', async () => {
+		await page.viewport(320, 640);
+		const long = structuredClone(sentence);
+		const goose = long.tree.children![0].children![0].children![1];
+		goose.word = goose.lemma = 'pneumonoultramicroscopicsilicovolcanoconiosis';
+		const { container } = render(WordCard, { tree: long.tree, index: 1, onclose: () => {} });
+
+		const card = container.querySelector('section')!;
+		expect(card.scrollWidth).toBeLessThanOrEqual(card.clientWidth);
+	});
 });

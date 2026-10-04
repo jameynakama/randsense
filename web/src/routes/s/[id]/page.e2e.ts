@@ -74,3 +74,21 @@ test('reflows at 320px without sideways scrolling', async ({ page }) => {
 	);
 	expect(overflow).toBeLessThanOrEqual(0);
 });
+
+test('keeps keyboard focus out from under the open word card', async ({ page }) => {
+	const s = await newSentence(page);
+	await page.goto(`/s/${s.id}`);
+	await page.getByRole('group', { name: s.text }).getByRole('button').first().click();
+	const card = await page.getByRole('region').boundingBox();
+
+	for (let i = 0; i < 4; i++) {
+		await page.keyboard.press('Tab');
+		const hidden = await page.evaluate((c) => {
+			const el = document.activeElement!;
+			if (el.closest('section')) return false;
+			const r = el.getBoundingClientRect();
+			return r.bottom > c.y && r.top < c.y + c.height && r.right > c.x && r.left < c.x + c.width;
+		}, card!);
+		expect(hidden).toBe(false);
+	}
+});

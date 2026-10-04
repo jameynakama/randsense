@@ -53,8 +53,4 @@
 		display: block;
 		color: var(--error);
 	}
-
-	.problem:empty {
-		display: none;
-	}
 </style>
