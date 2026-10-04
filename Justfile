@@ -6,13 +6,16 @@ alias md := migrate-down
 default: test
 
 # Run all tests
-test args="": (test-be args)
+test args="": (test-be args) test-fe
 
 # Start everything with hot reload
-run: run-be
+run:
+    #!/usr/bin/env bash
+    trap 'kill 0' EXIT
+    just run-be & just run-fe & wait
 
 # Build everything
-build: build-be
+build: build-be build-fe
 
 # Run the Go tests
 [working-directory: 'service']
@@ -36,6 +39,24 @@ run-be:
 [working-directory: 'service']
 build-be:
     go build -o bin/randsense ./cmd/server
+
+# Start the SvelteKit dev server
+[working-directory: 'web']
+run-fe:
+    npm run dev
+
+# Type-check, lint and run the web unit, component and e2e tests
+[working-directory: 'web']
+test-fe:
+    npm run check
+    npm run lint
+    npx vitest --run
+    npx playwright test
+
+# Build the SvelteKit app
+[working-directory: 'web']
+build-fe:
+    npm run build
 
 # Run pending migrations
 [working-directory: 'service']

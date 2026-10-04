@@ -38,6 +38,17 @@ just run
 
 Server starts on `http://localhost:8080` (or `PORT` from `.env`).
 
+The web app needs Node 24+ and Playwright's Chromium:
+
+```bash
+cd web && npm install && npx playwright install chromium && cd ..
+sudo npx playwright install-deps chromium   # once per machine, on Linux
+```
+
+`just run` starts both the Go server and the SvelteKit dev server at `http://localhost:5173`,
+which proxies `/api` to Go. Server-side page loads call Go at `API_ORIGIN` (default
+`http://localhost:8080`).
+
 ## Commands
 
 | Command                         | Description                              |
@@ -46,6 +57,8 @@ Server starts on `http://localhost:8080` (or `PORT` from `.env`).
 | `just run`                      | Start the app with hot reload            |
 | `just run-be`                   | Start the Go server with hot reload      |
 | `just test-be`                  | Run the Go tests                         |
+| `just run-fe`                   | Start the SvelteKit dev server           |
+| `just test-fe`                  | Type-check, lint and test the web app    |
 | `just build-be`                 | Build binary to `service/bin/randsense`  |
 | `just migrate-up`               | Apply pending migrations                 |
 | `just migrate-down [n]`         | Roll back n migrations (default 1)       |
@@ -139,6 +152,9 @@ invalid.
 Integration tests hit real ephemeral databases. Set `TEST_DATABASE_URL` in `.env` pointing at
 the same Postgres instance -- each package creates and drops its own database, named from it with a
 package suffix (`randsense_test_api`), so packages can run in parallel.
+
+`just test-fe` runs the web e2e tests against the Go server and the dev database, starting the
+server if it isn't running, so they save sentences and stars there.
 
 ```bash
 just test
