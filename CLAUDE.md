@@ -58,9 +58,7 @@ Don't reopen these without new evidence.
 1. **Frontend and saved sentences.** Designed in
    `docs/superpowers/specs/2026-10-03-frontend-design.md`: monorepo move, saved sentences, live
    feed over SSE, permalinks, stars, flags and a single-admin flag viewer. The backend
-   and the app's scaffold, sentence component and permalink page are built; the spec's "Build
-   order" lists what remains. `StarButton` reads its `id` after the request returns, so a feed
-   that replaces a sentence while its star request is pending must account for that.
+   and the public app are built; the spec's "Build order" lists what remains.
 2. **Idioms with a broken object frame.** OEWN marks "give birth", "find fault" and "pull wires"
    transitive, which gives "gave birth the goose". Each idiom needs a label: keep the frame,
    drop object frames (keeping "she gave birth"), or move it to a fixed-preposition frame ("gave
