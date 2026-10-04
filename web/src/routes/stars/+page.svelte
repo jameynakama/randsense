@@ -16,7 +16,10 @@
 		problem = '';
 		try {
 			const next = await starred(fetch, sentences.length);
-			sentences = [...sentences, ...next];
+			// Starring or unstarring elsewhere shifts the pages, so the next one
+			// can repeat a sentence already shown.
+			const fresh = next.filter((s) => !sentences.some((have) => have.id === s.id));
+			sentences = [...sentences, ...fresh];
 			more = next.length === STARS_PAGE;
 		} catch {
 			problem = 'Couldn’t load more. Try again.';

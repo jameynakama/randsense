@@ -1,3 +1,10 @@
+<script lang="ts" module>
+	// Counts this page's stars and unstars, so every button re-reads storage
+	// and two buttons for one sentence (the home page's and its feed copy)
+	// agree.
+	let changes = $state(0);
+</script>
+
 <script lang="ts">
 	import { isStarred, setStarred, voterToken } from '#lib/voter.js';
 
@@ -10,7 +17,12 @@
 	let problem = $state('');
 
 	$effect(() => {
+		void changes;
 		starred = isStarred(id);
+	});
+
+	$effect(() => {
+		void id;
 		problem = '';
 	});
 
@@ -30,6 +42,7 @@
 			if (!res.ok) throw new Error(`status ${res.status}`);
 			const answer = ((await res.json()) as { count: number }).count;
 			setStarred(target, starring);
+			changes++;
 			if (id === target) {
 				count = answer;
 				starred = starring;

@@ -128,4 +128,22 @@ describe('StarButton', () => {
 			.element(page.getByRole('button', { name: 'Star, 3 stars' }))
 			.toHaveAttribute('aria-pressed', 'true');
 	});
+
+	it('keeps every button for the same sentence in step', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => answer(3))
+		);
+		// The home page shows the visitor's sentence on top and again in the
+		// feed. An id of its own keeps earlier tests' stars, which voter.ts
+		// remembers for the life of the page, out of this one.
+		render(StarButton, { id: 'eeeeeeee', count: 2 });
+		render(StarButton, { id: 'eeeeeeee', count: 2 });
+
+		await page.getByRole('button', { name: 'Star, 2 stars' }).first().click();
+
+		await expect
+			.element(page.getByRole('button', { name: 'Star, 2 stars' }))
+			.toHaveAttribute('aria-pressed', 'true');
+	});
 });

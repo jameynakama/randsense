@@ -51,6 +51,16 @@ describe('SentenceView', () => {
 		await expect.element(opener).toHaveAttribute('aria-expanded', 'false');
 	});
 
+	it('opens no word card when the flag form closes', async () => {
+		render(SentenceView, { sentence, count: 2 });
+
+		await page.getByRole('button', { name: 'Something’s wrong' }).click();
+		await page.getByRole('button', { name: 'goose' }).click();
+		await userEvent.keyboard('{Escape}');
+
+		await expect.element(page.getByRole('region')).not.toBeInTheDocument();
+	});
+
 	it('starts over when another sentence takes its place', async () => {
 		const { rerender } = render(SentenceView, { sentence, count: 2 });
 

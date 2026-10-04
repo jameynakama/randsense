@@ -30,6 +30,8 @@
 	}
 
 	async function closeFlagForm() {
+		// The form's target was only a target, not a word to show.
+		selected = null;
 		flagging = false;
 		await tick();
 		flagButton?.focus();

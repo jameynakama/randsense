@@ -51,3 +51,30 @@ test('shows more than one page of stars', async ({ page }) => {
 	await expect(items).toHaveCount(31);
 	await expect(page.getByRole('button', { name: 'Show more' })).toHaveCount(0);
 });
+
+test('shows each sentence once when stars change between pages', async ({ page }) => {
+	const voter = randomUUID();
+	await page.addInitScript((v) => localStorage.setItem('randsense:voter', v), voter);
+	const res = await page.request.get('/api/v1/sentences?limit=32');
+	const ids: string[] = (await res.json()).map((s: Sentence) => s.id);
+	while (ids.length < 32) ids.push((await newSentence(page.request)).id);
+	const star = async (id: string) => {
+		const res = await page.request.post(`/api/v1/sentences/${id}/stars`, {
+			headers: { 'X-Voter': voter }
+		});
+		expect(res.ok()).toBe(true);
+	};
+	for (const id of ids.slice(0, 31)) await star(id);
+
+	await page.goto('/stars');
+	const links = page.getByRole('main').getByRole('listitem').getByRole('link');
+	await expect(links).toHaveCount(30);
+	// A star from another tab shifts every later page by one.
+	await star(ids[31]);
+	await page.getByRole('button', { name: 'Show more' }).click();
+
+	// The second page repeats one sentence from the first and adds one.
+	await expect(links).toHaveCount(31);
+	const hrefs = await links.evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+	expect(new Set(hrefs).size).toBe(hrefs.length);
+});
