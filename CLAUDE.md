@@ -17,7 +17,7 @@ Don't reopen these without new evidence.
 - **Word source.** OEWN 2025 supplies the words. Small lexicons repeat the same words.
 - **Morphology source.** The NLM SPECIALIST lexicon from the previous Django app has a structural
   medical bias that filtering can't remove, so it supplies only morphology:
-  `data/lexicon/verb_morphology.toml` comes from its `<variants>` lines (irreg, regd).
+  `service/data/lexicon/verb_morphology.toml` comes from its `<variants>` lines (irreg, regd).
 - **Curation never edits source data.** OEWN, SUBTLEX-US and the SPECIALIST extraction stay as
   shipped. Hand curation lives in its own discoverable places, so the compiled lexicon can tell
   sourced from curated: `verb_morphology_curated.toml`, `separable_verbs.toml`,
@@ -46,7 +46,7 @@ Don't reopen these without new evidence.
   let, make and have ("allowed him go"), so only the to-infinitive codes are used. The bar for
   `mislabeled` is no grammatical reading at all, counting "in order to" readings and archaic or
   dialect uses: "found her to devour", "learned us to", "pray me to" and "tipped her to" stay.
-- **Separable verbs are syntax only.** `data/lexicon/separable_verbs.toml` lists multiword
+- **Separable verbs are syntax only.** `service/data/lexicon/separable_verbs.toml` lists multiword
   verbs whose object goes after the head verb ("look it up", "set the goose on fire"). An idiom
   is listed only when the other order breaks the syntax, never to keep its meaning.
 - **One test database per package.** `go test ./...` runs packages in parallel, and each
@@ -79,8 +79,8 @@ Don't reopen these without new evidence.
    - questions
    - conditionals
 6. **Compiled lexicon, once a base version feels done.** Build every source (OEWN, SUBTLEX-US,
-   `mislabeled`, the `data/lexicon/` lists) into one versioned file that ingest loads and that
-   can be shared as research. It could also become where curation corrections live, so they
+   `mislabeled`, the `service/data/lexicon/` lists) into one versioned file that ingest loads
+   and that can be shared as research. It could also become where curation corrections live, so they
    survive re-ingest. Gzipped JSON Lines diffs well; WN-LMF XML fits poorly once synsets are
    gone. Check whether SUBTLEX-US and SPECIALIST allow redistribution before publishing; OEWN is
    CC BY 4.0.

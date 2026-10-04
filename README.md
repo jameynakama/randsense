@@ -8,6 +8,8 @@ Built in Go. Postgres for storage, WordNet (OEWN) as the primary lexicon, and
 [SUBTLEX-US](https://www.ugent.be/pp/experimentele-psychologie/en/research/documents/subtlexus)
 for word frequency.
 
+The Go service lives in `service/`; run the `just` recipes from the repository root.
+
 ## Stack
 
 - **[chi](https://github.com/go-chi/chi)** -- HTTP router
@@ -41,12 +43,14 @@ Server starts on `http://localhost:8080` (or `PORT` from `.env`).
 | Command                         | Description                              |
 | ------------------------------- | ---------------------------------------- |
 | `just`                          | Run tests (default)                      |
-| `just run`                      | Start dev server with hot reload         |
-| `just build`                    | Build binary to `bin/randsense`          |
+| `just run`                      | Start the app with hot reload            |
+| `just run-be`                   | Start the Go server with hot reload      |
+| `just test-be`                  | Run the Go tests                         |
+| `just build-be`                 | Build binary to `service/bin/randsense`  |
 | `just migrate-up`               | Apply pending migrations                 |
 | `just migrate-down [n]`         | Roll back n migrations (default 1)       |
 | `just generate`                 | Regenerate sqlc types after query changes|
-| `just ingest`                   | Load OEWN, SUBTLEX-US and the `data/lexicon/` lists |
+| `just ingest`                   | Load OEWN, SUBTLEX-US and the `service/data/lexicon/` lists |
 
 ## API
 
@@ -83,11 +87,12 @@ including every multiword lemma, count as 0, so any floor above 0 drops them.
 | 4          | lake, industry, warrior and up                |
 | 5          | brother, door, baby and up; about 200 nouns   |
 
-`data/subtlex-us/subtlex-us-pos.tsv.gz` is derived from the SUBTLEX-US part-of-speech workbook by
-`data/subtlex-us/convert.py`, which documents how to regenerate it.
+`service/data/subtlex-us/subtlex-us-pos.tsv.gz` is derived from the SUBTLEX-US part-of-speech
+workbook by `service/data/subtlex-us/convert.py`, which documents how to regenerate it.
 
-The server loads `data/grammar/grammar.toml` and the two `data/lexicon/verb_morphology*.toml` files
-at startup and refuses to start if any is invalid.
+The server loads `service/data/grammar/grammar.toml` and the two
+`service/data/lexicon/verb_morphology*.toml` files at startup and refuses to start if any is
+invalid.
 
 ## Tests
 

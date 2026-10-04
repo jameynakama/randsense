@@ -4,5 +4,5 @@ coverage.out
 
 .claude/settings.local.json
 
-data/**/*.xml
-data/subtlex-us/*.xlsx
+service/data/**/*.xml
+service/data/subtlex-us/*.xlsx
