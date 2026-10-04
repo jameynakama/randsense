@@ -285,7 +285,8 @@ Phones get the same features, laid out for one column and touch:
 - one column below about 640 CSS px; the sentence shrinks to no less than 24 CSS px
 - interactive targets at least 44 by 44 CSS px, words included (stricter than AA's 24), and
   nothing that only works on hover
-- the word card opens as a bottom sheet on narrow screens
+- the word card opens as a bottom sheet on narrow screens, and never covers a focused control
+  (WCAG 2.4.11)
 - at 320 CSS px wide the page reflows with no horizontal scrolling, and text enlarges to 200%
   without losing content. The structure outline narrows its indents to fit, and scrolls
   sideways inside its own box only for a branch too deep to fit any other way
@@ -318,9 +319,10 @@ The exact rates are set in the nginx config at deploy time.
 The backend (stages 1 to 5) is built. What remains, in order, each stage ending working and
 committed:
 
-6. SvelteKit app: scaffold, sentence component, home page with live feed, permalink, stars page,
-   flag form. Accessibility and small screens (above) are part of each component as it's built,
-   with the axe and phone-viewport tests starting with the scaffold.
+6. SvelteKit app in `web/`: home page with live feed, stars page, flag form. Accessibility and
+   small screens (above) are part of each component as it's built, with axe and phone-viewport
+   tests. Before the stage ships, someone checks by hand with a screen reader, at 320 CSS px and
+   at 200% text.
 7. Admin UI, under the same accessibility and small-screen rules.
 8. Deployment: the nginx site config (routing, SSE settings, rate limits), two systemd units, and
    a build-and-deploy recipe.

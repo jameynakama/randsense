@@ -8,7 +8,7 @@ Built in Go. Postgres for storage, WordNet (OEWN) as the primary lexicon, and
 [SUBTLEX-US](https://www.ugent.be/pp/experimentele-psychologie/en/research/documents/subtlexus)
 for word frequency.
 
-The Go service lives in `service/`; run the `just` recipes from the repository root.
+The Go service lives in `service/` and the SvelteKit app in `web/`; run the `just` recipes from the repository root.
 
 ## Stack
 
