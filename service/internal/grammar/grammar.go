@@ -157,9 +157,20 @@ type rule struct {
 	Weight    float64
 }
 
-// Grammar maps each non-terminal symbol to its rules.
+// Grammar maps each non-terminal symbol to its rules, and symbols to the
+// labels people read.
 type Grammar struct {
-	rules map[string][]rule
+	rules   map[string][]rule
+	phrases map[string]Label
+	slots   map[string]Label
+}
+
+// Label is how a symbol reads to people: "noun phrase", what it does, and
+// for a verb frame an example.
+type Label struct {
+	Label       string `toml:"label" json:"label"`
+	Description string `toml:"description" json:"description"`
+	Example     string `toml:"example" json:"example,omitempty"`
 }
 
 type fileRule struct {
@@ -169,7 +180,9 @@ type fileRule struct {
 }
 
 type file struct {
-	Rules []fileRule `toml:"rule"`
+	Rules   []fileRule       `toml:"rule"`
+	Phrases map[string]Label `toml:"phrase"`
+	Slots   map[string]Label `toml:"slot"`
 }
 
 // Load parses TOML grammar and validates it. A rule without a weight gets
@@ -198,7 +211,7 @@ func Load(r io.Reader) (*Grammar, error) {
 		rules[fr.Symbol] = append(rules[fr.Symbol], rule{Expansion: fr.Expansion, Weight: w})
 	}
 
-	g := &Grammar{rules: rules}
+	g := &Grammar{rules: rules, phrases: f.Phrases, slots: f.Slots}
 	if err := g.validate(); err != nil {
 		return nil, err
 	}
@@ -232,6 +245,18 @@ func (g *Grammar) validate() error {
 	for _, sym := range symbols {
 		if !productive[sym] {
 			return fmt.Errorf("grammar: %q can never expand to parts of speech", sym)
+		}
+	}
+
+	used := g.slotSymbols()
+	for _, sym := range slices.Sorted(maps.Keys(g.phrases)) {
+		if _, ok := g.rules[sym]; !ok {
+			return fmt.Errorf("grammar: phrase label for %q, which has no rules", sym)
+		}
+	}
+	for _, sym := range slices.Sorted(maps.Keys(g.slots)) {
+		if !used[sym] {
+			return fmt.Errorf("grammar: slot label for %q, which no rule uses", sym)
 		}
 	}
 	return nil
@@ -355,6 +380,69 @@ func (n *Node) Validate() error {
 		}
 	}
 	return nil
+}
+
+// slotSymbols is every part-of-speech symbol a rule uses, qualified ones
+// included.
+func (g *Grammar) slotSymbols() map[string]bool {
+	used := map[string]bool{}
+	for _, rules := range g.rules {
+		for _, r := range rules {
+			for _, s := range r.Expansion {
+				if _, phrase := g.rules[s]; !phrase {
+					used[s] = true
+				}
+			}
+		}
+	}
+	return used
+}
+
+// Labeled reports the first phrase, then the first slot a rule uses, that
+// has no label or no description. Load accepts unlabeled grammars so tests
+// can stay small; the server requires labels.
+func (g *Grammar) Labeled() error {
+	missing := func(l Label) bool { return l.Label == "" || l.Description == "" }
+	for _, sym := range slices.Sorted(maps.Keys(g.rules)) {
+		if missing(g.phrases[sym]) {
+			return fmt.Errorf("grammar: phrase %q has no label and description", sym)
+		}
+	}
+	for _, sym := range slices.Sorted(maps.Keys(g.slotSymbols())) {
+		if missing(g.slots[sym]) {
+			return fmt.Errorf("grammar: slot %q has no label and description", sym)
+		}
+	}
+	return nil
+}
+
+// Phrase is a non-terminal's label and its rules' expansions, in file order.
+type Phrase struct {
+	Label
+	Rules [][]string `json:"rules"`
+}
+
+// Description is the grammar as the frontend reads it: what to start from,
+// what each phrase can expand to, and how every symbol reads.
+type Description struct {
+	Start   string            `json:"start"`
+	Phrases map[string]Phrase `json:"phrases"`
+	Slots   map[string]Label  `json:"slots"`
+}
+
+func (g *Grammar) Describe() Description {
+	d := Description{Start: start, Phrases: map[string]Phrase{}, Slots: map[string]Label{}}
+	for sym, rules := range g.rules {
+		p := Phrase{Label: g.phrases[sym]}
+		for _, r := range rules {
+			p.Rules = append(p.Rules, r.Expansion)
+		}
+		d.Phrases[sym] = p
+	}
+	for sym := range g.slotSymbols() {
+		d.Slots[sym] = g.slots[sym]
+	}
+	return d
 }
 
 // maxDepth bounds tree depth so a grammar whose recursion outweighs its base

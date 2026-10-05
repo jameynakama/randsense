@@ -82,6 +82,9 @@ func main() {
 	}
 	g, err := grammar.Load(f)
 	f.Close()
+	if err == nil {
+		err = g.Labeled()
+	}
 	if err != nil {
 		log.Fatalf("load %s: %v", grammarPath, err)
 	}

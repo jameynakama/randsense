@@ -20,6 +20,11 @@
 # Pronoun, its Determiner, or "NP Conjunction NP" coordination. Verbs under an
 # InfVP keep their base form and verbs under a GerVP take -ing, up to any
 # clause nested inside them.
+#
+# Every phrase needs a [phrase.X] table and every slot a rule uses a
+# [slot."X"] table, each with a label and a description; verb frames also
+# get an example. The frontend shows them, and the server won't start
+# without them.
 
 [[rule]]
 symbol = "S"
@@ -255,3 +260,241 @@ weight = 3
 [[rule]]
 symbol = "ADJ"
 expansion = ["ADJ", "Adjective"]
+
+[phrase.S]
+label = "sentence"
+description = "A complete thought: one clause, or clauses joined by a conjunction."
+
+[phrase.Clause]
+label = "clause"
+description = "A subject and what it does: a noun phrase and a verb phrase."
+
+[phrase.NP]
+label = "noun phrase"
+description = "Names a person, place or thing, with any words that point at it or describe it."
+
+[phrase.VP]
+label = "verb phrase"
+description = "A verb and whatever it takes: objects, phrases or whole clauses."
+
+[phrase.InfVP]
+label = "infinitive"
+description = "\"To\" and a verb phrase in its base form."
+
+[phrase.GerVP]
+label = "gerund phrase"
+description = "A verb phrase in its -ing form, used like a noun."
+
+[phrase.PP]
+label = "prepositional phrase"
+description = "A preposition and its object."
+
+[phrase.ADJ]
+label = "adjective phrase"
+description = "One or more adjectives describing a noun."
+
+[slot.Noun]
+label = "noun"
+description = "A person, place, thing or idea."
+
+[slot.Determiner]
+label = "determiner"
+description = "Points at a noun: the, a, this, every."
+
+[slot.Adjective]
+label = "adjective"
+description = "Describes a noun."
+
+[slot.Adverb]
+label = "adverb"
+description = "Describes a verb: how, when or where."
+
+[slot.Preposition]
+label = "preposition"
+description = "Relates a noun phrase to the rest of the sentence: in, under, despite."
+
+[slot."Preposition:on"]
+label = "\"on\""
+description = "The preposition its verb asks for."
+
+[slot."Preposition:to"]
+label = "\"to\""
+description = "The preposition its verb asks for."
+
+[slot."Preposition:from"]
+label = "\"from\""
+description = "The preposition its verb asks for."
+
+[slot."Preposition:of"]
+label = "\"of\""
+description = "The preposition its verb asks for."
+
+[slot."Preposition:with"]
+label = "\"with\""
+description = "The preposition its verb asks for."
+
+[slot."Preposition:into"]
+label = "\"into\""
+description = "The preposition its verb asks for."
+
+[slot.Pronoun]
+label = "pronoun"
+description = "Stands in for a noun phrase: she, them, you."
+
+[slot."Pronoun:it"]
+label = "dummy \"it\""
+description = "A subject that refers to nothing, as in \"it rains\"."
+
+[slot."Pronoun:genitive"]
+label = "possessive pronoun"
+description = "Stands for something owned: mine, theirs."
+
+[slot."Pronoun:reflexive"]
+label = "reflexive pronoun"
+description = "Points back to the subject: herself, themselves."
+
+[slot."Conjunction:coordinating"]
+label = "coordinating conjunction"
+description = "Joins two equal clauses: and, but, or."
+
+[slot."Conjunction:subordinating"]
+label = "subordinating conjunction"
+description = "Attaches a clause that depends on the main one: because, although."
+
+[slot."Conjunction:np"]
+label = "\"and\" or \"or\""
+description = "Joins two noun phrases."
+
+[slot."Conjunction:neither"]
+label = "\"neither\""
+description = "Opens a neither...nor pair."
+
+[slot."Conjunction:nor"]
+label = "\"nor\""
+description = "Closes a neither...nor pair."
+
+[slot.Comma]
+label = "comma"
+description = "Punctuation before a conjunction that joins two clauses."
+
+[slot.Complementizer]
+label = "\"that\""
+description = "Introduces a clause that a verb takes."
+
+[slot."Complementizer:whether"]
+label = "\"whether\""
+description = "Introduces a choice the verb weighs."
+
+[slot.To]
+label = "\"to\""
+description = "Marks an infinitive."
+
+[slot."Verb:intransitive"]
+label = "intransitive verb"
+description = "Takes no object."
+example = "slept"
+
+[slot."Verb:transitive"]
+label = "transitive verb"
+description = "Takes an object."
+example = "devoured the goose"
+
+[slot."Verb:ditransitive"]
+label = "ditransitive verb"
+description = "Takes two objects."
+example = "gave her the goose"
+
+[slot."Verb:intransitive-pp"]
+label = "verb with a phrase"
+description = "Takes a prepositional phrase."
+example = "lived under the bridge"
+
+[slot."Verb:transitive-pp"]
+label = "verb with an object and a phrase"
+description = "Takes an object and a prepositional phrase."
+example = "put the goose under the bridge"
+
+[slot."Verb:intransitive-on"]
+label = "verb with \"on\""
+description = "Takes \"on\" and a noun phrase."
+example = "relied on the goose"
+
+[slot."Verb:intransitive-to"]
+label = "verb with \"to\""
+description = "Takes \"to\" and a noun phrase."
+example = "listened to the goose"
+
+[slot."Verb:transitive-from"]
+label = "verb with an object and \"from\""
+description = "Takes an object, then \"from\" and a noun phrase."
+example = "stole the bread from the goose"
+
+[slot."Verb:transitive-of"]
+label = "verb with an object and \"of\""
+description = "Takes an object, then \"of\" and a noun phrase."
+example = "robbed the goose of its bread"
+
+[slot."Verb:transitive-on"]
+label = "verb with an object and \"on\""
+description = "Takes an object, then \"on\" and a noun phrase."
+example = "blamed the mess on the goose"
+
+[slot."Verb:transitive-to"]
+label = "verb with an object and \"to\""
+description = "Takes an object, then \"to\" and a noun phrase."
+example = "handed the bread to the goose"
+
+[slot."Verb:transitive-with"]
+label = "verb with an object and \"with\""
+description = "Takes an object, then \"with\" and a noun phrase."
+example = "fed the goose with bread"
+
+[slot."Verb:that-clause"]
+label = "verb with a clause"
+description = "Takes a whole clause, often after \"that\"."
+example = "said that the goose sang"
+
+[slot."Verb:to-infinitive"]
+label = "verb with an infinitive"
+description = "Takes an infinitive."
+example = "wanted to sing"
+
+[slot."Verb:transitive-to-infinitive"]
+label = "verb with an object and an infinitive"
+description = "Takes an object, then an infinitive."
+example = "urged her to sing"
+
+[slot."Verb:whether-infinitive"]
+label = "verb with \"whether\""
+description = "Takes \"whether\" and an infinitive."
+example = "wondered whether to sing"
+
+[slot."Verb:gerund"]
+label = "verb with a gerund"
+description = "Takes a gerund phrase."
+example = "enjoyed singing"
+
+[slot."Verb:transitive-into-gerund"]
+label = "verb with an object and \"into\""
+description = "Takes an object, then \"into\" and a gerund phrase."
+example = "coaxed her into singing"
+
+[slot."Verb:adjective"]
+label = "linking verb"
+description = "Takes an adjective that describes the subject."
+example = "seemed ugly"
+
+[slot."Verb:transitive-adjective"]
+label = "verb with an object and an adjective"
+description = "Takes an object, then an adjective that describes it."
+example = "considered her ugly"
+
+[slot."Verb:weather"]
+label = "weather verb"
+description = "Takes the dummy subject \"it\" and nothing else."
+example = "it rains"
+
+[slot."Verb:dummy-that-clause"]
+label = "verb with dummy \"it\" and a clause"
+description = "Takes the dummy subject \"it\" and a clause."
+example = "it seems that the goose sang"

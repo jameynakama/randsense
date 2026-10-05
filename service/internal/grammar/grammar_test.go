@@ -293,6 +293,9 @@ func TestProjectGrammarLoadsAndExpands(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
+	if err := g.Labeled(); err != nil {
+		t.Fatalf("Labeled: %v", err)
+	}
 	rng := rand.New(rand.NewPCG(1, 2))
 	for range 100 {
 		if _, err := g.Expand(rng); err != nil {
@@ -479,5 +482,131 @@ func TestLeafNodesAreInSentenceOrder(t *testing.T) {
 
 	if got := tree.LeafNodes(); !slices.Equal(got, []*grammar.Node{det, noun, verb}) {
 		t.Errorf("expected determiner, noun, verb; got %v", got)
+	}
+}
+
+const labeled = `
+[[rule]]
+symbol = "S"
+expansion = ["NP", "Verb:transitive", "NP"]
+
+[[rule]]
+symbol = "NP"
+expansion = ["Determiner", "Noun"]
+
+[[rule]]
+symbol = "NP"
+expansion = ["Pronoun"]
+
+[phrase.S]
+label = "sentence"
+description = "A complete thought."
+
+[phrase.NP]
+label = "noun phrase"
+description = "Names a thing."
+
+[slot.Determiner]
+label = "determiner"
+description = "Points at a noun."
+
+[slot.Noun]
+label = "noun"
+description = "A thing."
+
+[slot.Pronoun]
+label = "pronoun"
+description = "Stands in for a noun phrase."
+
+[slot."Verb:transitive"]
+label = "transitive verb"
+description = "Takes an object."
+example = "devoured the goose"
+`
+
+func TestDescribeServesRulesInFileOrderWithLabels(t *testing.T) {
+	g := mustLoad(t, labeled)
+
+	got := g.Describe()
+
+	want := grammar.Description{
+		Start: "S",
+		Phrases: map[string]grammar.Phrase{
+			"S": {
+				Label: grammar.Label{Label: "sentence", Description: "A complete thought."},
+				Rules: [][]string{{"NP", "Verb:transitive", "NP"}},
+			},
+			"NP": {
+				Label: grammar.Label{Label: "noun phrase", Description: "Names a thing."},
+				Rules: [][]string{{"Determiner", "Noun"}, {"Pronoun"}},
+			},
+		},
+		Slots: map[string]grammar.Label{
+			"Determiner":      {Label: "determiner", Description: "Points at a noun."},
+			"Noun":            {Label: "noun", Description: "A thing."},
+			"Pronoun":         {Label: "pronoun", Description: "Stands in for a noun phrase."},
+			"Verb:transitive": {Label: "transitive verb", Description: "Takes an object.", Example: "devoured the goose"},
+		},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Describe:\n got %+v\nwant %+v", got, want)
+	}
+}
+
+func TestDescriptionOmitsAbsentExample(t *testing.T) {
+	b, err := json.Marshal(grammar.Label{Label: "noun", Description: "A thing."})
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+
+	if want := `{"label":"noun","description":"A thing."}`; string(b) != want {
+		t.Errorf("expected %s; got %s", want, b)
+	}
+}
+
+func TestLabeledAcceptsAFullyLabeledGrammar(t *testing.T) {
+	if err := mustLoad(t, labeled).Labeled(); err != nil {
+		t.Errorf("expected no error; got %v", err)
+	}
+}
+
+func TestLabeledReportsWhatIsMissing(t *testing.T) {
+	tests := []struct {
+		name, drop, want string
+	}{
+		{"phrase", "[phrase.NP]\nlabel = \"noun phrase\"\ndescription = \"Names a thing.\"\n", `phrase "NP"`},
+		{"slot", "[slot.Noun]\nlabel = \"noun\"\ndescription = \"A thing.\"\n", `slot "Noun"`},
+		{"description", "description = \"A thing.\"\n", `slot "Noun"`},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			in := strings.Replace(labeled, tc.drop, "", 1)
+			if in == labeled {
+				t.Fatalf("test grammar doesn't contain %q", tc.drop)
+			}
+			err := mustLoad(t, in).Labeled()
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Errorf("expected error mentioning %s; got %v", tc.want, err)
+			}
+		})
+	}
+}
+
+func TestLoadRejectsLabelsForUnusedSymbols(t *testing.T) {
+	tests := []struct {
+		name, extra, want string
+	}{
+		{"phrase without rules", "[phrase.VP]\nlabel = \"verb phrase\"\ndescription = \"x\"\n", `"VP"`},
+		{"slot no rule uses", "[slot.Adverb]\nlabel = \"adverb\"\ndescription = \"x\"\n", `"Adverb"`},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := grammar.Load(strings.NewReader(labeled + "\n" + tc.extra))
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Errorf("expected error mentioning %s; got %v", tc.want, err)
+			}
+		})
 	}
 }
