@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
+import { FEED_SIZE } from '../../lib/feed';
 import { expectNoAxeViolations, newSentence } from '../../lib/testing/e2e';
 import type { Sentence } from '../../lib/types';
 
@@ -32,8 +33,9 @@ test('shows more than one page of stars', async ({ page }) => {
 	const voter = randomUUID();
 	await page.addInitScript((v) => localStorage.setItem('randsense:voter', v), voter);
 	// Star sentences that already exist: generating 31 would push the home
-	// page tests' sentences out of the feed while they run.
-	const res = await page.request.get('/api/v1/sentences?limit=31');
+	// page tests' sentences out of the feed while they run. Skip the ones
+	// still in the feed, since other tests count the stars on theirs.
+	const res = await page.request.get(`/api/v1/sentences?limit=31&offset=${FEED_SIZE}`);
 	const ids: string[] = (await res.json()).map((s: Sentence) => s.id);
 	while (ids.length < 31) ids.push((await newSentence(page.request)).id);
 	for (const id of ids) {
@@ -55,7 +57,7 @@ test('shows more than one page of stars', async ({ page }) => {
 test('shows each sentence once when stars change between pages', async ({ page }) => {
 	const voter = randomUUID();
 	await page.addInitScript((v) => localStorage.setItem('randsense:voter', v), voter);
-	const res = await page.request.get('/api/v1/sentences?limit=32');
+	const res = await page.request.get(`/api/v1/sentences?limit=32&offset=${FEED_SIZE}`);
 	const ids: string[] = (await res.json()).map((s: Sentence) => s.id);
 	while (ids.length < 32) ids.push((await newSentence(page.request)).id);
 	const star = async (id: string) => {
