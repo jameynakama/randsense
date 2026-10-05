@@ -49,6 +49,9 @@ sudo npx playwright install-deps chromium   # once per machine, on Linux
 which proxies `/api` to Go. Server-side page loads call Go at `API_ORIGIN` (default
 `http://localhost:8080`).
 
+`/build` builds a sentence from `S` down: each slot offers only its rules from `grammar.toml`,
+Fill and Reroll call `realize`, and a tapped word is locked through the next reroll.
+
 ## Commands
 
 | Command                         | Description                              |

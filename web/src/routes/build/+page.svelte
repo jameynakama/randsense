@@ -1,0 +1,139 @@
+<script lang="ts">
+	import { tick } from 'svelte';
+	import Diagram from '#lib/components/Diagram.svelte';
+	import ExpansionSheet from '#lib/components/ExpansionSheet.svelte';
+	import {
+		choose,
+		clear,
+		draftText,
+		fill,
+		nodeAt,
+		start,
+		toggleLock,
+		undo,
+		type Builder
+	} from '#lib/builder.js';
+	import { key } from '#lib/diagram.js';
+	import { leaves } from '#lib/tree.js';
+
+	let { data } = $props();
+
+	// Builder functions return new state, and structuredClone can't copy a
+	// deep $state proxy, so the state is raw.
+	// svelte-ignore state_referenced_locally
+	let b = $state.raw<Builder>(start(data.grammar));
+	// The phrase whose sheet is open.
+	let open = $state<number[] | null>(null);
+	let busy = $state(false);
+	let problem = $state('');
+	let problemPath = $state<number[] | null>(null);
+
+	const text = $derived(draftText(b.draft.tree));
+	const openNode = $derived(open && nodeAt(b.draft.tree, open));
+
+	// apply shows the next state, closes the sheet and any problem, and
+	// returns focus to the phrase whose sheet was open.
+	async function apply(next: Builder) {
+		const path = open;
+		b = next;
+		open = null;
+		problem = '';
+		problemPath = null;
+		if (!path) return;
+		await tick();
+		document.getElementById(`slot-${key(path)}`)?.focus();
+	}
+
+	async function realize() {
+		busy = true;
+		problem = '';
+		problemPath = null;
+		try {
+			const res = await fetch('/api/v1/sentences/realize', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(b.draft.tree)
+			});
+			if (res.status === 422) {
+				const { leaf } = (await res.json()) as { leaf: number };
+				const target = leaves(b.draft.tree)[leaf];
+				problemPath = target.path;
+				problem = target.node.locked
+					? 'No word fits here with that word locked. Unlock it, or change the phrase above it.'
+					: 'No word fits this slot right now. Change the phrase above it.';
+				return;
+			}
+			if (!res.ok) throw new Error(`status ${res.status}`);
+			b = fill(b, await res.json());
+		} catch {
+			problem = 'Couldn’t fill the sentence. Try again.';
+		} finally {
+			busy = false;
+		}
+	}
+</script>
+
+<svelte:head>
+	<title>Build a sentence · RandSense</title>
+	<meta name="description" content="Build a grammatically sound sentence from the grammar down." />
+</svelte:head>
+
+<p class="intro">
+	Tap a dashed slot to choose what goes in it, or leave it for Fill to choose. After a fill, tap a
+	word to lock it, then reroll the rest.
+</p>
+
+<div class="actions">
+	<button type="button" class="button primary" disabled={busy} onclick={realize}
+		>{text ? 'Reroll' : 'Fill'}</button
+	>
+	<button
+		type="button"
+		class="button plain"
+		disabled={!b.undo.length}
+		onclick={() => apply(undo(b))}>Undo</button
+	>
+</div>
+<p class="problem" role="status">{problem}</p>
+<p class="draft" aria-live="polite">{text}</p>
+
+<Diagram
+	tree={b.draft.tree}
+	grammar={data.grammar}
+	editing={{
+		onphrase: (path) => (open = path),
+		onword: (path) => apply(toggleLock(b, path)),
+		problemPath
+	}}
+/>
+
+{#if open && openNode}
+	<ExpansionSheet
+		symbol={openNode.symbol}
+		grammar={data.grammar}
+		filled={!!openNode.children?.length}
+		onchoose={(rule) => apply(choose(b, open!, rule))}
+		onclear={() => apply(clear(b, open!))}
+		onclose={() => apply(b)}
+	/>
+{/if}
+
+<style>
+	.intro {
+		color: var(--secondary);
+		max-inline-size: 40rem;
+		margin-inline: auto;
+	}
+
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.5rem;
+	}
+
+	.draft {
+		font-size: var(--text-xl);
+		overflow-wrap: anywhere;
+	}
+</style>

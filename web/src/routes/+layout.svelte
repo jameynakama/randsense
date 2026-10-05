@@ -6,8 +6,12 @@
 
 	let { children } = $props();
 
-	// The stars page names itself in the header, so its own link would repeat it.
-	const onStars = $derived(page.url.pathname === '/stars');
+	// Each page names itself in the header, so its own link would repeat it.
+	const pages = [
+		{ href: '/build', link: 'Build', heading: 'Build a sentence' },
+		{ href: '/stars', link: 'Your stars', heading: 'Your stars' }
+	];
+	const current = $derived(pages.find((p) => p.href === page.url.pathname));
 </script>
 
 <svelte:head>
@@ -17,16 +21,16 @@
 <header>
 	<div class="crumbs">
 		<a class="title" href="/">RandSense</a>
-		{#if onStars}
+		{#if current}
 			<span class="divider" aria-hidden="true">/</span>
-			<h1>Your stars</h1>
+			<h1>{current.heading}</h1>
 		{/if}
 	</div>
-	{#if !onStars}
-		<nav aria-label="Main">
-			<a class="button plain" href="/stars">Your stars</a>
-		</nav>
-	{/if}
+	<nav aria-label="Main">
+		{#each pages.filter((p) => p !== current) as p (p.href)}
+			<a class="button plain" href={p.href}>{p.link}</a>
+		{/each}
+	</nav>
 </header>
 
 <main>
@@ -36,6 +40,7 @@
 <style>
 	header {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
