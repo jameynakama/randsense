@@ -9,10 +9,10 @@ import {
 } from '../../lib/testing/e2e';
 import { leaves } from '../../lib/tree';
 
-// flagMany adds more than a page of flags, so "Show more" appears.
-async function flagMany(page: Page) {
+// flagMany adds n flags, by default more than a page, so "Show more" appears.
+async function flagMany(page: Page, n = 31) {
 	const s = await newSentence(page.request);
-	for (let i = 0; i < 31; i++) await flagSentence(page.request, s.id, `e2e page filler ${i}`);
+	for (let i = 0; i < n; i++) await flagSentence(page.request, s.id, `e2e page filler ${i}`);
 }
 
 test('sends a visitor without a session to log in', async ({ page }) => {
@@ -67,6 +67,23 @@ test('shows more flags', async ({ page }) => {
 	const items = page.getByRole('tabpanel').getByRole('listitem');
 	await expect(items).toHaveCount(30);
 
+	await page.getByRole('button', { name: 'Show more' }).click();
+
+	await expect.poll(() => items.count()).toBeGreaterThan(30);
+});
+
+test('keeps paging when a page of new flags arrives between clicks', async ({ page }) => {
+	await logIn(page);
+	await flagMany(page);
+	await page.goto('/admin');
+	const items = page.getByRole('tabpanel').getByRole('listitem');
+	await expect(items).toHaveCount(30);
+
+	// Exactly a page of new flags pushes everything shown down by a page, so
+	// the next page repeats only what's already shown.
+	await flagMany(page, 30);
+	await page.getByRole('button', { name: 'Show more' }).click();
+	await expect(page.getByRole('button', { name: 'Show more' })).toBeEnabled();
 	await page.getByRole('button', { name: 'Show more' }).click();
 
 	await expect.poll(() => items.count()).toBeGreaterThan(30);

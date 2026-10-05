@@ -19,10 +19,16 @@
 	let flagList = $state(data.flags);
 	// svelte-ignore state_referenced_locally
 	let moreFlags = $state(data.flags.length === ADMIN_PAGE);
+	// How far each list has read. New flags push rows down, so a page can
+	// repeat rows already shown, and the shown count would fall behind.
+	// svelte-ignore state_referenced_locally
+	let flagOffset = $state(data.flags.length);
 	// svelte-ignore state_referenced_locally
 	let words = $state(data.words);
 	// svelte-ignore state_referenced_locally
 	let moreWords = $state(data.words.length === ADMIN_PAGE);
+	// svelte-ignore state_referenced_locally
+	let wordOffset = $state(data.words.length);
 	let loading = $state(false);
 	let problem = $state('');
 
@@ -43,14 +49,16 @@
 
 	const showMoreFlags = () =>
 		run(async () => {
-			const next = await flags(fetch, flagList.length);
+			const next = await flags(fetch, flagOffset);
+			flagOffset += next.length;
 			flagList = appendNew(flagList, next, (f) => f.id);
 			moreFlags = next.length === ADMIN_PAGE;
 		}, 'Couldn’t load more. Try again.');
 
 	const showMoreWords = () =>
 		run(async () => {
-			const next = await flaggedWords(fetch, words.length);
+			const next = await flaggedWords(fetch, wordOffset);
+			wordOffset += next.length;
 			words = appendNew(words, next, wordKey);
 			moreWords = next.length === ADMIN_PAGE;
 		}, 'Couldn’t load more. Try again.');
