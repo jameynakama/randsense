@@ -53,3 +53,22 @@ export interface Grammar {
 	phrases: Record<string, Phrase>;
 	slots: Record<string, Label>;
 }
+
+// A complaint from the admin API's flags list.
+export interface Flag {
+	id: number;
+	// The flagged leaf's position among the tree's leaves, commas counted.
+	// word_index, lemma and pos are null when the whole sentence was flagged.
+	word_index: number | null;
+	lemma: string | null;
+	pos: string | null;
+	comment: string;
+	created_at: string;
+	sentence: Pick<Sentence, 'id' | 'text' | 'tree'>;
+}
+
+export interface FlaggedWord {
+	lemma: string;
+	pos: string;
+	count: number;
+}

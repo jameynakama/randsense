@@ -1,4 +1,4 @@
-import type { Grammar, Sentence, TreeNode } from '#lib/types.js';
+import type { Flag, Grammar, Sentence, TreeNode } from '#lib/types.js';
 
 const leaf = (symbol: string, word: string, extra: Partial<TreeNode> = {}): TreeNode => ({
 	symbol,
@@ -95,4 +95,15 @@ export const grammar: Grammar = {
 			example: 'slept'
 		}
 	}
+};
+
+// flag is a complaint about "she" in sentence. Leaf 6 counts the comma.
+export const flag: Flag = {
+	id: 1,
+	word_index: 6,
+	lemma: 'she',
+	pos: 'Pronoun',
+	comment: 'Who is she?',
+	created_at: '2026-10-04T09:30:00Z',
+	sentence: { id: sentence.id, text: sentence.text, tree: sentence.tree }
 };
