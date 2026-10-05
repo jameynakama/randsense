@@ -271,8 +271,9 @@ Meet WCAG 2.2 AA from the first component.
 - **Screen readers:** the sentence's group is labeled with its full text, and each word button
   with its word. Opening the word card moves focus to its heading. Star buttons use
   `aria-pressed` and include the count in their name ("Star, 12 stars").
-- **Structure outline:** a nested list with expand and collapse buttons (`aria-expanded`), not an
-  ARIA tree widget. That's the simplest pattern that works.
+- **Diagram:** a nested list in tree order under the drawing, each item named by its grammar
+  label, not an ARIA tree widget. Its words aren't interactive. Zoomed, the scrolling tree is a
+  focusable region so the keyboard can scroll it.
 - **Admin tabs:** the full ARIA tabs pattern: tab and panel roles, labels, and arrow-key
   movement between tabs.
 - **The live feed** updates by itself, so it has a pause control (WCAG 2.2.2), and new sentences

@@ -119,3 +119,18 @@ test('draws the diagram with no accessibility violations', async ({ page }) => {
 	await expect(page.getByRole('list', { name: 'Sentence diagram' })).toBeVisible();
 	await expectNoAxeViolations(page);
 });
+
+test('lets the keyboard reach a zoomed diagram', async ({ page }) => {
+	await page.setViewportSize({ width: 320, height: 640 });
+	const s = await newSentence(page.request);
+	await page.goto(`/s/${s.id}`);
+	await page.getByRole('button', { name: 'Show diagram' }).click();
+	const zoom = page.getByRole('button', { name: 'Zoom' });
+	test.skip(!(await zoom.isVisible()), 'this sentence fits at 320px');
+
+	await zoom.click();
+
+	await page.keyboard.press('Tab');
+	await expect(page.getByRole('region', { name: 'Sentence diagram, full size' })).toBeFocused();
+	await expectNoAxeViolations(page);
+});

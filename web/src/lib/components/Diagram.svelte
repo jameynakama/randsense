@@ -92,7 +92,15 @@
 			onclick={() => (zoomed = !zoomed)}>Zoom</button
 		>
 	{/if}
-	<div class="viewport" class:zoomed style:height="{drawn.height * scale}px">
+	<!-- Zoomed, the tree scrolls sideways, so the keyboard needs a way in. -->
+	<div
+		class="viewport"
+		class:zoomed
+		style:height="{drawn.height * scale}px"
+		tabindex={zoomed ? 0 : undefined}
+		role={zoomed ? 'region' : undefined}
+		aria-label={zoomed ? 'Sentence diagram, full size' : undefined}
+	>
 		<div class="canvas" style:width="{drawn.width}px" style:height="{drawn.height}px" style:scale>
 			<svg aria-hidden="true" width={drawn.width} height={drawn.height}>
 				{#each drawn.edges as e, i (i)}
