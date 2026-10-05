@@ -2,6 +2,7 @@ import { page, userEvent } from 'vitest/browser';
 import { describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import { sentence } from '#lib/testing/fixtures.js';
+import '../../app.css';
 import WordCard from './WordCard.svelte';
 
 describe('WordCard', () => {

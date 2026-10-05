@@ -19,7 +19,7 @@
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && onclose()} />
 
-<section class="card" aria-labelledby={headingId}>
+<section class="sheet" aria-labelledby={headingId}>
 	<h2 id={headingId} tabindex="-1" bind:this={heading}>{leaf.node.display ?? leaf.node.word}</h2>
 	<dl>
 		<dt>Lemma</dt>
@@ -46,16 +46,6 @@
 </section>
 
 <style>
-	.card {
-		text-align: start;
-		border-radius: 16px;
-		padding: 1rem 1.25rem;
-		background: var(--fill);
-		max-inline-size: 40rem;
-		margin: 0 auto 1rem;
-		overflow-wrap: anywhere;
-	}
-
 	h2 {
 		margin-block-start: 0;
 		color: var(--word-selected);
@@ -92,42 +82,6 @@
 	}
 
 	@media (max-width: 640px) {
-		/* Room to scroll everything above the sheet, and focus scrolled clear
-		   of it, so the sheet never hides a focused control. */
-		:global(html:has(.card)) {
-			scroll-padding-block-end: 60vh;
-		}
-
-		:global(body:has(.card)) {
-			padding-block-end: 60vh;
-		}
-
-		.card {
-			position: fixed;
-			inset-inline: 0;
-			inset-block-end: 0;
-			max-block-size: 60vh;
-			overflow-y: auto;
-			border-radius: 16px 16px 0 0;
-			margin: 0;
-			padding-block-start: 1.5rem;
-			background: var(--bg);
-			box-shadow: 0 -0.25rem 1rem rgb(0 0 0 / 0.2);
-		}
-
-		/* A sheet's grabber, for the look: Close and Escape dismiss it. */
-		.card::before {
-			content: '';
-			position: absolute;
-			inset-block-start: 0.5rem;
-			inset-inline-start: 50%;
-			translate: -50%;
-			inline-size: 36px;
-			block-size: 5px;
-			border-radius: 999px;
-			background: var(--separator);
-		}
-
 		.features li {
 			background: var(--fill);
 		}
