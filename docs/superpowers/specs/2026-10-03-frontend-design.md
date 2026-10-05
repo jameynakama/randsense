@@ -64,6 +64,7 @@ One migration adds:
 | `id` | text, primary key | 8 random base-62 characters, generated in Go, retried on collision. Unlike sequential IDs, it doesn't reveal the sentence count. |
 | `text` | text | |
 | `tree` | jsonb | the `grammar.Node` tree, as the API returns it today |
+| `origin` | text | `generated` or `built` |
 | `commonness` | numeric | the `commonness` floor the request used (see `README.md`) |
 | `star_count` | integer, default 0 | kept in step with `stars` in the same transaction, so the feed never counts rows |
 | `created_at` | timestamptz | indexed for the feed |
@@ -118,7 +119,7 @@ ordered by `created_at` descending with `id` as the tie-breaker.
 
 | Endpoint | Behavior |
 |---|---|
-| `GET /sentences/random[?commonness=N]` | Generates, **saves**, broadcasts to the stream, and returns `{id, text, tree, star_count, created_at}`. CORS open to any origin. |
+| `GET /sentences/random[?commonness=N]` | Generates, **saves**, broadcasts to the stream, and returns `{id, text, tree, origin, star_count, created_at}`. CORS open to any origin. |
 | `GET /sentences?limit=30&offset=0` | Latest saved sentences, newest first. |
 | `GET /sentences/{id}` | One sentence, or 404. |
 | `GET /sentences/stream` | Server-Sent Events. See below. |
@@ -126,7 +127,8 @@ ordered by `created_at` descending with `id` as the tie-breaker.
 | `DELETE /sentences/{id}/stars` | Unstar, same header. Idempotent. Returns `{count}` and broadcasts. |
 | `GET /stars` | Sentences the `X-Voter` token starred, by star time, newest first. |
 | `POST /sentences/{id}/flags` | `{comment, word_index?}`. The comment must be 10 to 1,000 characters after trimming. The server checks `word_index` against the stored tree and fills `lemma` and `pos` itself. 201 on success. |
-| `POST /sentences/realize` | Unchanged. Not saved and not broadcast: it's a debugging tool and must not flood the feed. |
+| `POST /sentences/realize` | Fills a posted tree (holes expanded, locked words kept) and signs it. Powers the builder; not saved and not broadcast. See the diagram spec. |
+| `POST /sentences` | Keeps a signed tree from `realize` as a sentence with `origin: "built"`, and broadcasts it. See the diagram spec. |
 
 The voter token is a random UUID the browser makes on first visit and keeps in local storage. It
 isn't a user account and holds nothing personal. Clearing storage lets someone star again, which

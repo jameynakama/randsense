@@ -50,9 +50,9 @@ which proxies `/api` to Go. Server-side page loads call Go at `API_ORIGIN` (defa
 `http://localhost:8080`).
 
 `/build` builds a sentence from `S` down: each slot offers only its rules from `grammar.toml`,
-Fill and Reroll call `realize`, and a tapped word is locked through the next reroll.
-`/build?from={id}` remixes a saved sentence: its tree and words, nothing locked, and Keep waits for a
-reroll.
+Fill and Reroll call `realize`, and a tapped word stays locked across rerolls until it's tapped
+again. `/build?from={id}` remixes a saved sentence: its tree and words, nothing locked, and Keep
+waits for a reroll.
 
 ## Commands
 
@@ -93,10 +93,9 @@ GET    /api/v1/admin/flags[?limit&offset]     -> [{id, word_index, lemma, pos, c
 GET    /api/v1/admin/flagged-words[?limit&offset] -> [{lemma, pos, count}]
 ```
 
-The stream sends `sentence` (the full sentence) whenever `random` or `POST
-/sentences` saves one and `stars`
-(`{id, count}`) after every star or unstar, even one that leaves the count unchanged, with a `:`
-keepalive every 25 seconds. It doesn't replay missed events.
+The stream sends `sentence` (the full sentence) whenever `random` or `POST /sentences` saves one
+and `stars` (`{id, count}`) after every star or unstar, even one that leaves the count unchanged,
+with a `:` keepalive every 25 seconds. It doesn't replay missed events.
 
 There's one admin and no user table. `ADMIN_PASSWORD_HASH` holds a bcrypt hash (`just
 hash-password` makes one) and `SESSION_SECRET` (32+ bytes) signs the 14-day session cookie, so
@@ -121,10 +120,11 @@ part-of-speech symbol a rule uses to its `label`, `description` and, for verb fr
 `realize` takes a tree in the shape `random` returns and fills it with fresh words, so a specific
 construction can be checked without fishing for it. The tree must derive from `grammar.toml`:
 the root is `S`, and every node's children spell one of its rules. Agreement depends on the
-symbol names its header lists, as it does there. A phrase with no children is a hole, and `realize` expands it by weight before filling. Bodies
-are capped at 64 KiB. A slot no word fits, such as a frame with no verbs above the floor,
-returns 422 with `leaf`, the slot's index among the posted tree's leaves (holes included), in
-sentence order. A frame left empty inside a hole gets a fresh expansion first.
+symbol names its header lists, as it does there. A phrase with no children is a hole, and
+`realize` expands it by weight before filling. Bodies are capped at 64 KiB. A slot no word fits,
+such as a frame with no verbs above the floor, returns 422 with `leaf`, the slot's index among
+the posted tree's leaves (holes included), in sentence order. A frame left empty inside a hole
+gets a fresh expansion first.
 
 `realize` signs each tree it returns. `POST /sentences` keeps one: it saves the tree with
 `origin: "built"` and broadcasts it like `random`, if the signature matches the tree and is less
@@ -135,7 +135,8 @@ have `origin: "generated"`.
 A leaf with `"locked": true` keeps its `lemma` and is inflected again to agree, so a locked
 noun still follows its determiner. It must fit its slot, as a verb with the slot's frame or a
 pronoun of the slot's case, or the 422 says so. The commonness floor doesn't apply to it.
-Fixed words (`to`, a qualified preposition, a comma) and reflexives ignore a lock. A locked
+Fixed words (a comma, `to`, a complementizer, `neither`, `nor`, and a qualified preposition or
+pronoun such as `it`) and reflexives ignore a lock. A locked
 singular determiner keeps plural-only nouns ("Rastas") out of its noun phrase.
 
 Every node in a returned tree may carry a `features` object with what generation worked out:

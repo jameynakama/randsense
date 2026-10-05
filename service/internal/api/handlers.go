@@ -124,7 +124,8 @@ const maxTreeBytes = 64 << 10
 // realizeSentence fills a posted tree, in the shape randomSentence returns,
 // with words. The tree must derive from the grammar, and may have holes,
 // which are expanded first. Any words and features already in it are
-// replaced, except the lemmas of locked leaves. When no word fits a slot, the 422 names the slot's leaf.
+// replaced, except the lemmas of locked leaves. When no word fits a slot, the
+// 422 names the slot's leaf.
 func (h *Handler) realizeSentence(w http.ResponseWriter, r *http.Request) {
 	c, err := commonness(r)
 	if err != nil {

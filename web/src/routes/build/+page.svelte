@@ -151,7 +151,10 @@
 </div>
 <p class="problem" role="status">
 	{#if stale}
-		This sentence’s structure isn’t one the grammar makes anymore. <a href="/build">Start over</a>
+		This sentence’s structure isn’t one the grammar makes anymore. <a
+			href="/build"
+			data-sveltekit-reload>Start over</a
+		>
 	{:else}
 		{problem}
 	{/if}
