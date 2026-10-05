@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { sentence } from './testing/fixtures';
-import { GAP, key, layout, ROW, short, type Box } from './diagram';
+import { EDIT, key, layout, READ, short, type Box } from './diagram';
 import { leaves } from './tree';
 import type { TreeNode } from './types';
 
@@ -13,7 +13,7 @@ describe('layout', () => {
 		const xs = leaves(sentence.tree).map((l) => at(l.path));
 		const half = (p: (typeof xs)[number]) => Math.max(p.label.width, p.word?.width ?? 0) / 2;
 		for (let i = 1; i < xs.length; i++) {
-			expect(xs[i].label.x - half(xs[i]) - (xs[i - 1].label.x + half(xs[i - 1]))).toBe(GAP);
+			expect(xs[i].label.x - half(xs[i]) - (xs[i - 1].label.x + half(xs[i - 1]))).toBe(READ.gap);
 		}
 		expect(xs.map((p) => p.word?.text)).toEqual([
 			'the',
@@ -36,9 +36,9 @@ describe('layout', () => {
 
 	it('puts each node on its depth’s row and every word on one baseline below the deepest', () => {
 		expect(at([]).label.y).toBe(0);
-		expect(at([0, 1, 1, 0]).label.y).toBe(4 * ROW);
+		expect(at([0, 1, 1, 0]).label.y).toBe(4 * READ.row);
 		const baselines = new Set(leaves(sentence.tree).map((l) => at(l.path).word!.y));
-		expect([...baselines]).toEqual([5 * ROW]);
+		expect([...baselines]).toEqual([5 * READ.row]);
 	});
 
 	it('keeps boxes on the same row apart', () => {
@@ -68,7 +68,16 @@ describe('layout', () => {
 	it('sizes the drawing to its contents', () => {
 		const last = at(leaves(sentence.tree).at(-1)!.path);
 		expect(drawn.width).toBe(last.label.x + Math.max(last.label.width, last.word!.width) / 2);
-		expect(drawn.height).toBe(5 * ROW + 24);
+		expect(drawn.height).toBe(5 * READ.row + 24);
+	});
+
+	it('spaces rows and columns by the sizes it is given', () => {
+		const edit = layout(sentence.tree, measure, EDIT);
+		const placed = (path: number[]) => edit.placed.get(key(path))!;
+		expect(placed([0, 1, 1, 0]).label.y).toBe(4 * EDIT.row);
+		expect(placed([0, 0, 1]).label.x - placed([0, 0, 0]).label.x).toBe(
+			(measure('Det') + measure('goose')) / 2 + EDIT.gap
+		);
 	});
 
 	it('writes a separable verb as it reads in the sentence', () => {

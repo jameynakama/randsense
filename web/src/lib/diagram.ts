@@ -1,11 +1,26 @@
 import { pos } from './tree';
 import type { TreeNode } from './types';
 
-// Pixel sizes, kept in step with Diagram.svelte's styles.
-export const ROW = 40;
-export const LABEL_HEIGHT = 20;
-export const WORD_HEIGHT = 24;
-export const GAP = 16;
+// Pixel heights of a row, a label and a word, and the gap between columns.
+export interface Sizes {
+	row: number;
+	label: number;
+	word: number;
+	gap: number;
+}
+
+// Kept in step with Diagram.svelte's styles.
+export const READ: Sizes = { row: 40, label: 20, word: 24, gap: 16 };
+// An editable tree's labels and words are 44px buttons.
+export const EDIT: Sizes = { row: 64, label: 44, word: 44, gap: 8 };
+
+// Editing makes phrases open their rules and words toggle their locks.
+export interface Editing {
+	onphrase: (path: number[]) => void;
+	onword: (path: number[]) => void;
+	// The slot no word fits, to highlight.
+	problemPath: number[] | null;
+}
 
 // A box's x is its center and y its top.
 export interface Box {
@@ -70,14 +85,14 @@ function deepestLeaf(node: TreeNode, depth = 0): number {
 // wide as their label or word; each phrase centers over its first and last
 // child; each depth is a row; and every word sits on one baseline under
 // the deepest leaf.
-export function layout(tree: TreeNode, measure: Measure): Layout {
+export function layout(tree: TreeNode, measure: Measure, sizes: Sizes = READ): Layout {
 	const placed = new Map<string, Placed>();
 	const edges: Edge[] = [];
-	const baseline = (deepestLeaf(tree) + 1) * ROW;
+	const baseline = (deepestLeaf(tree) + 1) * sizes.row;
 	let cursor = 0;
 
 	function place(node: TreeNode, path: number[]): number {
-		const y = path.length * ROW;
+		const y = path.length * sizes.row;
 		const text = short(node);
 		const labelWidth = measure(text, 'label');
 
@@ -86,11 +101,11 @@ export function layout(tree: TreeNode, measure: Measure): Layout {
 			const wordWidth = written ? measure(written, 'word') : 0;
 			const column = Math.max(labelWidth, wordWidth);
 			const x = cursor + column / 2;
-			cursor += column + GAP;
+			cursor += column + sizes.gap;
 			const p: Placed = { node, path, label: { x, y, width: labelWidth } };
 			if (written) {
 				p.word = { x, y: baseline, width: wordWidth, text: written };
-				edges.push({ from: [x, y + LABEL_HEIGHT], to: [x, baseline], dotted: true, path });
+				edges.push({ from: [x, y + sizes.label], to: [x, baseline], dotted: true, path });
 			}
 			placed.set(key(path), p);
 			return x;
@@ -101,8 +116,8 @@ export function layout(tree: TreeNode, measure: Measure): Layout {
 		placed.set(key(path), { node, path, label: { x, y, width: labelWidth } });
 		xs.forEach((cx, i) =>
 			edges.push({
-				from: [x, y + LABEL_HEIGHT],
-				to: [cx, y + ROW],
+				from: [x, y + sizes.label],
+				to: [cx, y + sizes.row],
 				dotted: false,
 				path: [...path, i]
 			})
@@ -111,5 +126,5 @@ export function layout(tree: TreeNode, measure: Measure): Layout {
 	}
 
 	place(tree, []);
-	return { placed, edges, width: cursor - GAP, height: baseline + WORD_HEIGHT };
+	return { placed, edges, width: cursor - sizes.gap, height: baseline + sizes.word };
 }
