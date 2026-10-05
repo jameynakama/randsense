@@ -10,8 +10,6 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/jackc/pgx/v5"
-
 	"github.com/jameynakama/randsense/internal/grammar"
 	"github.com/jameynakama/randsense/internal/sentence"
 	"github.com/jameynakama/randsense/internal/store"
@@ -126,8 +124,9 @@ func (h *Handler) randomSentence(w http.ResponseWriter, r *http.Request) {
 const maxTreeBytes = 64 << 10
 
 // realizeSentence fills a posted tree, in the shape randomSentence returns,
-// with words. The tree must derive from the grammar. Any words and features
-// already in it are replaced.
+// with words. The tree must derive from the grammar, and may have holes,
+// which are expanded first. Any words and features already in it are
+// replaced. When no word fits a slot, the 422 names the slot's leaf.
 func (h *Handler) realizeSentence(w http.ResponseWriter, r *http.Request) {
 	c, err := commonness(r)
 	if err != nil {
@@ -146,9 +145,13 @@ func (h *Handler) realizeSentence(w http.ResponseWriter, r *http.Request) {
 	clearWords(&tree)
 
 	rng := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
-	s, err := sentence.Realize(r.Context(), h.queries, &tree, h.verbs, rng, c)
-	if errors.Is(err, pgx.ErrNoRows) {
-		writeError(w, http.StatusUnprocessableEntity, "no word in the lexicon fits a slot in this tree at this commonness")
+	s, err := sentence.Realize(r.Context(), h.queries, h.grammar, &tree, h.verbs, rng, c)
+	var leafErr *sentence.LeafError
+	if errors.As(err, &leafErr) {
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{
+			"error": "no word in the lexicon fits this slot at this commonness",
+			"leaf":  leafErr.Index,
+		})
 		return
 	}
 	if err != nil {

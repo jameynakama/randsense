@@ -593,7 +593,7 @@ func realized(t *testing.T, build func() *grammar.Node, newQ func() *fakeQuerier
 	v := loadVerbs(t)
 	seen := map[string]int{}
 	for i := range n {
-		s, err := sentence.Realize(context.Background(), newQ(), build(), v, rand.New(rand.NewPCG(uint64(i), 0)), 0)
+		s, err := sentence.Realize(context.Background(), newQ(), mustLoad(t, simpleGrammar), build(), v, rand.New(rand.NewPCG(uint64(i), 0)), 0)
 		if err != nil {
 			t.Fatalf("Realize: %v", err)
 		}
@@ -723,7 +723,7 @@ func TestRealizeReflexiveAfterNounSubjectTakesAnyGender(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.det.Lemma, func(t *testing.T) {
 			q := newFake(tc.det)
-			_, err := sentence.Realize(context.Background(), q, reflexiveObject(detNoun()), loadVerbs(t), rand.New(rand.NewPCG(1, 0)), 0)
+			_, err := sentence.Realize(context.Background(), q, mustLoad(t, simpleGrammar), reflexiveObject(detNoun()), loadVerbs(t), rand.New(rand.NewPCG(1, 0)), 0)
 			if err != nil {
 				t.Fatalf("Realize: %v", err)
 			}
@@ -810,7 +810,7 @@ func TestRealizeReturnsReflexiveLookupErrors(t *testing.T) {
 	q := newFake()
 	q.agreementErr = boom
 
-	_, err := sentence.Realize(context.Background(), q, reflexiveObject(detNoun()), loadVerbs(t), rand.New(rand.NewPCG(1, 0)), 0)
+	_, err := sentence.Realize(context.Background(), q, mustLoad(t, simpleGrammar), reflexiveObject(detNoun()), loadVerbs(t), rand.New(rand.NewPCG(1, 0)), 0)
 	if !errors.Is(err, boom) {
 		t.Errorf("expected boom; got %v", err)
 	}
@@ -1101,9 +1101,11 @@ func TestRealizeRecordsFeatures(t *testing.T) {
 	q.framed = &store.Verb{Lemma: "look up", Frames: []byte(`["transitive","intransitive"]`), Separable: true, Frequency: zipf(t, "3.25")}
 	tree := node("S", detNoun(), node("VP", leaf("Verb:transitive"), leaf("Pronoun:reflexive")))
 
-	if _, err := sentence.Realize(context.Background(), q, tree, loadVerbs(t), newRNG(), 2.5); err != nil {
+	s, err := sentence.Realize(context.Background(), q, mustLoad(t, simpleGrammar), tree, loadVerbs(t), newRNG(), 2.5)
+	if err != nil {
 		t.Fatalf("Realize: %v", err)
 	}
+	tree = s.Tree
 
 	tense := tree.Features.Tense
 	if tense != "present" && tense != "past" {
@@ -1139,16 +1141,16 @@ func TestRealizeRecordsNonFiniteVerbForms(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.form, func(t *testing.T) {
-			inner := node("VP", leaf("Verb"))
-			tree := node("S", detNoun(), node("VP", leaf("Verb:to-infinitive"), node(tc.phrase, inner)))
+			tree := node("S", detNoun(), node("VP", leaf("Verb:to-infinitive"), node(tc.phrase, node("VP", leaf("Verb")))))
 
-			if _, err := sentence.Realize(context.Background(), newFake(), tree, loadVerbs(t), newRNG(), 0); err != nil {
+			s, err := sentence.Realize(context.Background(), newFake(), mustLoad(t, simpleGrammar), tree, loadVerbs(t), newRNG(), 0)
+			if err != nil {
 				t.Fatalf("Realize: %v", err)
 			}
 
 			// No tense, person or number: a non-finite verb agrees with nothing.
 			want := grammar.Features{Form: tc.form, Frames: []string{"transitive"}}
-			if got := inner.Children[0].Features; !reflect.DeepEqual(got, want) {
+			if got := s.Tree.Children[1].Children[1].Children[0].Children[0].Features; !reflect.DeepEqual(got, want) {
 				t.Errorf("expected %+v; got %+v", want, got)
 			}
 		})
@@ -1162,9 +1164,11 @@ func TestRealizeRecordsPronounFeatures(t *testing.T) {
 	q.pronouns["genitive"] = store.Pronoun{Lemma: "mine", Person: 1, Number: "singular", Gender: "epicene"}
 	tree := node("S", node("NP", leaf("Pronoun")), node("VP", leaf("Verb:ditransitive"), node("NP", leaf("Pronoun")), leaf("Pronoun:genitive")))
 
-	if _, err := sentence.Realize(context.Background(), q, tree, loadVerbs(t), newRNG(), 0); err != nil {
+	s, err := sentence.Realize(context.Background(), q, mustLoad(t, simpleGrammar), tree, loadVerbs(t), newRNG(), 0)
+	if err != nil {
 		t.Fatalf("Realize: %v", err)
 	}
+	tree = s.Tree
 
 	vp := tree.Children[1]
 	genitive := vp.Children[2].Features
@@ -1191,9 +1195,11 @@ func TestRealizeRecordsPronounFeatures(t *testing.T) {
 func TestRealizeGivesNoFeaturesToFixedWords(t *testing.T) {
 	tree := node("S", leaf("Comma"), leaf("To"), leaf("Complementizer"), leaf("Preposition:with"), leaf("Conjunction:nor"))
 
-	if _, err := sentence.Realize(context.Background(), newFake(), tree, loadVerbs(t), newRNG(), 0); err != nil {
+	s, err := sentence.Realize(context.Background(), newFake(), mustLoad(t, simpleGrammar), tree, loadVerbs(t), newRNG(), 0)
+	if err != nil {
 		t.Fatalf("Realize: %v", err)
 	}
+	tree = s.Tree
 
 	for _, c := range tree.Children {
 		if !reflect.ValueOf(c.Features).IsZero() {
@@ -1224,9 +1230,11 @@ func TestRealizeShowsSplitSeparableVerbOnItsLeaves(t *testing.T) {
 	q.framed = &store.Verb{Lemma: "look up", Separable: true}
 	tree := node("S", node("NP", leaf("Pronoun")), node("VP", leaf("Verb:transitive"), node("NP", leaf("Pronoun"))))
 
-	if _, err := sentence.Realize(context.Background(), q, tree, loadVerbs(t), newRNG(), 0); err != nil {
+	s, err := sentence.Realize(context.Background(), q, mustLoad(t, simpleGrammar), tree, loadVerbs(t), newRNG(), 0)
+	if err != nil {
 		t.Fatalf("Realize: %v", err)
 	}
+	tree = s.Tree
 
 	subject := tree.Children[0].Children[0]
 	verb, object := tree.Children[1].Children[0], tree.Children[1].Children[1].Children[0]
@@ -1236,5 +1244,76 @@ func TestRealizeShowsSplitSeparableVerbOnItsLeaves(t *testing.T) {
 	}
 	if subject.Display != "" {
 		t.Errorf("expected no display on an unsplit word; got %q", subject.Display)
+	}
+}
+
+func TestRealizeExpandsHolesAndLeavesThePostedTreeAlone(t *testing.T) {
+	g := mustLoad(t, simpleGrammar)
+	tree := &grammar.Node{Symbol: "S"}
+
+	s, err := sentence.Realize(context.Background(), newFake(), g, tree, loadVerbs(t), newRNG(), 0)
+	if err != nil {
+		t.Fatalf("Realize: %v", err)
+	}
+
+	if len(tree.Children) != 0 {
+		t.Errorf("posted tree changed: %+v", tree)
+	}
+	if err := g.Check(s.Tree); err != nil || slices.ContainsFunc(s.Tree.LeafNodes(), func(n *grammar.Node) bool { return n.Word == "" }) {
+		t.Errorf("realized tree has an unfilled leaf or fails Check (%v): %+v", err, s.Tree)
+	}
+}
+
+func TestRealizeNamesTheLeafNoWordFits(t *testing.T) {
+	g := mustLoad(t, emptyFrameGrammar)
+	q := newFake()
+	q.emptyFrames = []string{"transitive-on"}
+	// "Pronoun Verb:transitive-on Pronoun Preposition:on Pronoun", with the
+	// subject NP left a hole.
+	tree := &grammar.Node{Symbol: "S", Children: []*grammar.Node{
+		{Symbol: "NP"},
+		{Symbol: "VP", Children: []*grammar.Node{
+			{Symbol: "Verb:transitive-on"}, {Symbol: "Pronoun"}, {Symbol: "Preposition:on"}, {Symbol: "Pronoun"},
+		}},
+	}}
+
+	_, err := sentence.Realize(context.Background(), q, g, tree, loadVerbs(t), newRNG(), 0)
+
+	var leafErr *sentence.LeafError
+	if !errors.As(err, &leafErr) || leafErr.Index != 1 || !errors.Is(err, pgx.ErrNoRows) {
+		t.Errorf("expected a LeafError at 1 wrapping pgx.ErrNoRows; got %v", err)
+	}
+}
+
+func TestRealizeReexpandsAHoleWithAnEmptyFrame(t *testing.T) {
+	g := mustLoad(t, emptyFrameGrammar)
+	for i := range 20 {
+		q := newFake()
+		q.emptyFrames = []string{"transitive-on"}
+		tree := &grammar.Node{Symbol: "S", Children: []*grammar.Node{
+			{Symbol: "NP", Children: []*grammar.Node{{Symbol: "Pronoun"}}},
+			{Symbol: "VP"},
+		}}
+
+		s, err := sentence.Realize(context.Background(), q, g, tree, loadVerbs(t), rand.New(rand.NewPCG(uint64(i), 0)), 0)
+		if err != nil {
+			t.Fatalf("Realize: %v", err)
+		}
+		if s.Text != "She gives." && s.Text != "She gave." {
+			t.Fatalf("text: got %q, want the intransitive VP", s.Text)
+		}
+	}
+}
+
+func TestTextUsesDisplayOverWord(t *testing.T) {
+	tree := &grammar.Node{Symbol: "S", Children: []*grammar.Node{
+		{Symbol: "Pronoun", Word: "she"},
+		{Symbol: "Verb", Word: "looked up", Display: "looked"},
+		{Symbol: "Pronoun", Word: "her", Display: "her up"},
+		{Symbol: "Comma", Word: ","},
+	}}
+
+	if got := sentence.Text(tree); got != "She looked her up,." {
+		t.Errorf("Text: got %q", got)
 	}
 }

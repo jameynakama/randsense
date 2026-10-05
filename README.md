@@ -114,8 +114,10 @@ part-of-speech symbol a rule uses to its `label`, `description` and, for verb fr
 `realize` takes a tree in the shape `random` returns and fills it with fresh words, so a specific
 construction can be checked without fishing for it. The tree must derive from `grammar.toml`:
 the root is `S`, and every node's children spell one of its rules. Agreement depends on the
-symbol names its header lists, as it does there. Bodies are capped at 64 KiB. A slot no word
-fits, such as a frame with no verbs above the floor, returns 422.
+symbol names its header lists, as it does there. A phrase with no children is a hole, and `realize` expands it by weight before filling. Bodies
+are capped at 64 KiB. A slot no word fits, such as a frame with no verbs above the floor,
+returns 422 with `leaf`, the slot's index among the posted tree's leaves (holes included), in
+sentence order. A frame left empty inside a hole gets a fresh expansion first.
 
 Every node in a returned tree may carry a `features` object with what generation worked out:
 the root's `tense` and `commonness`; an NP's `person` and `number`; a noun's `number`; a verb's

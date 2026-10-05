@@ -4,11 +4,13 @@
 package sentence
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand/v2"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -98,6 +100,28 @@ const maxAttempts = 10
 // errEmptyFrame marks a verb frame with no verbs at the commonness floor.
 var errEmptyFrame = errors.New("no verb with this frame")
 
+// LeafError is a leaf no word could fill. Index counts the posted tree's
+// leaves from 0 in sentence order, holes included, so a slot inside a hole
+// the server expanded is reported as the hole.
+type LeafError struct {
+	Index int
+	Err   error
+}
+
+func (e *LeafError) Error() string { return fmt.Sprintf("leaf %d: %v", e.Index, e.Err) }
+
+func (e *LeafError) Unwrap() error { return e.Err }
+
+// slotError is a leaf of the tree being realized that no word fits.
+type slotError struct {
+	leaf *grammar.Node
+	err  error
+}
+
+func (e *slotError) Error() string { return fmt.Sprintf("%s: %v", e.leaf.Symbol, e.err) }
+
+func (e *slotError) Unwrap() error { return e.err }
+
 // Generate expands g and realizes the resulting tree. Content words are at
 // least as common as commonness, a Zipf frequency; 0 allows any word. A high
 // floor can leave a frame without verbs, so a tree that needs one is
@@ -111,7 +135,7 @@ func Generate(ctx context.Context, q store.Querier, g *grammar.Grammar, verbs *m
 			return nil, fmt.Errorf("Generate: %w", err)
 		}
 		var s *Sentence
-		s, err = Realize(ctx, q, tree, verbs, rng, commonness)
+		s, err = Realize(ctx, q, g, tree, verbs, rng, commonness)
 		if !errors.Is(err, errEmptyFrame) {
 			return s, err
 		}
@@ -119,11 +143,39 @@ func Generate(ctx context.Context, q store.Querier, g *grammar.Grammar, verbs *m
 	return nil, err
 }
 
-// Realize fills every leaf of tree with a random active word and inflects the
-// words: nouns agree with their determiner, verbs with their subject, all in
-// one tense chosen at random. Content words are at least as common as
-// commonness.
-func Realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *morph.Verbs, rng *rand.Rand, commonness float64) (*Sentence, error) {
+// Realize fills a copy of tree with words, after expanding each hole by
+// weight, and inflects them: nouns agree with their determiner, verbs with
+// their subject, all in one tense chosen at random. Content words are at
+// least as common as commonness. A hole that needed a verb frame with no
+// verbs at that floor is expanded afresh. A leaf no word fits is a
+// *LeafError.
+func Realize(ctx context.Context, q store.Querier, g *grammar.Grammar, tree *grammar.Node, verbs *morph.Verbs, rng *rand.Rand, commonness float64) (*Sentence, error) {
+	var leafErr *LeafError
+	for range maxAttempts {
+		t := tree.Clone()
+		posted := t.LeafNodes()
+		if err := g.ExpandHoles(t, rng); err != nil {
+			return nil, fmt.Errorf("Realize: %w", err)
+		}
+		s, err := realize(ctx, q, t, verbs, rng, commonness)
+		var slot *slotError
+		if !errors.As(err, &slot) {
+			if err != nil {
+				return nil, fmt.Errorf("Realize: %w", err)
+			}
+			return s, nil
+		}
+		i := slices.IndexFunc(posted, func(p *grammar.Node) bool { return p.Contains(slot.leaf) })
+		leafErr = &LeafError{Index: i, Err: slot.err}
+		// A hole has children once expanded; a posted slot never does.
+		if len(posted[i].Children) == 0 || !errors.Is(slot.err, errEmptyFrame) {
+			break
+		}
+	}
+	return nil, fmt.Errorf("Realize: %w", leafErr)
+}
+
+func realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *morph.Verbs, rng *rand.Rand, commonness float64) (*Sentence, error) {
 	gen := &generator{
 		ctx:        ctx,
 		q:          q,
@@ -139,11 +191,11 @@ func Realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *mo
 	}
 
 	if err := gen.fill(tree, false); err != nil {
-		return nil, fmt.Errorf("Realize: %w", err)
+		return nil, err
 	}
 	gen.agreeNouns(tree)
 	if err := gen.agreeWithSubjects(tree, thirdSingular, finite); err != nil {
-		return nil, fmt.Errorf("Realize: %w", err)
+		return nil, err
 	}
 	tree.Features.Tense = string(gen.tense)
 	tree.Features.Commonness = &commonness
@@ -151,19 +203,27 @@ func Realize(ctx context.Context, q store.Querier, tree *grammar.Node, verbs *mo
 	text := map[*grammar.Node]string{}
 	gen.separateParticles(tree, text)
 	leaves := tree.LeafNodes()
-	words := make([]string, len(leaves))
 	for i, l := range leaves {
 		if l.Lemma == "a" && l.POS() == grammar.Determiner && i+1 < len(leaves) {
 			l.Word = morph.Article(leaves[i+1].Word)
 		}
-		words[i] = l.Word
 		if t, ok := text[l]; ok {
-			words[i] = t
 			l.Display = t
 		}
 	}
 
-	return &Sentence{Text: format(words), Tree: tree}, nil
+	return &Sentence{Text: Text(tree), Tree: tree}, nil
+}
+
+// Text writes out a realized tree: each leaf's display if it has one, or
+// else its word.
+func Text(tree *grammar.Node) string {
+	leaves := tree.LeafNodes()
+	words := make([]string, len(leaves))
+	for i, l := range leaves {
+		words[i] = cmp.Or(l.Display, l.Word)
+	}
+	return format(words)
 }
 
 // fill gives every leaf under n a word, except reflexives, which wait for
@@ -216,6 +276,9 @@ func verbPhraseFollows(siblings []*grammar.Node) bool {
 
 func (gen *generator) fillLeaf(n *grammar.Node, pluralNoun, subject bool) error {
 	lemma, info, err := gen.randomWord(n, pluralNoun, subject)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return &slotError{leaf: n, err: err}
+	}
 	if err != nil {
 		return fmt.Errorf("%s: %w", n.Symbol, err)
 	}
@@ -435,6 +498,9 @@ func (gen *generator) agreeWithSubjects(n *grammar.Node, agr agreement, form ver
 				Number: string(agr.number),
 				Gender: agr.gender,
 			})
+			if errors.Is(err, pgx.ErrNoRows) {
+				return &slotError{leaf: c, err: err}
+			}
 			if err != nil {
 				return fmt.Errorf("%s: %w", c.Symbol, err)
 			}

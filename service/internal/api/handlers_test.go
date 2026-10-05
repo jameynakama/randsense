@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -355,6 +356,14 @@ expansion = ["Verb:transitive", "NP"]
 [[rule]]
 symbol = "VP"
 expansion = ["Verb"]
+
+[[rule]]
+symbol = "S"
+expansion = ["NP", "Gift"]
+
+[[rule]]
+symbol = "Gift"
+expansion = ["Verb:ditransitive", "NP", "NP"]
 `
 
 func newRealizeServer(t *testing.T) *httptest.Server {
@@ -409,7 +418,6 @@ func TestRealizeSentenceRejectsBadRequests(t *testing.T) {
 		{"too large", "", `{"symbol": "S", "children": [` + strings.Repeat(`{"symbol": "Noun"},`, 10000) + `{"symbol": "Noun"}]}`, http.StatusBadRequest},
 		{"expansion that isn't a rule", "", `{"symbol": "S", "children": [{"symbol": "Noun"}]}`, http.StatusBadRequest},
 		{"root that isn't S", "", `{"symbol": "NP", "children": [{"symbol": "Determiner"}, {"symbol": "Noun"}]}`, http.StatusBadRequest},
-		{"phrase left empty", "", `{"symbol": "S", "children": [{"symbol": "NP"}, {"symbol": "VP", "children": [{"symbol": "Verb"}]}]}`, http.StatusBadRequest},
 		{"part of speech with children", "", `{"symbol": "S", "children": [{"symbol": "Verb:ditransitive", "children": [{"symbol": "Noun"}]}]}`, http.StatusBadRequest},
 		{"unknown qualifier", "", `{"symbol": "S", "children": [{"symbol": "Verb:bogus"}]}`, http.StatusBadRequest},
 		{"frame without verbs", "", `{"symbol": "S", "children": [{"symbol": "Verb:ditransitive"}]}`, http.StatusUnprocessableEntity},
@@ -461,5 +469,57 @@ func TestRealizeSentenceRecomputesPostedFeatures(t *testing.T) {
 	}
 	if d := body.Tree.Children[0].Children[1].Display; d != "" {
 		t.Errorf("noun display: got %q, want none", d)
+	}
+}
+
+// leafProblem is a 422 body from realize.
+type leafProblem struct {
+	Error string `json:"error"`
+	Leaf  int    `json:"leaf"`
+}
+
+func TestRealizeSentenceFillsHoles(t *testing.T) {
+	seedWords(t)
+	srv := newRealizeServer(t)
+	defer srv.Close()
+
+	resp := postTree(t, srv, "", `{"symbol": "S", "children": [{"symbol": "NP"}, {"symbol": "VP"}]}`)
+	defer resp.Body.Close()
+	var body struct {
+		Text string       `json:"text"`
+		Tree grammar.Node `json:"tree"`
+	}
+	decode(t, resp, http.StatusOK, &body)
+
+	if !regexp.MustCompile(`^This goose (devours|devoured)( this goose)?\.$`).MatchString(body.Text) {
+		t.Errorf("text: got %q", body.Text)
+	}
+	if len(body.Tree.Children[0].Children) != 2 || len(body.Tree.Children[1].Children) == 0 {
+		t.Errorf("holes left in the tree: %+v", body.Tree)
+	}
+}
+
+func TestRealizeSentenceNamesTheLeafNoWordFits(t *testing.T) {
+	seedWords(t)
+	srv := newRealizeServer(t)
+	defer srv.Close()
+
+	tests := []struct {
+		name, tree string
+		leaf       int
+	}{
+		{"a slot", `{"symbol": "S", "children": [{"symbol": "Verb:ditransitive"}]}`, 0},
+		{"a hole, after it is expanded afresh", `{"symbol": "S", "children": [{"symbol": "NP"}, {"symbol": "Gift"}]}`, 1},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			resp := postTree(t, srv, "", tc.tree)
+			defer resp.Body.Close()
+			var body leafProblem
+			decode(t, resp, http.StatusUnprocessableEntity, &body)
+			if body.Leaf != tc.leaf || body.Error == "" {
+				t.Errorf("body: got %+v, want leaf %d and an error", body, tc.leaf)
+			}
+		})
 	}
 }
