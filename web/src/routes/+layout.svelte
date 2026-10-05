@@ -11,7 +11,12 @@
 		{ href: '/build', link: 'Build', heading: 'Build a sentence' },
 		{ href: '/stars', link: 'Your stars', heading: 'Your stars' }
 	];
-	const current = $derived(pages.find((p) => p.href === page.url.pathname));
+	// Pages the header names but the nav doesn't link to.
+	const unlisted = [
+		{ href: '/admin', heading: 'Flags' },
+		{ href: '/admin/login', heading: 'Admin login' }
+	];
+	const current = $derived([...pages, ...unlisted].find((p) => p.href === page.url.pathname));
 </script>
 
 <svelte:head>

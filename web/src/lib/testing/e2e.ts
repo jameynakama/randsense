@@ -20,3 +20,28 @@ export async function expectNoSidewaysScroll(page: Page) {
 	);
 	expect(overflow).toBeLessThanOrEqual(0);
 }
+
+// The development admin password, as .env.example sets it.
+const ADMIN_PASSWORD = 'randsense';
+
+// logIn starts an admin session in page's browser context.
+export async function logIn(page: Page) {
+	const res = await page.request.post('/api/v1/admin/login', {
+		data: { password: ADMIN_PASSWORD }
+	});
+	expect(res.ok()).toBe(true);
+}
+
+// flagSentence reports a problem with a sentence, or the word at wordIndex,
+// as a visitor would.
+export async function flagSentence(
+	request: APIRequestContext,
+	id: string,
+	comment: string,
+	wordIndex?: number
+) {
+	const res = await request.post(`/api/v1/sentences/${id}/flags`, {
+		data: { comment, word_index: wordIndex }
+	});
+	expect(res.ok()).toBe(true);
+}
