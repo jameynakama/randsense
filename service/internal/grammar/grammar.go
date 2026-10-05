@@ -311,16 +311,18 @@ type Features struct {
 }
 
 // Node is one constituent of a parse tree. A leaf's Symbol is a POS,
-// optionally qualified ("Verb:transitive"). Once the leaf is filled from
-// the lexicon, Lemma is the dictionary form and Word the inflected one.
-// Display is how the leaf is written in the sentence when that differs
-// from Word: a separable verb split around its object ("looked" and
-// "her up").
+// optionally qualified ("Verb:transitive"), or a phrase with no children
+// yet, a hole. Once the leaf is filled from the lexicon, Lemma is the
+// dictionary form and Word the inflected one. Display is how the leaf is
+// written in the sentence when that differs from Word: a separable verb
+// split around its object ("looked" and "her up").
 type Node struct {
-	Symbol   string   `json:"symbol"`
-	Lemma    string   `json:"lemma,omitempty"`
-	Word     string   `json:"word,omitempty"`
-	Display  string   `json:"display,omitempty"`
+	Symbol  string `json:"symbol"`
+	Lemma   string `json:"lemma,omitempty"`
+	Word    string `json:"word,omitempty"`
+	Display string `json:"display,omitempty"`
+	// Locked keeps a leaf's lemma when the tree is realized again.
+	Locked   bool     `json:"locked,omitempty"`
 	Features Features `json:"features,omitzero"`
 	Children []*Node  `json:"children,omitempty"`
 }
@@ -362,9 +364,27 @@ func (n *Node) LeafNodes() []*Node {
 	return leaves
 }
 
+// Clone copies the tree, so changing the copy's nodes leaves n's alone.
+func (n *Node) Clone() *Node {
+	c := *n
+	if n.Children != nil {
+		c.Children = make([]*Node, len(n.Children))
+		for i, child := range n.Children {
+			c.Children[i] = child.Clone()
+		}
+	}
+	return &c
+}
+
+// Contains reports whether m is n or a node under it.
+func (n *Node) Contains(m *Node) bool {
+	return n == m || slices.ContainsFunc(n.Children, func(c *Node) bool { return c.Contains(m) })
+}
+
 // Check reports whether tree derives from the grammar: the root is the
 // start symbol, every inner node's children spell one of its symbol's
-// rules, and every leaf is a part of speech.
+// rules, and every leaf is a part of speech or a hole. Only words can be
+// locked.
 func (g *Grammar) Check(tree *Node) error {
 	if tree.Symbol != start {
 		return fmt.Errorf("grammar: root is %q, not %q", tree.Symbol, start)
@@ -373,16 +393,16 @@ func (g *Grammar) Check(tree *Node) error {
 }
 
 func (g *Grammar) check(n *Node) error {
+	rules, phrase := g.rules[n.Symbol]
+	if phrase && n.Locked {
+		return fmt.Errorf("grammar: %q is a phrase, and only words can be locked", n.Symbol)
+	}
 	if len(n.Children) == 0 {
 		// Rules only spell valid terminals, so a leaf that matched its
-		// parent's rule is either a part of speech or an empty phrase.
-		if _, phrase := g.rules[n.Symbol]; phrase {
-			return fmt.Errorf("grammar: %q has no children", n.Symbol)
-		}
+		// parent's rule is a part of speech or a hole.
 		return nil
 	}
-	rules, ok := g.rules[n.Symbol]
-	if !ok {
+	if !phrase {
 		return fmt.Errorf("grammar: %q is a part of speech and cannot have children", n.Symbol)
 	}
 	symbols := make([]string, len(n.Children))
@@ -506,4 +526,30 @@ func pick(rules []rule, rng *rand.Rand) rule {
 	}
 	// Reached only if float rounding leaves x at exactly zero.
 	return rules[len(rules)-1]
+}
+
+// ExpandHoles expands every hole in tree, choosing among rules by weight as
+// Expand does. Nodes that aren't holes stay as they are.
+func (g *Grammar) ExpandHoles(tree *Node, rng *rand.Rand) error {
+	return g.expandHoles(tree, 0, rng)
+}
+
+func (g *Grammar) expandHoles(n *Node, depth int, rng *rand.Rand) error {
+	if len(n.Children) == 0 {
+		if _, phrase := g.rules[n.Symbol]; !phrase {
+			return nil
+		}
+		expanded, err := g.expand(n.Symbol, depth, rng)
+		if err != nil {
+			return err
+		}
+		n.Children = expanded.Children
+		return nil
+	}
+	for _, c := range n.Children {
+		if err := g.expandHoles(c, depth+1, rng); err != nil {
+			return err
+		}
+	}
+	return nil
 }

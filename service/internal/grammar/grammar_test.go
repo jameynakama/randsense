@@ -422,10 +422,9 @@ func TestCheckRejectsTreesTheGrammarCannotDerive(t *testing.T) {
 		{"root that isn't the start symbol", tn("NP", tn("Pronoun")), `root is "NP"`},
 		{"expansion that isn't a rule", tn("S", np(), tn("VP", tn("Verb:transitive"))), `"VP"`},
 		{"rule with symbols out of order", tn("S", tn("VP", tn("Verb:transitive"), np()), np()), `"S"`},
-		{"phrase left empty", tn("S", tn("NP"), tn("VP", tn("Verb:transitive"), np())), `"NP"`},
+		{"locked phrase", tn("S", &grammar.Node{Symbol: "NP", Locked: true}, tn("VP", tn("Verb:transitive"), np())), `"NP"`},
 		{"part of speech with children", tn("S", np(), tn("VP", tn("Verb:transitive", tn("Noun")), np())), `"Verb:transitive"`},
 		{"unknown qualifier", tn("S", np(), tn("VP", tn("Verb:bogus"), np())), `"VP"`},
-		{"lone start symbol", tn("S"), `"S"`},
 	}
 
 	for _, tc := range tests {
@@ -435,6 +434,79 @@ func TestCheckRejectsTreesTheGrammarCannotDerive(t *testing.T) {
 				t.Errorf("expected error mentioning %s; got %v", tc.want, err)
 			}
 		})
+	}
+}
+
+func TestCheckAcceptsHoles(t *testing.T) {
+	g := mustLoad(t, checkGrammar)
+	for _, tree := range []*grammar.Node{
+		tn("S"),
+		tn("S", tn("NP"), tn("VP", tn("Verb:transitive"), tn("NP"))),
+	} {
+		if err := g.Check(tree); err != nil {
+			t.Errorf("expected no error; got %v", err)
+		}
+	}
+}
+
+func TestExpandHolesExpandsOnlyHoles(t *testing.T) {
+	g := mustLoad(t, checkGrammar)
+	tree := tn("S", tn("NP"), tn("VP", &grammar.Node{Symbol: "Verb:transitive", Lemma: "devour", Locked: true}, tn("NP", tn("Pronoun"))))
+
+	if err := g.ExpandHoles(tree, rand.New(rand.NewPCG(1, 2))); err != nil {
+		t.Fatalf("ExpandHoles: %v", err)
+	}
+
+	if err := g.Check(tree); err != nil {
+		t.Errorf("expanded tree: %v", err)
+	}
+	if len(tree.Children[0].Children) == 0 {
+		t.Error("the NP hole has no children")
+	}
+	if v := tree.Children[1].Children[0]; v.Lemma != "devour" || !v.Locked {
+		t.Errorf("the locked verb changed: %+v", v)
+	}
+	if obj := tree.Children[1].Children[1]; len(obj.Children) != 1 || obj.Children[0].Symbol != "Pronoun" {
+		t.Errorf("the filled NP changed: %+v", obj)
+	}
+}
+
+func TestExpandHolesFailsOnRunawayGrammar(t *testing.T) {
+	g := mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["S", "S"]
+	weight = 10
+
+	[[rule]]
+	symbol = "S"
+	expansion = ["Noun"]
+	`)
+
+	if err := g.ExpandHoles(tn("S"), rand.New(rand.NewPCG(1, 2))); err == nil {
+		t.Fatal("expected an error; got nil")
+	}
+}
+
+func TestCloneCopiesEveryNode(t *testing.T) {
+	tree := tn("S", tn("NP", &grammar.Node{Symbol: "Noun", Lemma: "goose", Locked: true}))
+
+	c := tree.Clone()
+	c.Children[0].Children[0].Lemma = "moon"
+	c.Children[0].Children = append(c.Children[0].Children, tn("Noun"))
+
+	if !reflect.DeepEqual(tree, tn("S", tn("NP", &grammar.Node{Symbol: "Noun", Lemma: "goose", Locked: true}))) {
+		t.Errorf("changing the clone changed the original: %+v", tree.Children[0])
+	}
+}
+
+func TestContains(t *testing.T) {
+	noun := tn("Noun")
+	np := tn("NP", noun)
+	tree := tn("S", np, tn("Verb"))
+
+	if !tree.Contains(noun) || !np.Contains(np) || np.Contains(tree.Children[1]) {
+		t.Error("Contains: want true for a descendant and the node itself, false for a sibling's")
 	}
 }
 
