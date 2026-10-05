@@ -206,18 +206,24 @@ What it was:
   also became "Thank you!".
 - Errors showed as bold red text.
 
-The new look keeps the old palette, with darker shades where a color fails WCAG AA contrast on
-white:
+The new look keeps the old palette for identity and makes the chrome iOS-like and neutral, with
+darker shades where a color fails WCAG AA contrast on white or the `#F2F2F7` gray fill:
 
-- white background, black body text
+- white background, black body text, `#6C6C70` secondary text (4.7:1 on the fill)
 - sentence words in `dodgerblue` (3.2:1, which passes only as large text, so the sentence never
   goes below 24 CSS px), turning `#C2185B` (5.9:1) on hover or selection in place of `hotpink`
-  (2.7:1)
-- the title in `deeppink` (3.6:1, large text only); smaller accents in `#C2185B`
-- pill buttons on white with a `royalblue` outline (4.9:1) and `slategray` text (4.1:1, so the
-  text stays at least 18.67 CSS px bold), the text turning `royalblue` on hover, with no
-  transform. `royalblue` replaces `cornflowerblue` (2.97:1)
-- feed and other normal-size text in black or `royalblue`, never `dodgerblue`
+  (2.7:1). `dodgerblue` fails on the gray fill, so it stays on white
+- the title in `deeppink` (3.6:1, large text only, so at least 18.67 CSS px bold); smaller
+  accents in `#C2185B`
+- no outlined pills. Capsule buttons in three weights, all in action blue `#0A5FC2` (4.75:1
+  even as text on its 10% tint over the fill): filled for the one primary action per view
+  (Generate, Send), tinted for stars and Close, plain text for secondary actions
+- a compact header bar: the title left, the stars link right. The stars page shows its `h1` in
+  the bar as "RandSense / Your stars"
+- sentence lists as one rounded gray group with hairline separators, text left and the star
+  button right; the word card and flag form as gray cards, the word card a bottom sheet on phones
+- a fixed type scale: 15, 17, 22 and 28 px, plus the sentence
+- feed and other normal-size text in black or action blue, never `dodgerblue`
 - sentences set large (about 4rem on desktop), smaller on phones in a single column
 - one readable font for the UI and sentences, falling back to the system stack
 - the raw-JSON viewer is replaced by the word card and structure outline below

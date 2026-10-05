@@ -44,7 +44,7 @@
 	<StarButton id={sentence.id} bind:count />
 	<button
 		type="button"
-		class="pill"
+		class="button plain"
 		aria-expanded={flagging}
 		bind:this={flagButton}
 		onclick={() => (flagging = !flagging)}>Something’s wrong</button
@@ -66,7 +66,7 @@
 		flex-wrap: wrap;
 		align-items: flex-start;
 		justify-content: center;
-		gap: 1rem;
-		margin-block: 1.5rem;
+		gap: 0.5rem;
+		margin-block: 1rem 1.5rem;
 	}
 </style>

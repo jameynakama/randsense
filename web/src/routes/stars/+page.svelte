@@ -33,8 +33,6 @@
 	<title>Your stars · RandSense</title>
 </svelte:head>
 
-<h1>Your stars</h1>
-
 {#if sentences.length}
 	<ul class="sentence-list">
 		{#each sentences as s (s.id)}
@@ -45,15 +43,15 @@
 		{/each}
 	</ul>
 	{#if more}
-		<button type="button" class="pill" disabled={loading} onclick={showMore}>Show more</button>
+		<button type="button" class="button" disabled={loading} onclick={showMore}>Show more</button>
 	{/if}
 {:else}
-	<p>You haven’t starred any sentences in this browser yet.</p>
+	<p class="empty">You haven’t starred any sentences in this browser yet.</p>
 {/if}
 <p class="problem" role="status">{problem}</p>
 
 <style>
-	.problem {
-		color: var(--error);
+	.empty {
+		color: var(--secondary);
 	}
 </style>

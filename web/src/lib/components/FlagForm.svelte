@@ -56,7 +56,7 @@
 	<h2 id="{id}-heading" tabindex="-1" bind:this={heading}>Report a problem</h2>
 	<p role="status">{sent ? 'Thanks. Your report was sent.' : ''}</p>
 	{#if sent}
-		<button type="button" class="pill" onclick={onclose}>Close</button>
+		<button type="button" class="button" onclick={onclose}>Close</button>
 	{:else}
 		<form onsubmit={submit} novalidate>
 			<label for="{id}-target">About</label>
@@ -76,8 +76,8 @@
 			<p id="{id}-count" class="hint">{length} of 1,000 characters, at least 10</p>
 			<p id="{id}-problem" class="problem" aria-live="polite">{problem}</p>
 			<div class="buttons">
-				<button type="submit" class="pill" disabled={sending}>Send</button>
-				<button type="button" class="pill" onclick={onclose}>Cancel</button>
+				<button type="submit" class="button primary" disabled={sending}>Send</button>
+				<button type="button" class="button plain" onclick={onclose}>Cancel</button>
 			</div>
 		</form>
 	{/if}
@@ -86,9 +86,9 @@
 <style>
 	.flag {
 		text-align: start;
-		border: 2px solid var(--outline);
-		border-radius: 1rem;
-		padding: 1rem 1.5rem;
+		background: var(--fill);
+		border-radius: 16px;
+		padding: 1rem 1.25rem;
 		max-inline-size: 40rem;
 		margin: 1.5rem auto;
 		overflow-wrap: anywhere;
@@ -104,31 +104,36 @@
 	}
 
 	label {
-		font-weight: bold;
+		font-size: var(--text-sm);
+		font-weight: 600;
+		color: var(--secondary);
 	}
 
 	select,
 	textarea {
 		font: inherit;
 		min-block-size: 44px;
-		border: 2px solid var(--outline);
-		border-radius: 0.5rem;
-		padding: 0.5rem;
+		background: var(--bg);
+		border: 1px solid var(--separator);
+		border-radius: 10px;
+		padding: 0.5rem 0.75rem;
 		min-inline-size: 0;
 	}
 
 	.hint,
 	.problem {
 		margin: 0;
+		font-size: var(--text-sm);
 	}
 
-	.problem {
-		color: var(--error);
+	.hint {
+		color: var(--secondary);
 	}
 
 	.buttons {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 1rem;
+		gap: 0.5rem;
+		margin-block-start: 0.5rem;
 	}
 </style>

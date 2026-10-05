@@ -36,7 +36,9 @@
 
 <h1 class="visually-hidden">Random sentences</h1>
 
-<button type="button" class="pill" disabled={generating} onclick={generate}>Generate</button>
+<button type="button" class="button primary" disabled={generating} onclick={generate}
+	>Generate</button
+>
 <p class="problem" role="status">{problem}</p>
 <!-- Announces the visitor's own sentence. The feed is never read aloud. -->
 <p class="visually-hidden" aria-live="polite">{current?.text ?? ''}</p>
@@ -51,9 +53,3 @@
 		if (current?.id === e.id) current.star_count = e.count;
 	}}
 />
-
-<style>
-	.problem {
-		color: var(--error);
-	}
-</style>

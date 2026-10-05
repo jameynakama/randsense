@@ -1,16 +1,25 @@
-/* Colors are checked against white for WCAG AA. See "Look" in the
-   frontend design spec for each ratio. */
+/* Colors are checked against white and --fill for WCAG AA. See "Look" in
+   the frontend design spec for each ratio. */
 :root {
 	--bg: #fff;
+	--fill: #f2f2f7;
+	--separator: #d1d1d6;
 	--text: #000;
+	--secondary: #6c6c70;
 	--word: dodgerblue; /* 3.2:1, large text only */
 	--word-selected: #c2185b;
 	--title: deeppink; /* 3.6:1, large text only */
 	--accent: #c2185b;
-	--outline: royalblue;
-	--button-text: slategray; /* 4.1:1, bold 18.67px and up only */
+	--action: #0a5fc2;
+	--action-tint: rgb(10 95 194 / 0.1);
 	--error: #b00020;
 	--focus: #000;
+
+	--text-sm: 0.9375rem;
+	--text-md: 1.0625rem;
+	--text-lg: 1.375rem;
+	--text-xl: 1.75rem;
+
 	font-family:
 		'Atkinson Hyperlegible Next Variable',
 		-apple-system,
@@ -18,6 +27,8 @@
 		'Segoe UI',
 		Roboto,
 		sans-serif;
+	font-size: var(--text-md);
+	line-height: 1.4;
 	color: var(--text);
 	background: var(--bg);
 }
@@ -26,54 +37,85 @@ body {
 	margin: 0;
 }
 
+h2 {
+	font-size: var(--text-lg);
+}
+
 :focus-visible {
 	outline: 3px solid var(--focus);
 	outline-offset: 2px;
 }
 
-.pill {
+/* Buttons come in three weights: one filled primary action per view, tinted
+   for counts and toggles, and plain for everything secondary. */
+.button {
 	font: inherit;
-	font-size: 1.5rem;
-	font-weight: bold;
-	text-transform: uppercase;
-	color: var(--button-text);
-	background: transparent;
-	border: 2px solid var(--outline);
-	border-radius: 1rem;
-	padding: 0.5rem 1.5rem;
+	font-weight: 600;
+	color: var(--action);
+	background: var(--action-tint);
+	border: none;
+	border-radius: 999px;
+	padding: 0 1.25rem;
 	min-block-size: 44px;
 	cursor: pointer;
 }
 
-.pill:hover {
-	color: var(--outline);
+.button:active {
+	opacity: 0.7;
 }
 
-.pill:disabled {
+.button:disabled {
+	opacity: 0.6;
 	cursor: progress;
+}
+
+.button.primary {
+	color: #fff;
+	background: var(--action);
+	padding-inline: 2rem;
+}
+
+.button.plain {
+	background: none;
+	padding-inline: 0.75rem;
 }
 
 /* A list of sentences that link to their permalinks, each with its star
    button: the home page's feed and the stars page. */
 .sentence-list {
 	padding: 0;
+	margin-block: 1rem;
 	list-style: none;
-	font-size: 1.25rem;
+	text-align: start;
+	background: var(--fill);
+	border-radius: 12px;
 }
 
 .sentence-list li {
 	display: flex;
-	flex-wrap: wrap;
 	align-items: center;
-	justify-content: center;
-	gap: 0.5rem 1rem;
-	padding-block: 0.75rem;
-	border-block-end: 1px solid #ddd;
+	gap: 1rem;
+	padding: 0.5rem 0.75rem 0.5rem 1rem;
+	border-block-end: 1px solid var(--separator);
+}
+
+.sentence-list li:last-child {
+	border-block-end: none;
 }
 
 .sentence-list a {
-	color: var(--outline);
+	flex: 1;
+	color: var(--text);
+	text-decoration: none;
 	overflow-wrap: anywhere;
+}
+
+.sentence-list a:hover {
+	text-decoration: underline;
+}
+
+.problem {
+	color: var(--error);
 }
 
 .visually-hidden {

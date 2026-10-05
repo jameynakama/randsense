@@ -14,7 +14,7 @@
 <div class="structure">
 	<button
 		type="button"
-		class="pill"
+		class="button plain"
 		aria-expanded={open}
 		aria-controls={outlineId}
 		onclick={() => (open = !open)}>{open ? 'Hide structure' : 'Show structure'}</button

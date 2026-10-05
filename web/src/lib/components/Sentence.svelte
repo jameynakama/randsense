@@ -31,22 +31,33 @@
 	.sentence {
 		margin: 0;
 		font-size: clamp(1.5rem, 8vw, 4rem);
-		line-height: 1.3;
+		line-height: 1.2;
 		overflow-wrap: anywhere;
 	}
 
 	.word {
+		position: relative;
 		font: inherit;
 		color: var(--word);
 		background: none;
 		border: none;
-		padding: 0.1em 0.15em;
+		padding: 0;
 		margin: 0;
-		min-block-size: 44px;
-		min-inline-size: 44px;
 		cursor: pointer;
-		border-radius: 0.2em;
+		border-radius: 0.15em;
 		overflow-wrap: anywhere;
+	}
+
+	/* Stretches each word's target to 44px without spreading the lines or
+	   the words apart. */
+	.word::after {
+		content: '';
+		position: absolute;
+		inset-block-start: 50%;
+		inset-inline-start: 50%;
+		inline-size: max(100%, 44px);
+		block-size: max(100%, 44px);
+		translate: -50% -50%;
 	}
 
 	.word:hover,

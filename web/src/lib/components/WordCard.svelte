@@ -42,25 +42,24 @@
 			{/each}
 		</ul>
 	{/if}
-	<button type="button" class="pill" onclick={onclose}>Close</button>
+	<button type="button" class="button" onclick={onclose}>Close</button>
 </section>
 
 <style>
 	.card {
 		text-align: start;
-		border: 2px solid var(--outline);
-		border-radius: 1rem;
-		padding: 1rem 1.5rem;
-		background: var(--bg);
+		border-radius: 16px;
+		padding: 1rem 1.25rem;
+		background: var(--fill);
 		max-inline-size: 40rem;
-		margin-inline: auto;
+		margin: 0 auto 1rem;
 		overflow-wrap: anywhere;
 	}
 
 	h2 {
 		margin-block-start: 0;
-		color: var(--word);
-		font-size: 2rem;
+		color: var(--word-selected);
+		font-size: var(--text-xl);
 	}
 
 	dl {
@@ -70,7 +69,7 @@
 	}
 
 	dt {
-		font-weight: bold;
+		color: var(--secondary);
 	}
 
 	dd {
@@ -86,9 +85,10 @@
 	}
 
 	.features li {
-		border: 1px solid var(--outline);
-		border-radius: 1rem;
-		padding: 0.1rem 0.75rem;
+		font-size: var(--text-sm);
+		background: var(--bg);
+		border-radius: 8px;
+		padding: 0.25rem 0.75rem;
 	}
 
 	@media (max-width: 640px) {
@@ -108,9 +108,28 @@
 			inset-block-end: 0;
 			max-block-size: 60vh;
 			overflow-y: auto;
-			border-radius: 1rem 1rem 0 0;
+			border-radius: 16px 16px 0 0;
 			margin: 0;
+			padding-block-start: 1.5rem;
+			background: var(--bg);
 			box-shadow: 0 -0.25rem 1rem rgb(0 0 0 / 0.2);
+		}
+
+		/* A sheet's grabber, for the look: Close and Escape dismiss it. */
+		.card::before {
+			content: '';
+			position: absolute;
+			inset-block-start: 0.5rem;
+			inset-inline-start: 50%;
+			translate: -50%;
+			inline-size: 36px;
+			block-size: 5px;
+			border-radius: 999px;
+			background: var(--separator);
+		}
+
+		.features li {
+			background: var(--fill);
 		}
 	}
 </style>

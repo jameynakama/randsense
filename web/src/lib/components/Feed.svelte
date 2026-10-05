@@ -63,7 +63,7 @@
 <section class="feed" aria-labelledby={headingId}>
 	<div class="head">
 		<h2 id={headingId}>Latest sentences</h2>
-		<button type="button" class="pill" aria-pressed={paused} onclick={togglePause}
+		<button type="button" class="button plain" aria-pressed={paused} onclick={togglePause}
 			>Pause feed</button
 		>
 	</div>
@@ -92,11 +92,21 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		justify-content: center;
-		gap: 0.5rem 1.5rem;
+		justify-content: space-between;
+		gap: 0.5rem 1rem;
+	}
+
+	h2 {
+		margin: 0;
+	}
+
+	.head [aria-pressed='true'] {
+		background: var(--action-tint);
 	}
 
 	.waiting {
-		color: var(--outline);
+		margin-block-end: 0;
+		color: var(--action);
+		font-weight: 600;
 	}
 </style>

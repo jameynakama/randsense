@@ -62,7 +62,7 @@
 <span class="star">
 	<button
 		type="button"
-		class="pill"
+		class="button"
 		aria-pressed={starred}
 		aria-label="Star, {count} {count === 1 ? 'star' : 'stars'}"
 		disabled={busy}
@@ -72,8 +72,20 @@
 </span>
 
 <style>
+	.star {
+		flex: none;
+	}
+
+	button {
+		padding-inline: 1rem;
+	}
+
+	button[aria-pressed='true'] span {
+		color: var(--accent);
+	}
+
 	.problem {
 		display: block;
-		color: var(--error);
+		font-size: var(--text-sm);
 	}
 </style>
