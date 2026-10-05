@@ -135,9 +135,9 @@ have `origin: "generated"`.
 A leaf with `"locked": true` keeps its `lemma` and is inflected again to agree, so a locked
 noun still follows its determiner. It must fit its slot, as a verb with the slot's frame or a
 pronoun of the slot's case, or the 422 says so. The commonness floor doesn't apply to it.
-Fixed words (a comma, `to`, a complementizer, `neither`, `nor`, and a qualified preposition or
-pronoun such as `it`) and reflexives ignore a lock. A locked
-singular determiner keeps plural-only nouns ("Rastas") out of its noun phrase.
+Fixed words (a comma, `to`, a complementizer, `neither`, `nor`, a qualified preposition and
+`Pronoun:it`) and reflexives ignore a lock. A locked singular determiner keeps plural-only nouns
+("Rastas") out of its noun phrase.
 
 Every node in a returned tree may carry a `features` object with what generation worked out:
 the root's `tense` and `commonness`; an NP's `person` and `number`; a noun's `number`; a verb's
@@ -181,7 +181,8 @@ the same Postgres instance -- each package creates and drops its own database, n
 package suffix (`randsense_test_api`), so packages can run in parallel.
 
 `just test-fe` runs the web e2e tests against the Go server and the dev database, starting the
-server if it isn't running, so they save sentences and stars there.
+server if it isn't running, so they save sentences and stars there. A server already on :8080 (or
+a preview on :4173) is reused as is, so stop a stale one after Go or web changes.
 Parallel workers share a live feed of 30 sentences, so e2e tests must not assert sentence
 positions. Generate only a few sentences per test; star existing sentences when many are needed.
 Every word of a random sentence is a button named by the word, and Playwright matches names and

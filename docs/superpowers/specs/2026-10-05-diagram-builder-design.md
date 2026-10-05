@@ -73,7 +73,7 @@ it server-side for `/build`.
 
 ## Grammar check
 
-`Grammar.Check(tree)` replaces `Node.Validate` in `realize`. It requires:
+`realize` checks trees with `Grammar.Check(tree)`. It requires:
 
 - the root is the start symbol
 - every inner node's child symbols equal one of that symbol's rules exactly
@@ -216,13 +216,3 @@ color.
   - remix from a permalink
   - axe on `/build` with the sheet open and on the diagram
   - reflow at 320px
-
-## Build order
-
-Stages 1 (grammar labels, `Grammar.Check`, `GET /grammar`) and 2 (the read-only diagram) are
-built. The remaining stages each end working and committed:
-
-3. Holes and locks in `realize`. `Grammar.Check` rejects a childless phrase until holes land.
-4. The builder UI.
-5. Signature, Keep, `origin`, and the badge.
-6. Remix.
