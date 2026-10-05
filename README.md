@@ -132,7 +132,7 @@ echo '{"symbol": "S", "children": [{"symbol": "Clause", "children": [
 ]}]}' | http POST :8080/api/v1/sentences/realize | jq .text
 ```
 
-`commonness` (0 to 7, default 0) limits nouns, verbs, adjectives and adverbs to words at least that
+`commonness` (0 to 7, default 1) limits nouns, verbs, adjectives and adverbs to words at least that
 common in that part of speech, on the Zipf scale (log10 occurrences per billion words of
 subtitles). "baby" clears 5 as a noun but has no frequency as a verb. Words SUBTLEX-US lacks,
 including every multiword lemma, count as 0, so any floor above 0 drops them.

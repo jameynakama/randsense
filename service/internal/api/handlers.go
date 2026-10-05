@@ -20,12 +20,16 @@ import (
 // maxCommonness is about the Zipf frequency of "the", the most common word.
 const maxCommonness = 7
 
+// defaultCommonness is the floor when a request names none: it keeps out
+// the rarest words, which make the weakest sentences.
+const defaultCommonness = 1
+
 // commonness parses the optional commonness query param: content words must
-// be at least this common, as a Zipf frequency. Absent means any word.
+// be at least this common, as a Zipf frequency.
 func commonness(r *http.Request) (float64, error) {
 	v := r.URL.Query().Get("commonness")
 	if v == "" {
-		return 0, nil
+		return defaultCommonness, nil
 	}
 	c, err := strconv.ParseFloat(v, 64)
 	if err != nil || !(c >= 0 && c <= maxCommonness) {

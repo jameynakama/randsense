@@ -71,6 +71,13 @@ func seedWords(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("seed determiner: %v", err)
 	}
+	if _, err := testPool.Exec(ctx, `
+		UPDATE nouns SET frequency = 1.5;
+		UPDATE verbs SET frequency = 1.5;
+		UPDATE adjectives SET frequency = 1.5;
+		UPDATE adverbs SET frequency = 1.5`); err != nil {
+		t.Fatalf("seed frequencies: %v", err)
+	}
 }
 
 func TestRandomSentence(t *testing.T) {
@@ -249,6 +256,21 @@ func seedRareNoun(t *testing.T) {
 	}
 	if _, err := testPool.Exec(ctx, "UPDATE nouns SET frequency = 4.12 WHERE lemma = 'goose'"); err != nil {
 		t.Fatalf("set frequency: %v", err)
+	}
+}
+
+func TestCommonnessDefaultsToOne(t *testing.T) {
+	seedWords(t)
+	seedRareNoun(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	for range 20 {
+		var body map[string]any
+		decode(t, call(t, srv, http.MethodGet, "/api/v1/words/random?pos=noun", "", nil), http.StatusOK, &body)
+		if body["lemma"] != "goose" {
+			t.Fatalf("lemma: got %v, want goose, since goffer has no frequency", body["lemma"])
+		}
 	}
 }
 
@@ -431,8 +453,8 @@ func TestRealizeSentenceRecomputesPostedFeatures(t *testing.T) {
 	if tense := body.Tree.Features.Tense; tense != "present" && tense != "past" {
 		t.Errorf("tense: got %q, want present or past", tense)
 	}
-	if c := body.Tree.Features.Commonness; c == nil || *c != 0 {
-		t.Errorf("commonness: got %v, want 0", c)
+	if c := body.Tree.Features.Commonness; c == nil || *c != 1 {
+		t.Errorf("commonness: got %v, want the default, 1", c)
 	}
 	if g := body.Tree.Children[1].Features.Gender; g != "" {
 		t.Errorf("VP gender: got %q, want none", g)
