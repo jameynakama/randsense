@@ -35,3 +35,10 @@ WHERE verbs.lemma = f.word;
 -- name: SetSeparableVerbs :execrows
 UPDATE verbs SET separable = TRUE
 WHERE lemma = ANY(@lemmas::text[]);
+
+-- name: LookupVerb :one
+-- A locked word: the floor doesn't apply. An empty frame matches any verb.
+SELECT * FROM verbs
+WHERE active AND lemma = @lemma AND (@frame::text = '' OR frames ? @frame::text)
+ORDER BY id
+LIMIT 1;

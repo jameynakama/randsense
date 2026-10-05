@@ -46,3 +46,17 @@ WHERE nouns.lemma = f.word;
 UPDATE nouns SET frequency = round(f.zipf::numeric, 2)
 FROM (SELECT unnest(@words::text[]) AS word, unnest(@zipfs::float8[]) AS zipf) f
 WHERE nouns.lemma <> lower(nouns.lemma) AND lower(nouns.lemma) = f.word;
+
+-- name: GetRandomSingularNoun :one
+-- For a locked singular determiner, which can't go with "Rastas".
+SELECT * FROM nouns
+WHERE active AND NOT plural AND coalesce(frequency, 0) >= @commonness::float8
+ORDER BY random()
+LIMIT 1;
+
+-- name: LookupNoun :one
+-- A locked word: the floor doesn't apply.
+SELECT * FROM nouns
+WHERE active AND lemma = $1
+ORDER BY id
+LIMIT 1;

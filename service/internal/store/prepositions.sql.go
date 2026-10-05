@@ -58,6 +58,18 @@ func (q *Queries) ListPrepositions(ctx context.Context) ([]Preposition, error) {
 	return items, nil
 }
 
+const lookupPreposition = `-- name: LookupPreposition :one
+SELECT id, lemma, active FROM prepositions
+WHERE active AND lemma = $1
+`
+
+func (q *Queries) LookupPreposition(ctx context.Context, lemma string) (Preposition, error) {
+	row := q.db.QueryRow(ctx, lookupPreposition, lemma)
+	var i Preposition
+	err := row.Scan(&i.ID, &i.Lemma, &i.Active)
+	return i, err
+}
+
 const truncatePrepositions = `-- name: TruncatePrepositions :exec
 TRUNCATE prepositions RESTART IDENTITY CASCADE
 `

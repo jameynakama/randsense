@@ -22,3 +22,10 @@ WHERE active AND case_ = @case_ AND person = @person AND number = @number
   AND (@gender::text = '' OR gender = @gender)
 ORDER BY random()
 LIMIT 1;
+
+-- name: LookupPronoun :one
+-- "you" is singular and plural, so either can come back.
+SELECT * FROM pronouns
+WHERE active AND lemma = @lemma AND case_ = @case_
+ORDER BY random()
+LIMIT 1;

@@ -87,6 +87,33 @@ func (q *Queries) InsertAdverb(ctx context.Context, arg InsertAdverbParams) erro
 	return err
 }
 
+const lookupAdverb = `-- name: LookupAdverb :one
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM adverbs
+WHERE active AND lemma = $1
+ORDER BY id
+LIMIT 1
+`
+
+// A locked word: the floor doesn't apply.
+func (q *Queries) LookupAdverb(ctx context.Context, lemma string) (Adverb, error) {
+	row := q.db.QueryRow(ctx, lookupAdverb, lemma)
+	var i Adverb
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Inflections,
+		&i.Source,
+		&i.SourceID,
+		&i.Register,
+		&i.Frequency,
+		&i.Active,
+		&i.VoteCount,
+		&i.CreateTime,
+		&i.UpdateTime,
+	)
+	return i, err
+}
+
 const setAdverbFrequencies = `-- name: SetAdverbFrequencies :execrows
 UPDATE adverbs SET frequency = round(f.zipf::numeric, 2)
 FROM (SELECT unnest($1::text[]) AS word, unnest($2::float8[]) AS zipf) f

@@ -116,6 +116,35 @@ func (q *Queries) ListConjunctions(ctx context.Context) ([]Conjunction, error) {
 	return items, nil
 }
 
+const lookupConjunction = `-- name: LookupConjunction :one
+SELECT id, lemma, type, active, joins_nps FROM conjunctions
+WHERE active AND lemma = $1 AND ($2::text = '' OR type = $2::text)
+  AND (joins_nps OR NOT $3::bool)
+ORDER BY id
+LIMIT 1
+`
+
+type LookupConjunctionParams struct {
+	Lemma    string `db:"lemma" json:"lemma"`
+	Type     string `db:"type" json:"type"`
+	JoinsNps bool   `db:"joins_nps" json:"joins_nps"`
+}
+
+// An empty type matches either; joins_nps requires a conjunction that can
+// join noun phrases.
+func (q *Queries) LookupConjunction(ctx context.Context, arg LookupConjunctionParams) (Conjunction, error) {
+	row := q.db.QueryRow(ctx, lookupConjunction, arg.Lemma, arg.Type, arg.JoinsNps)
+	var i Conjunction
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Type,
+		&i.Active,
+		&i.JoinsNps,
+	)
+	return i, err
+}
+
 const truncateConjunctions = `-- name: TruncateConjunctions :exec
 TRUNCATE conjunctions RESTART IDENTITY CASCADE
 `

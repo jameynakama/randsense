@@ -14,3 +14,7 @@ SELECT * FROM prepositions
 WHERE active
 ORDER BY random()
 LIMIT 1;
+
+-- name: LookupPreposition :one
+SELECT * FROM prepositions
+WHERE active AND lemma = $1;

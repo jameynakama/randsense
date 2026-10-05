@@ -96,6 +96,24 @@ func (q *Queries) ListDeterminers(ctx context.Context) ([]Determiner, error) {
 	return items, nil
 }
 
+const lookupDeterminer = `-- name: LookupDeterminer :one
+SELECT id, lemma, type, number, active FROM determiners
+WHERE active AND lemma = $1
+`
+
+func (q *Queries) LookupDeterminer(ctx context.Context, lemma string) (Determiner, error) {
+	row := q.db.QueryRow(ctx, lookupDeterminer, lemma)
+	var i Determiner
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Type,
+		&i.Number,
+		&i.Active,
+	)
+	return i, err
+}
+
 const truncateDeterminers = `-- name: TruncateDeterminers :exec
 TRUNCATE determiners RESTART IDENTITY CASCADE
 `

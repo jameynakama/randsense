@@ -72,6 +72,34 @@ func (q *Queries) GetRandomNoun(ctx context.Context, commonness float64) (Noun, 
 	return i, err
 }
 
+const getRandomSingularNoun = `-- name: GetRandomSingularNoun :one
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural FROM nouns
+WHERE active AND NOT plural AND coalesce(frequency, 0) >= $1::float8
+ORDER BY random()
+LIMIT 1
+`
+
+// For a locked singular determiner, which can't go with "Rastas".
+func (q *Queries) GetRandomSingularNoun(ctx context.Context, commonness float64) (Noun, error) {
+	row := q.db.QueryRow(ctx, getRandomSingularNoun, commonness)
+	var i Noun
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Inflections,
+		&i.Source,
+		&i.SourceID,
+		&i.Register,
+		&i.Frequency,
+		&i.Active,
+		&i.VoteCount,
+		&i.CreateTime,
+		&i.UpdateTime,
+		&i.Plural,
+	)
+	return i, err
+}
+
 const insertNoun = `-- name: InsertNoun :exec
 INSERT INTO nouns (lemma, inflections, source)
 VALUES ($1, $2, $3)
@@ -87,6 +115,34 @@ type InsertNounParams struct {
 func (q *Queries) InsertNoun(ctx context.Context, arg InsertNounParams) error {
 	_, err := q.db.Exec(ctx, insertNoun, arg.Lemma, arg.Inflections, arg.Source)
 	return err
+}
+
+const lookupNoun = `-- name: LookupNoun :one
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural FROM nouns
+WHERE active AND lemma = $1
+ORDER BY id
+LIMIT 1
+`
+
+// A locked word: the floor doesn't apply.
+func (q *Queries) LookupNoun(ctx context.Context, lemma string) (Noun, error) {
+	row := q.db.QueryRow(ctx, lookupNoun, lemma)
+	var i Noun
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Inflections,
+		&i.Source,
+		&i.SourceID,
+		&i.Register,
+		&i.Frequency,
+		&i.Active,
+		&i.VoteCount,
+		&i.CreateTime,
+		&i.UpdateTime,
+		&i.Plural,
+	)
+	return i, err
 }
 
 const markPluralNouns = `-- name: MarkPluralNouns :execrows

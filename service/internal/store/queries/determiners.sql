@@ -20,3 +20,7 @@ SELECT * FROM determiners
 WHERE active AND number = ANY(@numbers::text[])
 ORDER BY random()
 LIMIT 1;
+
+-- name: LookupDeterminer :one
+SELECT * FROM determiners
+WHERE active AND lemma = $1;

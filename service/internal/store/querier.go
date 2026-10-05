@@ -31,6 +31,8 @@ type Querier interface {
 	// An empty gender matches any.
 	GetRandomPronounWithAgreement(ctx context.Context, arg GetRandomPronounWithAgreementParams) (Pronoun, error)
 	GetRandomPronounWithCase(ctx context.Context, case_ string) (Pronoun, error)
+	// For a locked singular determiner, which can't go with "Rastas".
+	GetRandomSingularNoun(ctx context.Context, commonness float64) (Noun, error)
 	GetRandomVerb(ctx context.Context, commonness float64) (Verb, error)
 	GetRandomVerbWithFrame(ctx context.Context, arg GetRandomVerbWithFrameParams) (Verb, error)
 	GetSentence(ctx context.Context, id string) (Sentence, error)
@@ -53,6 +55,21 @@ type Querier interface {
 	ListPronouns(ctx context.Context) ([]Pronoun, error)
 	ListSentences(ctx context.Context, arg ListSentencesParams) ([]Sentence, error)
 	ListStarredSentences(ctx context.Context, arg ListStarredSentencesParams) ([]Sentence, error)
+	// A locked word: the floor doesn't apply.
+	LookupAdjective(ctx context.Context, lemma string) (Adjective, error)
+	// A locked word: the floor doesn't apply.
+	LookupAdverb(ctx context.Context, lemma string) (Adverb, error)
+	// An empty type matches either; joins_nps requires a conjunction that can
+	// join noun phrases.
+	LookupConjunction(ctx context.Context, arg LookupConjunctionParams) (Conjunction, error)
+	LookupDeterminer(ctx context.Context, lemma string) (Determiner, error)
+	// A locked word: the floor doesn't apply.
+	LookupNoun(ctx context.Context, lemma string) (Noun, error)
+	LookupPreposition(ctx context.Context, lemma string) (Preposition, error)
+	// "you" is singular and plural, so either can come back.
+	LookupPronoun(ctx context.Context, arg LookupPronounParams) (Pronoun, error)
+	// A locked word: the floor doesn't apply. An empty frame matches any verb.
+	LookupVerb(ctx context.Context, arg LookupVerbParams) (Verb, error)
 	// A lemma is plural if it ends in -s and its singular (minus -s, or minus
 	// -es) is also a lemma ("Rastas"/"Rasta", "eyeglasses"/"eyeglass"). Short
 	// words and -ss/-us/-is endings ("Ms", "Mass", "Pus") are left singular.

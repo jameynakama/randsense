@@ -3,6 +3,7 @@ package sentence_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"maps"
@@ -61,6 +62,13 @@ type fakeQuerier struct {
 
 	// commonness records the floor each content-word lookup was given.
 	commonness []float64
+
+	// lookedUp records the lemmas every Lookup query was asked for. Each
+	// finds any lemma but "nope". LookupDeterminer gives "a" singular
+	// number and LookupNoun makes "Rastas" a plural lemma.
+	lookedUp []string
+	// singularNouns counts GetRandomSingularNoun calls.
+	singularNouns int
 }
 
 func newFake(dets ...store.Determiner) *fakeQuerier {
@@ -1315,5 +1323,149 @@ func TestTextUsesDisplayOverWord(t *testing.T) {
 
 	if got := sentence.Text(tree); got != "She looked her up,." {
 		t.Errorf("Text: got %q", got)
+	}
+}
+
+func (f *fakeQuerier) lookup(lemma string) error {
+	f.lookedUp = append(f.lookedUp, lemma)
+	if lemma == "nope" {
+		return pgx.ErrNoRows
+	}
+	return nil
+}
+
+func (f *fakeQuerier) LookupNoun(_ context.Context, lemma string) (store.Noun, error) {
+	return store.Noun{Lemma: lemma, Inflections: []byte(`{}`), Plural: lemma == "Rastas"}, f.lookup(lemma)
+}
+
+func (f *fakeQuerier) GetRandomSingularNoun(_ context.Context, commonness float64) (store.Noun, error) {
+	f.singularNouns++
+	return store.Noun{Lemma: "goose", Inflections: []byte(`{"plural":"geese"}`)}, f.err
+}
+
+func (f *fakeQuerier) LookupVerb(_ context.Context, arg store.LookupVerbParams) (store.Verb, error) {
+	return store.Verb{Lemma: arg.Lemma, Frames: []byte(`["transitive"]`)}, f.lookup(arg.Lemma)
+}
+
+func (f *fakeQuerier) LookupAdjective(_ context.Context, lemma string) (store.Adjective, error) {
+	return store.Adjective{Lemma: lemma}, f.lookup(lemma)
+}
+
+func (f *fakeQuerier) LookupAdverb(_ context.Context, lemma string) (store.Adverb, error) {
+	return store.Adverb{Lemma: lemma}, f.lookup(lemma)
+}
+
+func (f *fakeQuerier) LookupDeterminer(_ context.Context, lemma string) (store.Determiner, error) {
+	number := "either"
+	if lemma == "a" {
+		number = "singular"
+	}
+	return store.Determiner{Lemma: lemma, Number: number}, f.lookup(lemma)
+}
+
+func (f *fakeQuerier) LookupPreposition(_ context.Context, lemma string) (store.Preposition, error) {
+	return store.Preposition{Lemma: lemma}, f.lookup(lemma)
+}
+
+func (f *fakeQuerier) LookupPronoun(_ context.Context, arg store.LookupPronounParams) (store.Pronoun, error) {
+	return store.Pronoun{Lemma: arg.Lemma, Person: 3, Number: "singular"}, f.lookup(arg.Lemma)
+}
+
+func (f *fakeQuerier) LookupConjunction(_ context.Context, arg store.LookupConjunctionParams) (store.Conjunction, error) {
+	return store.Conjunction{Lemma: arg.Lemma}, f.lookup(arg.Lemma)
+}
+
+// lone is a tree of one leaf under S, and a grammar that derives it.
+func lone(t *testing.T, leaf *grammar.Node) (*grammar.Grammar, *grammar.Node) {
+	t.Helper()
+	g := mustLoad(t, fmt.Sprintf("[[rule]]\nsymbol = \"S\"\nexpansion = [%q]\n", leaf.Symbol))
+	return g, &grammar.Node{Symbol: "S", Children: []*grammar.Node{leaf}}
+}
+
+func TestRealizeLooksUpLockedLemmas(t *testing.T) {
+	for _, slot := range []string{
+		"Noun", "Verb:transitive", "Adjective", "Adverb", "Determiner", "Preposition",
+		"Pronoun", "Pronoun:genitive", "Conjunction", "Conjunction:np", "Conjunction:coordinating",
+	} {
+		t.Run(slot, func(t *testing.T) {
+			g, tree := lone(t, &grammar.Node{Symbol: slot, Lemma: "zany", Locked: true})
+			q := newFake()
+
+			s, err := sentence.Realize(context.Background(), q, g, tree, loadVerbs(t), newRNG(), 0)
+			if err != nil {
+				t.Fatalf("Realize: %v", err)
+			}
+			if leaf := s.Tree.Children[0]; leaf.Lemma != "zany" || !leaf.Locked {
+				t.Errorf("leaf: got %+v, want the locked lemma zany", leaf)
+			}
+			if !slices.Equal(q.lookedUp, []string{"zany"}) || len(q.commonness) != 0 {
+				t.Errorf("lookups %v and random draws %v: want one lookup and no draws", q.lookedUp, q.commonness)
+			}
+		})
+	}
+}
+
+func TestRealizeIgnoresLocksOnFixedWords(t *testing.T) {
+	for slot, want := range map[string]string{"Comma": ",", "Preposition:with": "with", "Conjunction:nor": "nor", "To": "to"} {
+		t.Run(slot, func(t *testing.T) {
+			g, tree := lone(t, &grammar.Node{Symbol: slot, Lemma: "zany", Locked: true})
+			q := newFake()
+
+			s, err := sentence.Realize(context.Background(), q, g, tree, loadVerbs(t), newRNG(), 0)
+			if err != nil {
+				t.Fatalf("Realize: %v", err)
+			}
+			if got := s.Tree.Children[0].Lemma; got != want || len(q.lookedUp) != 0 {
+				t.Errorf("lemma: got %q after lookups %v, want %q and none", got, q.lookedUp, want)
+			}
+		})
+	}
+}
+
+func TestRealizeRejectsALockedLemmaThatDoesNotFit(t *testing.T) {
+	g, tree := lone(t, &grammar.Node{Symbol: "Noun", Lemma: "nope", Locked: true})
+
+	_, err := sentence.Realize(context.Background(), newFake(), g, tree, loadVerbs(t), newRNG(), 0)
+
+	var leafErr *sentence.LeafError
+	if !errors.As(err, &leafErr) || leafErr.Index != 0 || !errors.Is(err, sentence.ErrLockMismatch) {
+		t.Errorf("expected a LeafError at 0 wrapping ErrLockMismatch; got %v", err)
+	}
+}
+
+const npGrammar = `
+[[rule]]
+symbol = "S"
+expansion = ["NP"]
+
+[[rule]]
+symbol = "NP"
+expansion = ["Determiner", "Noun"]
+`
+
+func TestRealizeKeepsPluralLemmasOffALockedSingularDeterminer(t *testing.T) {
+	tree := &grammar.Node{Symbol: "S", Children: []*grammar.Node{{Symbol: "NP", Children: []*grammar.Node{
+		{Symbol: "Determiner", Lemma: "a", Locked: true}, {Symbol: "Noun"},
+	}}}}
+	q := newFake()
+
+	if _, err := sentence.Realize(context.Background(), q, mustLoad(t, npGrammar), tree, loadVerbs(t), newRNG(), 0); err != nil {
+		t.Fatalf("Realize: %v", err)
+	}
+	if q.singularNouns != 1 {
+		t.Errorf("singular noun draws: got %d, want 1", q.singularNouns)
+	}
+}
+
+func TestRealizeRejectsALockedPluralLemmaAfterALockedSingularDeterminer(t *testing.T) {
+	tree := &grammar.Node{Symbol: "S", Children: []*grammar.Node{{Symbol: "NP", Children: []*grammar.Node{
+		{Symbol: "Determiner", Lemma: "a", Locked: true}, {Symbol: "Noun", Lemma: "Rastas", Locked: true},
+	}}}}
+
+	_, err := sentence.Realize(context.Background(), newFake(), mustLoad(t, npGrammar), tree, loadVerbs(t), newRNG(), 0)
+
+	var leafErr *sentence.LeafError
+	if !errors.As(err, &leafErr) || leafErr.Index != 0 || !errors.Is(err, sentence.ErrLockMismatch) {
+		t.Errorf("expected a LeafError at the determiner wrapping ErrLockMismatch; got %v", err)
 	}
 }

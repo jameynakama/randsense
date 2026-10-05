@@ -126,7 +126,7 @@ const maxTreeBytes = 64 << 10
 // realizeSentence fills a posted tree, in the shape randomSentence returns,
 // with words. The tree must derive from the grammar, and may have holes,
 // which are expanded first. Any words and features already in it are
-// replaced. When no word fits a slot, the 422 names the slot's leaf.
+// replaced, except the lemmas of locked leaves. When no word fits a slot, the 422 names the slot's leaf.
 func (h *Handler) realizeSentence(w http.ResponseWriter, r *http.Request) {
 	c, err := commonness(r)
 	if err != nil {
@@ -148,10 +148,11 @@ func (h *Handler) realizeSentence(w http.ResponseWriter, r *http.Request) {
 	s, err := sentence.Realize(r.Context(), h.queries, h.grammar, &tree, h.verbs, rng, c)
 	var leafErr *sentence.LeafError
 	if errors.As(err, &leafErr) {
-		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{
-			"error": "no word in the lexicon fits this slot at this commonness",
-			"leaf":  leafErr.Index,
-		})
+		msg := "no word in the lexicon fits this slot at this commonness"
+		if errors.Is(leafErr, sentence.ErrLockMismatch) {
+			msg = "the locked word doesn't fit this slot"
+		}
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": msg, "leaf": leafErr.Index})
 		return
 	}
 	if err != nil {
@@ -162,8 +163,12 @@ func (h *Handler) realizeSentence(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, s)
 }
 
+// clearWords empties every word and feature, except a locked leaf's lemma.
 func clearWords(n *grammar.Node) {
-	n.Lemma, n.Word, n.Display, n.Features = "", "", "", grammar.Features{}
+	if !n.Locked {
+		n.Lemma = ""
+	}
+	n.Word, n.Display, n.Features = "", "", grammar.Features{}
 	for _, c := range n.Children {
 		clearWords(c)
 	}

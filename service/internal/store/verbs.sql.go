@@ -131,6 +131,40 @@ func (q *Queries) InsertVerb(ctx context.Context, arg InsertVerbParams) error {
 	return err
 }
 
+const lookupVerb = `-- name: LookupVerb :one
+SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable FROM verbs
+WHERE active AND lemma = $1 AND ($2::text = '' OR frames ? $2::text)
+ORDER BY id
+LIMIT 1
+`
+
+type LookupVerbParams struct {
+	Lemma string `db:"lemma" json:"lemma"`
+	Frame string `db:"frame" json:"frame"`
+}
+
+// A locked word: the floor doesn't apply. An empty frame matches any verb.
+func (q *Queries) LookupVerb(ctx context.Context, arg LookupVerbParams) (Verb, error) {
+	row := q.db.QueryRow(ctx, lookupVerb, arg.Lemma, arg.Frame)
+	var i Verb
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Inflections,
+		&i.Frames,
+		&i.Source,
+		&i.SourceID,
+		&i.Register,
+		&i.Frequency,
+		&i.Active,
+		&i.VoteCount,
+		&i.CreateTime,
+		&i.UpdateTime,
+		&i.Separable,
+	)
+	return i, err
+}
+
 const setSeparableVerbs = `-- name: SetSeparableVerbs :execrows
 UPDATE verbs SET separable = TRUE
 WHERE lemma = ANY($1::text[])

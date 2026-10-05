@@ -421,6 +421,7 @@ func TestRealizeSentenceRejectsBadRequests(t *testing.T) {
 		{"part of speech with children", "", `{"symbol": "S", "children": [{"symbol": "Verb:ditransitive", "children": [{"symbol": "Noun"}]}]}`, http.StatusBadRequest},
 		{"unknown qualifier", "", `{"symbol": "S", "children": [{"symbol": "Verb:bogus"}]}`, http.StatusBadRequest},
 		{"frame without verbs", "", `{"symbol": "S", "children": [{"symbol": "Verb:ditransitive"}]}`, http.StatusUnprocessableEntity},
+		{"locked phrase", "", `{"symbol": "S", "children": [{"symbol": "NP", "locked": true}, {"symbol": "VP", "children": [{"symbol": "Verb"}]}]}`, http.StatusBadRequest},
 	}
 
 	for _, tc := range tests {
@@ -521,5 +522,54 @@ func TestRealizeSentenceNamesTheLeafNoWordFits(t *testing.T) {
 				t.Errorf("body: got %+v, want leaf %d and an error", body, tc.leaf)
 			}
 		})
+	}
+}
+
+func TestRealizeSentenceKeepsLockedLemmas(t *testing.T) {
+	seedWords(t)
+	seedRareNoun(t)
+	mustExec(t, "INSERT INTO determiners (lemma, type, number) VALUES ('these', 'demonstrative', 'plural')")
+	srv := newRealizeServer(t)
+	defer srv.Close()
+
+	// goffer has no frequency, so it clears the default floor only because
+	// it's locked. "these" makes it plural.
+	resp := postTree(t, srv, "", `{"symbol": "S", "children": [
+		{"symbol": "NP", "children": [
+			{"symbol": "Determiner", "lemma": "these", "locked": true},
+			{"symbol": "Noun", "lemma": "goffer", "word": "stale", "locked": true}
+		]},
+		{"symbol": "VP", "children": [{"symbol": "Verb"}]}
+	]}`)
+	defer resp.Body.Close()
+	var body struct {
+		Text string       `json:"text"`
+		Tree grammar.Node `json:"tree"`
+	}
+	decode(t, resp, http.StatusOK, &body)
+
+	if body.Text != "These goffers devour." && body.Text != "These goffers devoured." {
+		t.Errorf("text: got %q, want These goffers devour/devoured", body.Text)
+	}
+	if noun := body.Tree.Children[0].Children[1]; noun.Lemma != "goffer" || !noun.Locked {
+		t.Errorf("noun: got %+v, want goffer, still locked", noun)
+	}
+}
+
+func TestRealizeSentenceRejectsALockThatDoesNotFit(t *testing.T) {
+	seedWords(t)
+	srv := newRealizeServer(t)
+	defer srv.Close()
+
+	resp := postTree(t, srv, "", `{"symbol": "S", "children": [
+		{"symbol": "NP", "children": [{"symbol": "Determiner"}, {"symbol": "Noun", "lemma": "devour", "locked": true}]},
+		{"symbol": "VP", "children": [{"symbol": "Verb"}]}
+	]}`)
+	defer resp.Body.Close()
+	var body leafProblem
+	decode(t, resp, http.StatusUnprocessableEntity, &body)
+
+	if body.Leaf != 1 || !strings.Contains(body.Error, "locked") {
+		t.Errorf("body: got %+v, want leaf 1 and an error about the locked word", body)
 	}
 }

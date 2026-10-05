@@ -100,6 +100,11 @@ const maxAttempts = 10
 // errEmptyFrame marks a verb frame with no verbs at the commonness floor.
 var errEmptyFrame = errors.New("no verb with this frame")
 
+// ErrLockMismatch is a locked lemma that doesn't fit its slot: a word the
+// slot's table lacks, a verb without the slot's frame, or a plural lemma
+// after a locked singular determiner.
+var ErrLockMismatch = errors.New("the locked word doesn't fit this slot")
+
 // LeafError is a leaf no word could fill. Index counts the posted tree's
 // leaves from 0 in sentence order, holes included, so a slot inside a hole
 // the server expanded is reported as the hole.
@@ -227,27 +232,43 @@ func Text(tree *grammar.Node) string {
 }
 
 // fill gives every leaf under n a word, except reflexives, which wait for
-// agreeWithSubjects. subject says n is (part of) a subject NP. An NP fills its
-// nouns first so that a plural lemma ("Rastas") can rule out singular
-// determiners ("a Rastas").
+// agreeWithSubjects. A locked leaf keeps its lemma. subject says n is (part
+// of) a subject NP. An NP fills a locked determiner first, so that a
+// singular one ("a") keeps plural lemmas ("Rastas") off its nouns, then its
+// nouns, so that a plural lemma can rule out singular determiners.
 func (gen *generator) fill(n *grammar.Node, subject bool) error {
 	pluralNoun := false
 	if n.Symbol == nounPhrase {
+		var singular *grammar.Node
+		for _, c := range n.Children {
+			if c.POS() == grammar.Determiner && c.Locked {
+				if err := gen.fillLeaf(c, false, false, false); err != nil {
+					return err
+				}
+				if gen.leaves[c].number == "singular" {
+					singular = c
+				}
+			}
+		}
 		for _, c := range n.Children {
 			if c.POS() == grammar.Noun {
-				if err := gen.fillLeaf(c, false, false); err != nil {
+				if err := gen.fillLeaf(c, false, singular != nil, false); err != nil {
 					return err
 				}
 				pluralNoun = pluralNoun || gen.leaves[c].pluralLemma
 			}
 		}
+		// Only a locked plural lemma gets past a singular determiner.
+		if pluralNoun && singular != nil {
+			return &slotError{leaf: singular, err: ErrLockMismatch}
+		}
 	}
 	for i, c := range n.Children {
-		if c.Lemma != "" || isReflexive(c) {
+		if _, filled := gen.leaves[c]; filled || isReflexive(c) {
 			continue
 		}
 		if len(c.Children) == 0 {
-			if err := gen.fillLeaf(c, pluralNoun, subject); err != nil {
+			if err := gen.fillLeaf(c, pluralNoun, false, subject); err != nil {
 				return err
 			}
 			continue
@@ -274,9 +295,14 @@ func verbPhraseFollows(siblings []*grammar.Node) bool {
 	return false
 }
 
-func (gen *generator) fillLeaf(n *grammar.Node, pluralNoun, subject bool) error {
-	lemma, info, err := gen.randomWord(n, pluralNoun, subject)
+// fillLeaf gives n a word, its locked lemma's if it's locked.
+// singularNoun restricts a noun to lemmas that aren't plural.
+func (gen *generator) fillLeaf(n *grammar.Node, pluralNoun, singularNoun, subject bool) error {
+	lemma, info, err := gen.chooseWord(n, pluralNoun, singularNoun, subject)
 	if errors.Is(err, pgx.ErrNoRows) {
+		if n.Locked {
+			err = ErrLockMismatch
+		}
 		return &slotError{leaf: n, err: err}
 	}
 	if err != nil {
@@ -288,14 +314,26 @@ func (gen *generator) fillLeaf(n *grammar.Node, pluralNoun, subject bool) error 
 	return nil
 }
 
-// randomWord picks a word for leaf n, honoring its qualifier. pluralNoun
-// restricts a determiner to ones that can go with a plural noun; subject
-// makes a pronoun nominative rather than accusative.
-func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (string, leafInfo, error) {
+// chooseWord picks a word for leaf n, honoring its qualifier: its locked
+// lemma, looked up without the commonness floor, or a random one. Fixed
+// words ("to", "with", a comma) ignore a lock. pluralNoun restricts a
+// determiner to ones that can go with a plural noun; singularNoun restricts
+// a noun to lemmas that aren't plural; subject makes a pronoun nominative
+// rather than accusative.
+func (gen *generator) chooseWord(n *grammar.Node, pluralNoun, singularNoun, subject bool) (string, leafInfo, error) {
 	ctx, q := gen.ctx, gen.q
 	switch n.POS() {
 	case grammar.Noun:
-		w, err := q.GetRandomNoun(ctx, gen.commonness)
+		var w store.Noun
+		var err error
+		switch {
+		case n.Locked:
+			w, err = q.LookupNoun(ctx, n.Lemma)
+		case singularNoun:
+			w, err = q.GetRandomSingularNoun(ctx, gen.commonness)
+		default:
+			w, err = q.GetRandomNoun(ctx, gen.commonness)
+		}
 		if err != nil {
 			return "", leafInfo{}, err
 		}
@@ -312,12 +350,15 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 	case grammar.Verb:
 		var w store.Verb
 		var err error
-		if frame := n.Qualifier(); frame != "" {
+		switch frame := n.Qualifier(); {
+		case n.Locked:
+			w, err = q.LookupVerb(ctx, store.LookupVerbParams{Lemma: n.Lemma, Frame: frame})
+		case frame != "":
 			w, err = q.GetRandomVerbWithFrame(ctx, store.GetRandomVerbWithFrameParams{Frame: frame, Commonness: gen.commonness})
 			if errors.Is(err, pgx.ErrNoRows) {
 				err = fmt.Errorf("%w: %w", errEmptyFrame, err)
 			}
-		} else {
+		default:
 			w, err = q.GetRandomVerb(ctx, gen.commonness)
 		}
 		if err != nil {
@@ -331,17 +372,32 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 			Frames: frames, Separable: w.Separable, Frequency: frequency(w.Frequency),
 		}}, nil
 	case grammar.Adjective:
-		w, err := q.GetRandomAdjective(ctx, gen.commonness)
+		var w store.Adjective
+		var err error
+		if n.Locked {
+			w, err = q.LookupAdjective(ctx, n.Lemma)
+		} else {
+			w, err = q.GetRandomAdjective(ctx, gen.commonness)
+		}
 		return w.Lemma, leafInfo{features: grammar.Features{Frequency: frequency(w.Frequency)}}, err
 	case grammar.Adverb:
-		w, err := q.GetRandomAdverb(ctx, gen.commonness)
+		var w store.Adverb
+		var err error
+		if n.Locked {
+			w, err = q.LookupAdverb(ctx, n.Lemma)
+		} else {
+			w, err = q.GetRandomAdverb(ctx, gen.commonness)
+		}
 		return w.Lemma, leafInfo{features: grammar.Features{Frequency: frequency(w.Frequency)}}, err
 	case grammar.Determiner:
 		var w store.Determiner
 		var err error
-		if pluralNoun {
+		switch {
+		case n.Locked:
+			w, err = q.LookupDeterminer(ctx, n.Lemma)
+		case pluralNoun:
 			w, err = q.GetRandomDeterminerWithNumber(ctx, []string{"plural", "either"})
-		} else {
+		default:
 			w, err = q.GetRandomDeterminer(ctx)
 		}
 		return w.Lemma, leafInfo{number: w.Number, features: grammar.Features{Type: w.Type, Number: w.Number}}, err
@@ -349,17 +405,29 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 		if prep := n.Qualifier(); prep != "" {
 			return prep, leafInfo{}, nil
 		}
-		w, err := q.GetRandomPreposition(ctx)
+		var w store.Preposition
+		var err error
+		if n.Locked {
+			w, err = q.LookupPreposition(ctx, n.Lemma)
+		} else {
+			w, err = q.GetRandomPreposition(ctx)
+		}
 		return w.Lemma, leafInfo{}, err
 	case grammar.Pronoun:
 		pronounCase := "accusative"
 		if subject {
 			pronounCase = "nominative"
 		}
+		pronoun := func(c string) (store.Pronoun, error) {
+			if n.Locked {
+				return q.LookupPronoun(ctx, store.LookupPronounParams{Lemma: n.Lemma, Case: c})
+			}
+			return q.GetRandomPronounWithCase(ctx, c)
+		}
 		if n.Qualifier() == grammar.Genitive {
 			// "mine" stands for what is owned, not the owner, so it's third
 			// person of either number.
-			w, err := q.GetRandomPronounWithCase(ctx, grammar.Genitive)
+			w, err := pronoun(grammar.Genitive)
 			number := morph.Singular
 			if gen.rng.IntN(2) == 1 {
 				number = morph.Plural
@@ -373,7 +441,7 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 				Case: pronounCase, Person: int(morph.Third), Number: string(morph.Singular),
 			}}, nil
 		}
-		w, err := q.GetRandomPronounWithCase(ctx, pronounCase)
+		w, err := pronoun(pronounCase)
 		return w.Lemma, leafInfo{number: w.Number, person: morph.Person(w.Person), gender: w.Gender, features: grammar.Features{
 			Case: pronounCase, Person: int(w.Person), Number: w.Number, Gender: w.Gender,
 		}}, err
@@ -389,12 +457,18 @@ func (gen *generator) randomWord(n *grammar.Node, pluralNoun, subject bool) (str
 	default: // Conjunction: Load guarantees every leaf is a POS.
 		var w store.Conjunction
 		var err error
-		switch qualifier := n.Qualifier(); qualifier {
-		case grammar.JoinsNPs:
-			w, err = q.GetRandomNPConjunction(ctx)
-		case grammar.Neither, grammar.Nor:
+		switch qualifier := n.Qualifier(); {
+		case qualifier == grammar.Neither || qualifier == grammar.Nor:
 			return qualifier, leafInfo{}, nil
-		case "":
+		case n.Locked:
+			lookup := store.LookupConjunctionParams{Lemma: n.Lemma, JoinsNps: qualifier == grammar.JoinsNPs}
+			if !lookup.JoinsNps {
+				lookup.Type = qualifier
+			}
+			w, err = q.LookupConjunction(ctx, lookup)
+		case qualifier == grammar.JoinsNPs:
+			w, err = q.GetRandomNPConjunction(ctx)
+		case qualifier == "":
 			w, err = q.GetRandomConjunction(ctx)
 		default:
 			w, err = q.GetRandomConjunctionOfType(ctx, qualifier)

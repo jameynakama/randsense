@@ -26,3 +26,12 @@ SELECT * FROM conjunctions
 WHERE active AND joins_nps
 ORDER BY random()
 LIMIT 1;
+
+-- name: LookupConjunction :one
+-- An empty type matches either; joins_nps requires a conjunction that can
+-- join noun phrases.
+SELECT * FROM conjunctions
+WHERE active AND lemma = @lemma AND (@type::text = '' OR type = @type::text)
+  AND (joins_nps OR NOT @joins_nps::bool)
+ORDER BY id
+LIMIT 1;

@@ -24,3 +24,10 @@ LIMIT 1;
 UPDATE adjectives SET frequency = round(f.zipf::numeric, 2)
 FROM (SELECT unnest(@words::text[]) AS word, unnest(@zipfs::float8[]) AS zipf) f
 WHERE adjectives.lemma = f.word;
+
+-- name: LookupAdjective :one
+-- A locked word: the floor doesn't apply.
+SELECT * FROM adjectives
+WHERE active AND lemma = $1
+ORDER BY id
+LIMIT 1;

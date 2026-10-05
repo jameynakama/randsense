@@ -87,6 +87,33 @@ func (q *Queries) InsertAdjective(ctx context.Context, arg InsertAdjectiveParams
 	return err
 }
 
+const lookupAdjective = `-- name: LookupAdjective :one
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM adjectives
+WHERE active AND lemma = $1
+ORDER BY id
+LIMIT 1
+`
+
+// A locked word: the floor doesn't apply.
+func (q *Queries) LookupAdjective(ctx context.Context, lemma string) (Adjective, error) {
+	row := q.db.QueryRow(ctx, lookupAdjective, lemma)
+	var i Adjective
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Inflections,
+		&i.Source,
+		&i.SourceID,
+		&i.Register,
+		&i.Frequency,
+		&i.Active,
+		&i.VoteCount,
+		&i.CreateTime,
+		&i.UpdateTime,
+	)
+	return i, err
+}
+
 const setAdjectiveFrequencies = `-- name: SetAdjectiveFrequencies :execrows
 UPDATE adjectives SET frequency = round(f.zipf::numeric, 2)
 FROM (SELECT unnest($1::text[]) AS word, unnest($2::float8[]) AS zipf) f

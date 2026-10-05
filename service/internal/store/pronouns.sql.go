@@ -124,6 +124,34 @@ func (q *Queries) ListPronouns(ctx context.Context) ([]Pronoun, error) {
 	return items, nil
 }
 
+const lookupPronoun = `-- name: LookupPronoun :one
+SELECT id, lemma, case_, person, number, gender, active FROM pronouns
+WHERE active AND lemma = $1 AND case_ = $2
+ORDER BY random()
+LIMIT 1
+`
+
+type LookupPronounParams struct {
+	Lemma string `db:"lemma" json:"lemma"`
+	Case  string `db:"case_" json:"case_"`
+}
+
+// "you" is singular and plural, so either can come back.
+func (q *Queries) LookupPronoun(ctx context.Context, arg LookupPronounParams) (Pronoun, error) {
+	row := q.db.QueryRow(ctx, lookupPronoun, arg.Lemma, arg.Case)
+	var i Pronoun
+	err := row.Scan(
+		&i.ID,
+		&i.Lemma,
+		&i.Case,
+		&i.Person,
+		&i.Number,
+		&i.Gender,
+		&i.Active,
+	)
+	return i, err
+}
+
 const truncatePronouns = `-- name: TruncatePronouns :exec
 TRUNCATE pronouns RESTART IDENTITY CASCADE
 `

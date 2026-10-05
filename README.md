@@ -119,6 +119,12 @@ are capped at 64 KiB. A slot no word fits, such as a frame with no verbs above t
 returns 422 with `leaf`, the slot's index among the posted tree's leaves (holes included), in
 sentence order. A frame left empty inside a hole gets a fresh expansion first.
 
+A leaf with `"locked": true` keeps its `lemma` and is inflected again to agree, so a locked
+noun still follows its determiner. It must fit its slot, as a verb with the slot's frame or a
+pronoun of the slot's case, or the 422 says so. The commonness floor doesn't apply to it.
+Fixed words (`to`, a qualified preposition, a comma) and reflexives ignore a lock. A locked
+singular determiner keeps plural-only nouns ("Rastas") out of its noun phrase.
+
 Every node in a returned tree may carry a `features` object with what generation worked out:
 the root's `tense` and `commonness`; an NP's `person` and `number`; a noun's `number`; a verb's
 `form` (`finite`, `base` or `gerund`), `frames` (every frame its lemma has) and `separable`,
