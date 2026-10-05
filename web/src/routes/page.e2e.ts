@@ -65,6 +65,8 @@ test('reflows the home page at 320px without sideways scrolling', async ({ page 
 	await page.setViewportSize({ width: 320, height: 640 });
 	await page.goto('/');
 	await ownSentence(page);
+	await page.getByRole('button', { name: 'Show diagram' }).click();
+	await expect(page.getByRole('list', { name: 'Sentence diagram' })).toBeVisible();
 
 	await expectNoSidewaysScroll(page);
 });

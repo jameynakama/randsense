@@ -44,7 +44,7 @@
 <p class="visually-hidden" aria-live="polite">{current?.text ?? ''}</p>
 
 {#if current}
-	<SentenceView sentence={current} bind:count={current.star_count} />
+	<SentenceView sentence={current} grammar={data.grammar} bind:count={current.star_count} />
 {/if}
 
 <Feed

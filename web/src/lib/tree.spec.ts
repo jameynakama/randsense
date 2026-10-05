@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { featureLabels, frame, leaves, role, symbolName, tokens } from './tree';
+import { featureLabels, frame, leaves, role, tokens } from './tree';
 import type { TreeNode } from './types';
 
 const leaf = (symbol: string, word: string, extra: Partial<TreeNode> = {}): TreeNode => ({
@@ -98,15 +98,10 @@ describe('role', () => {
 	});
 });
 
-describe('frame and symbolName', () => {
+describe('frame', () => {
 	it('reads frames only from verbs', () => {
 		expect(frame(leaf('Verb:transitive', 'x'))).toBe('transitive');
 		expect(frame(leaf('Pronoun:reflexive', 'x'))).toBeUndefined();
-	});
-
-	it('names phrases and parts of speech', () => {
-		expect(symbolName(node('NP'))).toBe('noun phrase');
-		expect(symbolName(leaf('Verb:transitive', 'x'))).toBe('verb');
 	});
 });
 

@@ -109,3 +109,13 @@ test('flags a word by keyboard alone', async ({ page }) => {
 	await page.keyboard.press('Escape');
 	await expect(opener).toBeFocused();
 });
+
+test('draws the diagram with no accessibility violations', async ({ page }) => {
+	const s = await newSentence(page.request);
+	await page.goto(`/s/${s.id}`);
+
+	await page.getByRole('button', { name: 'Show diagram' }).click();
+
+	await expect(page.getByRole('list', { name: 'Sentence diagram' })).toBeVisible();
+	await expectNoAxeViolations(page);
+});

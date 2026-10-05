@@ -30,4 +30,4 @@
 
 <h1 class="visually-hidden">A random sentence</h1>
 
-<SentenceView sentence={data.sentence} bind:count={stars} />
+<SentenceView sentence={data.sentence} grammar={data.grammar} bind:count={stars} />

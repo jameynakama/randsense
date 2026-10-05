@@ -42,23 +42,6 @@ export function tokens(tree: TreeNode): Token[] {
 	});
 }
 
-const phraseNames: Record<string, string> = {
-	S: 'sentence',
-	Clause: 'clause',
-	NP: 'noun phrase',
-	VP: 'verb phrase',
-	PP: 'prepositional phrase',
-	InfVP: 'infinitive',
-	GerVP: 'gerund phrase',
-	ADJ: 'adjective phrase'
-};
-
-// symbolName reads a symbol out: "noun phrase" for NP, "verb" for
-// Verb:transitive.
-export function symbolName(node: TreeNode): string {
-	return phraseNames[node.symbol] ?? pos(node).toLowerCase();
-}
-
 // role is where the leaf at path sits in its clause, from the nearest
 // phrase that says: a prepositional phrase, an infinitive, a gerund phrase,
 // or the subject or object. null when none applies.

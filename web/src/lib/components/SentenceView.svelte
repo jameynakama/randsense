@@ -1,14 +1,18 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { leaves } from '#lib/tree.js';
-	import type { Sentence as SentenceData } from '#lib/types.js';
+	import type { Grammar, Sentence as SentenceData } from '#lib/types.js';
+	import Diagram from './Diagram.svelte';
 	import FlagForm from './FlagForm.svelte';
 	import Sentence, { wordId } from './Sentence.svelte';
 	import StarButton from './StarButton.svelte';
-	import Structure from './Structure.svelte';
 	import WordCard from './WordCard.svelte';
 
-	let { sentence, count = $bindable() }: { sentence: SentenceData; count: number } = $props();
+	let {
+		sentence,
+		grammar,
+		count = $bindable()
+	}: { sentence: SentenceData; grammar: Grammar; count: number } = $props();
 
 	// Both reset when another sentence takes this one's place.
 	let selected = $derived.by<number | null>(() => {
@@ -21,6 +25,8 @@
 	});
 	const selectedPath = $derived(selected === null ? null : leaves(sentence.tree)[selected].path);
 	let flagButton: HTMLButtonElement | undefined = $state();
+	// Stays open from one sentence to the next.
+	let showDiagram = $state(false);
 
 	async function closeCard() {
 		const opener = selected;
@@ -58,7 +64,16 @@
 	<WordCard tree={sentence.tree} index={selected} onclose={closeCard} />
 {/if}
 
-<Structure tree={sentence.tree} {selectedPath} />
+<button
+	type="button"
+	class="button plain"
+	aria-expanded={showDiagram}
+	onclick={() => (showDiagram = !showDiagram)}
+	>{showDiagram ? 'Hide diagram' : 'Show diagram'}</button
+>
+{#if showDiagram}
+	<Diagram tree={sentence.tree} {grammar} {selectedPath} />
+{/if}
 
 <style>
 	.actions {
