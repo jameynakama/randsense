@@ -362,20 +362,38 @@ func (n *Node) LeafNodes() []*Node {
 	return leaves
 }
 
-// Validate reports whether the tree could have been expanded from some
-// grammar: every leaf is a POS, optionally qualified, and no inner node is.
-func (n *Node) Validate() error {
-	terminal, err := checkTerminal(n.Symbol)
-	switch {
-	case err != nil:
-		return err
-	case len(n.Children) == 0 && !terminal:
-		return fmt.Errorf("grammar: leaf %q is not a part of speech", n.Symbol)
-	case len(n.Children) > 0 && terminal:
+// Check reports whether tree derives from the grammar: the root is the
+// start symbol, every inner node's children spell one of its symbol's
+// rules, and every leaf is a part of speech.
+func (g *Grammar) Check(tree *Node) error {
+	if tree.Symbol != start {
+		return fmt.Errorf("grammar: root is %q, not %q", tree.Symbol, start)
+	}
+	return g.check(tree)
+}
+
+func (g *Grammar) check(n *Node) error {
+	if len(n.Children) == 0 {
+		// Rules only spell valid terminals, so a leaf that matched its
+		// parent's rule is either a part of speech or an empty phrase.
+		if _, phrase := g.rules[n.Symbol]; phrase {
+			return fmt.Errorf("grammar: %q has no children", n.Symbol)
+		}
+		return nil
+	}
+	rules, ok := g.rules[n.Symbol]
+	if !ok {
 		return fmt.Errorf("grammar: %q is a part of speech and cannot have children", n.Symbol)
 	}
+	symbols := make([]string, len(n.Children))
+	for i, c := range n.Children {
+		symbols[i] = c.Symbol
+	}
+	if !slices.ContainsFunc(rules, func(r rule) bool { return slices.Equal(r.Expansion, symbols) }) {
+		return fmt.Errorf("grammar: %q -> %v is not a rule", n.Symbol, symbols)
+	}
 	for _, c := range n.Children {
-		if err := c.Validate(); err != nil {
+		if err := g.check(c); err != nil {
 			return err
 		}
 	}

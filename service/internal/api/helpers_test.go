@@ -97,14 +97,10 @@ func decode(t *testing.T, resp *http.Response, status int, v any) {
 	}
 }
 
-// newServer serves the API with cfg, filling in the test grammar and verbs,
-// and testPool unless cfg has its own queries.
+// newServer serves the API with cfg, filling in the test grammar unless cfg
+// has its own, the verbs, and testPool unless cfg has its own queries.
 func newServer(t *testing.T, cfg api.RouterConfig) *httptest.Server {
 	t.Helper()
-	g, err := grammar.Load(strings.NewReader(testGrammar))
-	if err != nil {
-		t.Fatalf("grammar.Load: %v", err)
-	}
 	v, err := morph.LoadVerbs(strings.NewReader(""))
 	if err != nil {
 		t.Fatalf("morph.LoadVerbs: %v", err)
@@ -119,8 +115,20 @@ func newServer(t *testing.T, cfg api.RouterConfig) *httptest.Server {
 		}
 		cfg.Admin = api.AdminConfig{PasswordHash: hash, SessionSecret: testSecret, InsecureCookies: cfg.Admin.InsecureCookies}
 	}
-	cfg.Grammar, cfg.Verbs = g, v
+	if cfg.Grammar == nil {
+		cfg.Grammar = loadGrammar(t, testGrammar)
+	}
+	cfg.Verbs = v
 	return httptest.NewServer(api.NewRouter(cfg))
+}
+
+func loadGrammar(t *testing.T, in string) *grammar.Grammar {
+	t.Helper()
+	g, err := grammar.Load(strings.NewReader(in))
+	if err != nil {
+		t.Fatalf("grammar.Load: %v", err)
+	}
+	return g
 }
 
 func newTestServer(t *testing.T) *httptest.Server {

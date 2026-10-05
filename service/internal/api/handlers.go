@@ -122,7 +122,8 @@ func (h *Handler) randomSentence(w http.ResponseWriter, r *http.Request) {
 const maxTreeBytes = 64 << 10
 
 // realizeSentence fills a posted tree, in the shape randomSentence returns,
-// with words. Any words and features already in the tree are replaced.
+// with words. The tree must derive from the grammar. Any words and features
+// already in it are replaced.
 func (h *Handler) realizeSentence(w http.ResponseWriter, r *http.Request) {
 	c, err := commonness(r)
 	if err != nil {
@@ -134,7 +135,7 @@ func (h *Handler) realizeSentence(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("body must be a JSON tree of at most %d bytes: %v", maxTreeBytes, err))
 		return
 	}
-	if err := tree.Validate(); err != nil {
+	if err := h.grammar.Check(&tree); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}

@@ -380,33 +380,57 @@ func TestLoadAcceptsNeitherNor(t *testing.T) {
 	`)
 }
 
-func TestValidateAcceptsTreeOfTerminals(t *testing.T) {
-	tree := &grammar.Node{Symbol: "S", Children: []*grammar.Node{
-		{Symbol: "NP", Children: []*grammar.Node{{Symbol: "Determiner"}, {Symbol: "Noun"}}},
-		{Symbol: "VP", Children: []*grammar.Node{{Symbol: "Verb:transitive"}, {Symbol: "Pronoun:reflexive"}}},
-	}}
+const checkGrammar = `
+[[rule]]
+symbol = "S"
+expansion = ["NP", "VP"]
 
-	if err := tree.Validate(); err != nil {
+[[rule]]
+symbol = "NP"
+expansion = ["Determiner", "Noun"]
+
+[[rule]]
+symbol = "NP"
+expansion = ["Pronoun"]
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:transitive", "NP"]
+`
+
+func tn(symbol string, children ...*grammar.Node) *grammar.Node {
+	return &grammar.Node{Symbol: symbol, Children: children}
+}
+
+func TestCheckAcceptsTreeTheGrammarDerives(t *testing.T) {
+	g := mustLoad(t, checkGrammar)
+	tree := tn("S", tn("NP", tn("Determiner"), tn("Noun")), tn("VP", tn("Verb:transitive"), tn("NP", tn("Pronoun"))))
+
+	if err := g.Check(tree); err != nil {
 		t.Errorf("expected no error; got %v", err)
 	}
 }
 
-func TestValidateRejectsMalformedTrees(t *testing.T) {
+func TestCheckRejectsTreesTheGrammarCannotDerive(t *testing.T) {
+	g := mustLoad(t, checkGrammar)
+	np := func() *grammar.Node { return tn("NP", tn("Pronoun")) }
 	tests := []struct {
 		name string
 		tree *grammar.Node
 		want string
 	}{
-		{"leaf that isn't a POS", &grammar.Node{Symbol: "S", Children: []*grammar.Node{{Symbol: "NP"}}}, `"NP"`},
-		{"unknown qualifier", &grammar.Node{Symbol: "S", Children: []*grammar.Node{{Symbol: "Verb:bogus"}}}, `"Verb:bogus"`},
-		{"POS with children", &grammar.Node{Symbol: "S", Children: []*grammar.Node{
-			{Symbol: "Noun", Children: []*grammar.Node{{Symbol: "Noun"}}},
-		}}, `"Noun"`},
+		{"root that isn't the start symbol", tn("NP", tn("Pronoun")), `root is "NP"`},
+		{"expansion that isn't a rule", tn("S", np(), tn("VP", tn("Verb:transitive"))), `"VP"`},
+		{"rule with symbols out of order", tn("S", tn("VP", tn("Verb:transitive"), np()), np()), `"S"`},
+		{"phrase left empty", tn("S", tn("NP"), tn("VP", tn("Verb:transitive"), np())), `"NP"`},
+		{"part of speech with children", tn("S", np(), tn("VP", tn("Verb:transitive", tn("Noun")), np())), `"Verb:transitive"`},
+		{"unknown qualifier", tn("S", np(), tn("VP", tn("Verb:bogus"), np())), `"VP"`},
+		{"lone start symbol", tn("S"), `"S"`},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.tree.Validate()
+			err := g.Check(tc.tree)
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Errorf("expected error mentioning %s; got %v", tc.want, err)
 			}

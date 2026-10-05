@@ -46,7 +46,7 @@ func TestRandomSentenceIsSaved(t *testing.T) {
 func TestRealizedSentenceIsNotSaved(t *testing.T) {
 	seedWords(t)
 	resetSentences(t)
-	srv := newTestServer(t)
+	srv := newRealizeServer(t)
 	defer srv.Close()
 
 	resp := postTree(t, srv, "", realizeTree)

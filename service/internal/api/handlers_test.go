@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jameynakama/randsense/internal/api"
 	"github.com/jameynakama/randsense/internal/grammar"
 	"github.com/jameynakama/randsense/internal/store"
 )
@@ -311,6 +312,34 @@ const realizeTree = `{"symbol": "S", "children": [
 	]}
 ]}`
 
+// realizeGrammar derives the trees the realize tests post.
+const realizeGrammar = `
+[[rule]]
+symbol = "S"
+expansion = ["NP", "VP"]
+
+[[rule]]
+symbol = "S"
+expansion = ["Verb:ditransitive"]
+
+[[rule]]
+symbol = "NP"
+expansion = ["Determiner", "Noun"]
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb:transitive", "NP"]
+
+[[rule]]
+symbol = "VP"
+expansion = ["Verb"]
+`
+
+func newRealizeServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	return newServer(t, api.RouterConfig{Grammar: loadGrammar(t, realizeGrammar)})
+}
+
 func postTree(t *testing.T, srv *httptest.Server, query, tree string) *http.Response {
 	t.Helper()
 	resp, err := http.Post(srv.URL+"/api/v1/sentences/realize"+query, "application/json", strings.NewReader(tree))
@@ -322,7 +351,7 @@ func postTree(t *testing.T, srv *httptest.Server, query, tree string) *http.Resp
 
 func TestRealizeSentence(t *testing.T) {
 	seedWords(t)
-	srv := newTestServer(t)
+	srv := newRealizeServer(t)
 	defer srv.Close()
 
 	// A tree from a previous response gets fresh words.
@@ -346,7 +375,7 @@ func TestRealizeSentence(t *testing.T) {
 
 func TestRealizeSentenceRejectsBadRequests(t *testing.T) {
 	seedWords(t)
-	srv := newTestServer(t)
+	srv := newRealizeServer(t)
 	defer srv.Close()
 
 	tests := []struct {
@@ -356,7 +385,11 @@ func TestRealizeSentenceRejectsBadRequests(t *testing.T) {
 		{"invalid commonness", "?commonness=lots", realizeTree, http.StatusBadRequest},
 		{"not JSON", "", "S -> NP VP", http.StatusBadRequest},
 		{"too large", "", `{"symbol": "S", "children": [` + strings.Repeat(`{"symbol": "Noun"},`, 10000) + `{"symbol": "Noun"}]}`, http.StatusBadRequest},
-		{"leaf that isn't a POS", "", `{"symbol": "S", "children": [{"symbol": "NP"}]}`, http.StatusBadRequest},
+		{"expansion that isn't a rule", "", `{"symbol": "S", "children": [{"symbol": "Noun"}]}`, http.StatusBadRequest},
+		{"root that isn't S", "", `{"symbol": "NP", "children": [{"symbol": "Determiner"}, {"symbol": "Noun"}]}`, http.StatusBadRequest},
+		{"phrase left empty", "", `{"symbol": "S", "children": [{"symbol": "NP"}, {"symbol": "VP", "children": [{"symbol": "Verb"}]}]}`, http.StatusBadRequest},
+		{"part of speech with children", "", `{"symbol": "S", "children": [{"symbol": "Verb:ditransitive", "children": [{"symbol": "Noun"}]}]}`, http.StatusBadRequest},
+		{"unknown qualifier", "", `{"symbol": "S", "children": [{"symbol": "Verb:bogus"}]}`, http.StatusBadRequest},
 		{"frame without verbs", "", `{"symbol": "S", "children": [{"symbol": "Verb:ditransitive"}]}`, http.StatusUnprocessableEntity},
 	}
 
@@ -373,7 +406,7 @@ func TestRealizeSentenceRejectsBadRequests(t *testing.T) {
 
 func TestRealizeSentenceRecomputesPostedFeatures(t *testing.T) {
 	seedWords(t)
-	srv := newTestServer(t)
+	srv := newRealizeServer(t)
 	defer srv.Close()
 
 	// As if copied from a saved sentence, with features that no longer
