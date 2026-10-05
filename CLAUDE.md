@@ -58,13 +58,19 @@ Don't reopen these without new evidence.
 1. **Frontend and saved sentences.** Designed in
    `docs/superpowers/specs/2026-10-03-frontend-design.md`: monorepo move, saved sentences, live
    feed over SSE, permalinks, stars, flags and a single-admin flag viewer. The backend
-   and the public app are built; the spec's "Build order" lists what remains.
-2. **Idioms with a broken object frame.** OEWN marks "give birth", "find fault" and "pull wires"
+   and the public app are built; the spec's "Build order" lists what remains. Later, try other
+   entrance animations for sentences arriving in the feed.
+2. **Sentence diagram and builder.** Designed in
+   `docs/superpowers/specs/2026-10-05-diagram-builder-design.md`: a drawn tree for every
+   sentence, a top-down builder with word locks and rerolls, kept sentences with a Homemade
+   badge, and Remix. Its "Non-goals" lists the follow-ups (a diagram game, drag and drop,
+   picking words, a commonness slider, a Reed-Kellogg view).
+3. **Idioms with a broken object frame.** OEWN marks "give birth", "find fault" and "pull wires"
    transitive, which gives "gave birth the goose". Each idiom needs a label: keep the frame,
    drop object frames (keeping "she gave birth"), or move it to a fixed-preposition frame ("gave
    birth to mud"). Some prepositions ("find fault with", "take kindly to") would need new
    frames. Keep the idioms themselves.
-3. **Curation loop, after the frontend.**
+4. **Curation loop, after the frontend.**
    - **Flags are the votes:** the frontend's flags, with their copied lemma and part of speech,
      are what flag words for review.
    - **Admin:** grow the frontend's flag viewer into a UI for disabling or removing entries.
@@ -72,13 +78,13 @@ Don't reopen these without new evidence.
    - **Prerequisite:** ingest currently truncates and reloads, which would wipe `active`,
      `vote_count` and corrections to the heuristic `nouns.plural` flag. That flag misfires on
      Taos, Sauternes and tabes.
-4. **LLM batch labeling** for curation.
-5. **More sentence types:**
+5. **LLM batch labeling** for curation.
+6. **More sentence types:**
    - passive voice, from transitive frames only; `verb_morphology.toml` already has past
      participles
    - questions
    - conditionals
-6. **Compiled lexicon, once a base version feels done.** Build every source (OEWN, SUBTLEX-US,
+7. **Compiled lexicon, once a base version feels done.** Build every source (OEWN, SUBTLEX-US,
    `mislabeled`, the `service/data/lexicon/` lists) into one versioned file that ingest loads
    and that can be shared as research. It could also become where curation corrections live, so they
    survive re-ingest. Gzipped JSON Lines diffs well; WN-LMF XML fits poorly once synsets are
