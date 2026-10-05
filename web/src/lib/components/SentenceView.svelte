@@ -45,6 +45,7 @@
 </script>
 
 <Sentence {sentence} bind:selected />
+{#if sentence.origin === 'built'}<p class="badge">Homemade</p>{/if}
 
 <div class="actions">
 	<StarButton id={sentence.id} bind:count />

@@ -77,6 +77,7 @@
 		{#each feed as s (s.id)}
 			<li animate:flip={{ duration }} in:fly={{ y: -16, duration }}>
 				<a href="/s/{s.id}">{s.text}</a>
+				{#if s.origin === 'built'}<span class="badge">Homemade</span>{/if}
 				<StarButton id={s.id} count={s.star_count} />
 			</li>
 		{/each}

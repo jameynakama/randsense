@@ -13,7 +13,7 @@ import {
 } from './builder';
 import { grammar, sentence } from './testing/fixtures';
 
-const realized: Realized = { text: sentence.text, tree: sentence.tree };
+const realized: Realized = { text: sentence.text, tree: sentence.tree, signature: 's' };
 
 describe('builder', () => {
 	it('starts from a lone start hole with nothing to undo', () => {

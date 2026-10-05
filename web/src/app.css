@@ -114,6 +114,13 @@ h2 {
 	text-decoration: underline;
 }
 
+/* Marks a sentence someone built and kept. */
+.badge {
+	color: var(--secondary);
+	font-size: var(--text-sm);
+	font-weight: 600;
+}
+
 .problem {
 	color: var(--error);
 }

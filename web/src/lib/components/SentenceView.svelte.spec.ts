@@ -96,4 +96,12 @@ describe('SentenceView', () => {
 		await expect.element(diagram.getByText('wept')).toBeVisible();
 		await expect.element(diagram.getByText('sang')).not.toBeInTheDocument();
 	});
+
+	it('marks a built sentence Homemade, and only a built one', async () => {
+		const { rerender } = render(SentenceView, { sentence, grammar, count: 2 });
+		await expect.element(page.getByText('Homemade')).not.toBeInTheDocument();
+
+		await rerender({ sentence: { ...sentence, origin: 'built' } });
+		await expect.element(page.getByText('Homemade')).toBeInTheDocument();
+	});
 });

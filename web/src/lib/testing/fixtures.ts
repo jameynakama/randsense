@@ -10,6 +10,7 @@ const node = (symbol: string, ...children: TreeNode[]): TreeNode => ({ symbol, c
 
 // sentence is "The goose devoured her, but she sang." as the API returns it.
 export const sentence: Sentence = {
+	origin: 'generated',
 	id: 'aaaaaaaa',
 	text: 'The goose devoured her, but she sang.',
 	star_count: 2,

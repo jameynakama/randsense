@@ -135,4 +135,11 @@ describe('Feed', () => {
 
 		expect(FakeEventSource.latest!.closed).toBe(true);
 	});
+
+	it('marks built sentences Homemade', async () => {
+		render(Feed, { initial: [{ ...second, origin: 'built' }, third] });
+
+		await expect.element(page.getByText('Homemade')).toBeInTheDocument();
+		expect(page.getByText('Homemade').all()).toHaveLength(1);
+	});
 });

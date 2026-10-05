@@ -28,6 +28,8 @@ export interface TreeNode {
 }
 
 export interface Sentence {
+	// built: kept from the builder; generated: from random.
+	origin: 'generated' | 'built';
 	id: string;
 	text: string;
 	tree: TreeNode;

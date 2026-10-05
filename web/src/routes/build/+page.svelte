@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte';
+	import { goto } from '$app/navigation';
 	import Diagram from '#lib/components/Diagram.svelte';
 	import ExpansionSheet from '#lib/components/ExpansionSheet.svelte';
 	import {
@@ -15,6 +16,7 @@
 	} from '#lib/builder.js';
 	import { key } from '#lib/diagram.js';
 	import { leaves } from '#lib/tree.js';
+	import type { Sentence } from '#lib/types.js';
 
 	let { data } = $props();
 
@@ -75,6 +77,30 @@
 			busy = false;
 		}
 	}
+
+	async function keep() {
+		busy = true;
+		problem = '';
+		try {
+			const { tree, signature } = b.draft.filled!;
+			const res = await fetch('/api/v1/sentences', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ tree, signature })
+			});
+			if (res.status === 400) {
+				problem = 'This one waited too long to be kept. Reroll, then keep.';
+				return;
+			}
+			if (!res.ok) throw new Error(`status ${res.status}`);
+			const kept: Sentence = await res.json();
+			await goto(`/s/${kept.id}`);
+		} catch {
+			problem = 'Couldn’t keep the sentence. Try again.';
+		} finally {
+			busy = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -96,6 +122,9 @@
 		class="button plain"
 		disabled={!b.undo.length}
 		onclick={() => apply(undo(b))}>Undo</button
+	>
+	<button type="button" class="button" disabled={busy || !b.draft.filled} onclick={keep}
+		>Keep this one</button
 	>
 </div>
 <p class="problem" role="status">{problem}</p>

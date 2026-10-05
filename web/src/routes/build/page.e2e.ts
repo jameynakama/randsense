@@ -111,3 +111,41 @@ test('marks the slot that no word fits', async ({ page }) => {
 		diagram(page).getByRole('button', { name: 'Choose sentence', exact: true })
 	).toHaveClass(/\bproblem\b/);
 });
+
+test('keeps a built sentence after a lock, with a Homemade badge on its permalink and in the feed', async ({
+	page
+}) => {
+	const first = await build(page);
+	await diagram(page).locator('button[aria-pressed]').nth(1).click();
+
+	await page.getByRole('button', { name: 'Keep this one', exact: true }).click();
+	await expect(page).toHaveURL(/\/s\/[0-9A-Za-z]{8}$/);
+	await expect(page.getByRole('group', { name: first.text })).toBeVisible();
+	await expect(page.getByText('Homemade', { exact: true })).toBeVisible();
+
+	await page.goto('/');
+	const row = page
+		.getByRole('listitem')
+		.filter({ has: page.getByRole('link', { name: first.text, exact: true }) });
+	await expect(row.first().getByText('Homemade', { exact: true })).toBeVisible();
+});
+
+test('saves once when Keep is pressed twice', async ({ page }) => {
+	await build(page);
+	let posts = 0;
+	await page.route('**/api/v1/sentences', async (route) => {
+		posts++;
+		await new Promise((resolve) => setTimeout(resolve, 500));
+		await route.continue();
+	});
+
+	await page.getByRole('button', { name: 'Keep this one', exact: true }).dblclick();
+	await expect(page).toHaveURL(/\/s\//);
+	expect(posts).toBe(1);
+});
+
+test('keeps nothing until a fill', async ({ page }) => {
+	await page.goto('/build');
+
+	await expect(page.getByRole('button', { name: 'Keep this one', exact: true })).toBeDisabled();
+});

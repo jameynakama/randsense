@@ -5,6 +5,8 @@ import type { Grammar, TreeNode } from './types';
 export interface Realized {
 	text: string;
 	tree: TreeNode;
+	// Keep posts this with the tree, untouched.
+	signature: string;
 }
 
 // Draft is the tree being built, and the last fill if only locks have

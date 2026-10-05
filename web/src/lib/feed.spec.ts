@@ -3,6 +3,7 @@ import { catchUp, FEED_SIZE, prepend } from './feed';
 import type { Sentence } from './types';
 
 const s = (id: string, created_at = '2026-10-04T12:00:00Z'): Sentence => ({
+	origin: 'generated',
 	id,
 	text: id,
 	tree: { symbol: 'S' },
