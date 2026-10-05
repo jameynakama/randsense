@@ -21,6 +21,8 @@ export interface TreeNode {
 	// How the leaf is written when it differs from word: a separable verb
 	// split around its object ("looked" ... "her up").
 	display?: string;
+	// Keeps the leaf's lemma when the tree is filled again.
+	locked?: boolean;
 	features?: Features;
 	children?: TreeNode[];
 }
