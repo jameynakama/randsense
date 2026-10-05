@@ -327,11 +327,10 @@ The exact rates are set in the nginx config at deploy time.
 
 ## Build order
 
-The backend (stages 1 to 5) is built. What remains, in order, each stage ending working and
-committed:
+The backend (stages 1 to 5) and the admin UI (stage 7) are built. What remains, in order, each
+stage ending working and committed:
 
 6. SvelteKit app in `web/`: before it ships, someone checks it by hand with a screen reader, at
    320 CSS px and at 200% text.
-7. Admin UI, under the same accessibility and small-screen rules.
 8. Deployment: the nginx site config (routing, SSE settings, rate limits), two systemd units, and
    a build-and-deploy recipe.

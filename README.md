@@ -54,6 +54,9 @@ Fill and Reroll call `realize`, and a tapped word stays locked across rerolls un
 again. `/build?from={id}` remixes a saved sentence: its tree and words, nothing locked, and Keep
 waits for a reroll.
 
+`/admin/login` takes the admin password and `/admin` lists flags newest first, with a tab for
+the most-flagged words.
+
 ## Commands
 
 | Command                         | Description                              |
