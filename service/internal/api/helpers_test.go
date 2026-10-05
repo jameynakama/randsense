@@ -118,6 +118,9 @@ func newServer(t *testing.T, cfg api.RouterConfig) *httptest.Server {
 	if cfg.Grammar == nil {
 		cfg.Grammar = loadGrammar(t, testGrammar)
 	}
+	if cfg.BuildSecret == nil {
+		cfg.BuildSecret = testBuildSecret
+	}
 	cfg.Verbs = v
 	return httptest.NewServer(api.NewRouter(cfg))
 }
@@ -139,6 +142,7 @@ func newTestServer(t *testing.T) *httptest.Server {
 const testPassword = "correct horse battery"
 
 var testSecret = []byte("test-session-secret-32-bytes-xxx")
+var testBuildSecret = []byte("test-build-secret-32-bytes-xxxxx")
 
 // adminCookie is a session cookie, as a Cookie header, that's valid until
 // expires.

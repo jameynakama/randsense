@@ -100,6 +100,7 @@ type Sentence struct {
 	Commonness pgtype.Numeric     `db:"commonness" json:"commonness"`
 	StarCount  int32              `db:"star_count" json:"star_count"`
 	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	Origin     string             `db:"origin" json:"origin"`
 }
 
 type Star struct {

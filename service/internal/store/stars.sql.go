@@ -36,7 +36,7 @@ func (q *Queries) AddStar(ctx context.Context, arg AddStarParams) (int32, error)
 }
 
 const listStarredSentences = `-- name: ListStarredSentences :many
-SELECT sentences.id, sentences.text, sentences.tree, sentences.commonness, sentences.star_count, sentences.created_at FROM sentences
+SELECT sentences.id, sentences.text, sentences.tree, sentences.commonness, sentences.star_count, sentences.created_at, sentences.origin FROM sentences
 JOIN stars ON stars.sentence_id = sentences.id
 WHERE stars.voter = $1
 ORDER BY stars.created_at DESC, sentences.id DESC
@@ -65,6 +65,7 @@ func (q *Queries) ListStarredSentences(ctx context.Context, arg ListStarredSente
 			&i.Commonness,
 			&i.StarCount,
 			&i.CreatedAt,
+			&i.Origin,
 		); err != nil {
 			return nil, err
 		}

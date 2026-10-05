@@ -25,6 +25,7 @@ type config struct {
 	port              string
 	adminPasswordHash string
 	sessionSecret     string
+	buildSecret       string
 	insecureCookies   bool
 }
 
@@ -50,6 +51,7 @@ func loadConfig() config {
 		port:              withDefault("PORT", "8080"),
 		adminPasswordHash: required("ADMIN_PASSWORD_HASH"),
 		sessionSecret:     required("SESSION_SECRET"),
+		buildSecret:       required("BUILD_SECRET"),
 		insecureCookies:   os.Getenv("INSECURE_COOKIES") == "true",
 	}
 }
@@ -61,6 +63,9 @@ func main() {
 	}
 	if len(cfg.sessionSecret) < 32 {
 		log.Fatal("SESSION_SECRET must be at least 32 bytes")
+	}
+	if len(cfg.buildSecret) < 32 {
+		log.Fatal("BUILD_SECRET must be at least 32 bytes")
 	}
 
 	ctx := context.Background()
@@ -111,6 +116,7 @@ func main() {
 			SessionSecret:   []byte(cfg.sessionSecret),
 			InsecureCookies: cfg.insecureCookies,
 		},
+		BuildSecret: []byte(cfg.buildSecret),
 	}
 	r := api.NewRouter(routerCfg)
 

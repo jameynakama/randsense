@@ -35,27 +35,31 @@ type RouterConfig struct {
 	Admin   AdminConfig
 	// Keepalive overrides defaultKeepalive.
 	Keepalive time.Duration
+	// BuildSecret signs realized trees, so Keep saves only what realize made.
+	BuildSecret []byte
 }
 
 type Handler struct {
-	queries   *store.Queries
-	grammar   *grammar.Grammar
-	verbs     *morph.Verbs
-	admin     AdminConfig
-	hub       *live.Hub
-	keepalive time.Duration
+	queries     *store.Queries
+	grammar     *grammar.Grammar
+	verbs       *morph.Verbs
+	admin       AdminConfig
+	hub         *live.Hub
+	keepalive   time.Duration
+	buildSecret []byte
 }
 
 func NewRouter(cfg RouterConfig) http.Handler {
 	hub := live.NewHub()
 	go hub.Run()
 	h := &Handler{
-		queries:   cfg.Queries,
-		grammar:   cfg.Grammar,
-		verbs:     cfg.Verbs,
-		admin:     cfg.Admin,
-		hub:       hub,
-		keepalive: cmp.Or(cfg.Keepalive, defaultKeepalive),
+		queries:     cfg.Queries,
+		grammar:     cfg.Grammar,
+		verbs:       cfg.Verbs,
+		admin:       cfg.Admin,
+		hub:         hub,
+		buildSecret: cfg.BuildSecret,
+		keepalive:   cmp.Or(cfg.Keepalive, defaultKeepalive),
 	}
 
 	r := chi.NewRouter()
@@ -69,6 +73,7 @@ func NewRouter(cfg RouterConfig) http.Handler {
 		r.Get("/words/random", h.randomWord)
 		r.Get("/grammar", h.getGrammar)
 		r.Get("/sentences", h.listSentences)
+		r.Post("/sentences", h.keepSentence)
 		r.Get("/sentences/random", h.randomSentence)
 		r.Get("/sentences/stream", h.stream)
 		r.Post("/sentences/realize", h.realizeSentence)

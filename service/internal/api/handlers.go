@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"time"
 
 	"github.com/jameynakama/randsense/internal/grammar"
 	"github.com/jameynakama/randsense/internal/sentence"
-	"github.com/jameynakama/randsense/internal/store"
 )
 
 // maxCommonness is about the Zipf frequency of "the", the most common word.
@@ -107,9 +107,7 @@ func (h *Handler) randomSentence(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "server error")
 		return
 	}
-	saved, err := insertWithNewID(newSentenceID, func(id string) (store.Sentence, error) {
-		return h.queries.InsertSentence(r.Context(), store.InsertSentenceParams{ID: id, Text: s.Text, Tree: tree, Commonness: c})
-	})
+	saved, err := h.save(r.Context(), s.Text, tree, c, originGenerated)
 	if err != nil {
 		log.Printf("randomSentence: save: %v", err)
 		writeError(w, http.StatusInternalServerError, "server error")
@@ -160,7 +158,13 @@ func (h *Handler) realizeSentence(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "server error")
 		return
 	}
-	writeJSON(w, http.StatusOK, s)
+	canonical, err := json.Marshal(s.Tree)
+	if err != nil {
+		log.Printf("realizeSentence: %v", err)
+		writeError(w, http.StatusInternalServerError, "server error")
+		return
+	}
+	writeJSON(w, http.StatusOK, realizeResponse{Sentence: s, Signature: signTree(h.buildSecret, canonical, time.Now())})
 }
 
 // clearWords empties every word and feature, except a locked leaf's lemma.

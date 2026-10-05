@@ -1,6 +1,6 @@
 -- name: InsertSentence :one
-INSERT INTO sentences (id, text, tree, commonness)
-VALUES (@id, @text, @tree, @commonness::float8)
+INSERT INTO sentences (id, text, tree, commonness, origin)
+VALUES (@id, @text, @tree, @commonness::float8, @origin)
 RETURNING *;
 
 -- name: GetSentence :one

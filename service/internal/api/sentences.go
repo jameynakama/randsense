@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -45,6 +46,21 @@ func insertWithNewID(newID func() string, insert func(id string) (store.Sentence
 		}
 	}
 	return s, err
+}
+
+// A sentence's origin: random generated it, or someone built and kept it.
+const (
+	originGenerated = "generated"
+	originBuilt     = "built"
+)
+
+// save stores a sentence under a new ID.
+func (h *Handler) save(ctx context.Context, text string, tree []byte, commonness float64, origin string) (store.Sentence, error) {
+	return insertWithNewID(newSentenceID, func(id string) (store.Sentence, error) {
+		return h.queries.InsertSentence(ctx, store.InsertSentenceParams{
+			ID: id, Text: text, Tree: tree, Commonness: commonness, Origin: origin,
+		})
+	})
 }
 
 const (

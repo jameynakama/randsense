@@ -304,6 +304,8 @@ nginx `limit_req` per IP:
 
 - generation (`/api/v1/sentences/random`): generous, since signature embeds load from each
   viewer's own IP
+- realize (`POST /api/v1/sentences/realize`): like generation, since every builder reroll calls it
+- keep (`POST /api/v1/sentences`): tight, like stars
 - stars and flags: tight
 - admin login: tight
 

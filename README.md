@@ -75,10 +75,11 @@ Fill and Reroll call `realize`, and a tapped word is locked through the next rer
 GET /health
 GET /api/v1/words/random?pos=noun|verb|adjective|adverb[&commonness=N]
 GET /api/v1/grammar                           -> {start, phrases, slots}
-GET /api/v1/sentences/random[?commonness=N]   -> {id, text, tree, star_count, created_at}
-POST /api/v1/sentences/realize[?commonness=N] -> {text, tree}
-GET /api/v1/sentences[?limit=30&offset=0]     -> [{id, text, tree, star_count, created_at}]
-GET /api/v1/sentences/{id}                    -> {id, text, tree, star_count, created_at}
+GET /api/v1/sentences/random[?commonness=N]   -> {id, text, tree, star_count, origin, created_at}
+POST /api/v1/sentences/realize[?commonness=N] -> {text, tree, signature}
+POST /api/v1/sentences                        {tree, signature} -> 201 {id, text, tree, star_count, origin, created_at}
+GET /api/v1/sentences[?limit=30&offset=0]     -> [{id, text, tree, star_count, origin, created_at}]
+GET /api/v1/sentences/{id}                    -> {id, text, tree, star_count, origin, created_at}
 POST   /api/v1/sentences/{id}/stars           -> {count}   (X-Voter: <uuid>)
 DELETE /api/v1/sentences/{id}/stars           -> {count}   (X-Voter: <uuid>)
 GET    /api/v1/stars[?limit&offset]           -> [sentence] starred by X-Voter, newest star first
@@ -90,7 +91,8 @@ GET    /api/v1/admin/flags[?limit&offset]     -> [{id, word_index, lemma, pos, c
 GET    /api/v1/admin/flagged-words[?limit&offset] -> [{lemma, pos, count}]
 ```
 
-The stream sends `sentence` (the full sentence) whenever `random` saves one and `stars`
+The stream sends `sentence` (the full sentence) whenever `random` or `POST
+/sentences` saves one and `stars`
 (`{id, count}`) after every star or unstar, even one that leaves the count unchanged, with a `:`
 keepalive every 25 seconds. It doesn't replay missed events.
 
@@ -121,6 +123,12 @@ symbol names its header lists, as it does there. A phrase with no children is a 
 are capped at 64 KiB. A slot no word fits, such as a frame with no verbs above the floor,
 returns 422 with `leaf`, the slot's index among the posted tree's leaves (holes included), in
 sentence order. A frame left empty inside a hole gets a fresh expansion first.
+
+`realize` signs each tree it returns. `POST /sentences` keeps one: it saves the tree with
+`origin: "built"` and broadcasts it like `random`, if the signature matches the tree and is less
+than a day old. Otherwise it's a 400. The text is written from the tree. `BUILD_SECRET` (32+
+bytes) signs the trees, so changing it only means unkept trees need a reroll. Generated sentences
+have `origin: "generated"`.
 
 A leaf with `"locked": true` keeps its `lemma` and is inflected again to agree, so a locked
 noun still follows its determiner. It must fit its slot, as a verb with the slot's frame or a

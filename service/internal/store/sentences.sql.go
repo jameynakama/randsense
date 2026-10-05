@@ -10,7 +10,7 @@ import (
 )
 
 const getSentence = `-- name: GetSentence :one
-SELECT id, text, tree, commonness, star_count, created_at FROM sentences
+SELECT id, text, tree, commonness, star_count, created_at, origin FROM sentences
 WHERE id = $1
 `
 
@@ -24,14 +24,15 @@ func (q *Queries) GetSentence(ctx context.Context, id string) (Sentence, error) 
 		&i.Commonness,
 		&i.StarCount,
 		&i.CreatedAt,
+		&i.Origin,
 	)
 	return i, err
 }
 
 const insertSentence = `-- name: InsertSentence :one
-INSERT INTO sentences (id, text, tree, commonness)
-VALUES ($1, $2, $3, $4::float8)
-RETURNING id, text, tree, commonness, star_count, created_at
+INSERT INTO sentences (id, text, tree, commonness, origin)
+VALUES ($1, $2, $3, $4::float8, $5)
+RETURNING id, text, tree, commonness, star_count, created_at, origin
 `
 
 type InsertSentenceParams struct {
@@ -39,6 +40,7 @@ type InsertSentenceParams struct {
 	Text       string  `db:"text" json:"text"`
 	Tree       []byte  `db:"tree" json:"tree"`
 	Commonness float64 `db:"commonness" json:"commonness"`
+	Origin     string  `db:"origin" json:"origin"`
 }
 
 func (q *Queries) InsertSentence(ctx context.Context, arg InsertSentenceParams) (Sentence, error) {
@@ -47,6 +49,7 @@ func (q *Queries) InsertSentence(ctx context.Context, arg InsertSentenceParams) 
 		arg.Text,
 		arg.Tree,
 		arg.Commonness,
+		arg.Origin,
 	)
 	var i Sentence
 	err := row.Scan(
@@ -56,12 +59,13 @@ func (q *Queries) InsertSentence(ctx context.Context, arg InsertSentenceParams) 
 		&i.Commonness,
 		&i.StarCount,
 		&i.CreatedAt,
+		&i.Origin,
 	)
 	return i, err
 }
 
 const listSentences = `-- name: ListSentences :many
-SELECT id, text, tree, commonness, star_count, created_at FROM sentences
+SELECT id, text, tree, commonness, star_count, created_at, origin FROM sentences
 ORDER BY created_at DESC, id DESC
 LIMIT $2 OFFSET $1
 `
@@ -87,6 +91,7 @@ func (q *Queries) ListSentences(ctx context.Context, arg ListSentencesParams) ([
 			&i.Commonness,
 			&i.StarCount,
 			&i.CreatedAt,
+			&i.Origin,
 		); err != nil {
 			return nil, err
 		}

@@ -87,9 +87,10 @@ type SentenceResponse struct {
 	Text      string          `json:"text"`
 	Tree      json.RawMessage `json:"tree"`
 	StarCount int32           `json:"star_count"`
+	Origin    string          `json:"origin"`
 	CreatedAt time.Time       `json:"created_at"`
 }
 
 func sentenceResponse(s store.Sentence) SentenceResponse {
-	return SentenceResponse{ID: s.ID, Text: s.Text, Tree: s.Tree, StarCount: s.StarCount, CreatedAt: s.CreatedAt.Time}
+	return SentenceResponse{ID: s.ID, Text: s.Text, Tree: s.Tree, StarCount: s.StarCount, Origin: s.Origin, CreatedAt: s.CreatedAt.Time}
 }

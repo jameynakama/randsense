@@ -31,6 +31,9 @@ func TestRandomSentenceIsSaved(t *testing.T) {
 	if body.CreatedAt.IsZero() || body.StarCount != 0 || len(body.Tree) == 0 {
 		t.Errorf("body: got %+v, want created_at, star_count 0 and a tree", body)
 	}
+	if body.Origin != "generated" {
+		t.Errorf("origin: got %q, want generated", body.Origin)
+	}
 	var text string
 	var commonness float64
 	err := testPool.QueryRow(context.Background(), "SELECT text, commonness::float8 FROM sentences WHERE id = $1", body.ID).
