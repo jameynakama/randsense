@@ -95,11 +95,11 @@ test('flags a word by keyboard alone', async ({ page }) => {
 	await expect(page.getByRole('heading', { name: 'Report a problem' })).toBeFocused();
 	await expectNoAxeViolations(page);
 	await page.keyboard.press('Tab');
-	await expect(page.getByLabel('About')).toBeFocused();
+	await expect(page.getByLabel('About', { exact: true })).toBeFocused();
 	// Typing a word's first letter picks it. ArrowDown would, except in
 	// Chrome on macOS, where it opens the picker instead.
 	await page.keyboard.press(s.text[0]);
-	await expect(page.getByLabel('About')).toHaveValue('0');
+	await expect(page.getByLabel('About', { exact: true })).toHaveValue('0');
 	await page.keyboard.press('Tab');
 	await page.keyboard.type('This word should not be here.');
 	await page.keyboard.press('Tab');
@@ -125,7 +125,7 @@ test('lets the keyboard reach a zoomed diagram', async ({ page }) => {
 	const s = await newSentence(page.request);
 	await page.goto(`/s/${s.id}`);
 	await page.getByRole('button', { name: 'Show diagram' }).click();
-	const zoom = page.getByRole('button', { name: 'Zoom' });
+	const zoom = page.getByRole('button', { name: 'Zoom', exact: true });
 	test.skip(!(await zoom.isVisible()), 'this sentence fits at 320px');
 
 	await zoom.click();

@@ -30,7 +30,7 @@ test('generates another sentence and announces it', async ({ page }) => {
 	await page.goto('/');
 	const first = await ownSentence(page);
 
-	await page.getByRole('button', { name: 'Generate' }).click();
+	await page.getByRole('button', { name: 'Generate', exact: true }).click();
 
 	const group = page.getByRole('group');
 	await expect(group).not.toHaveAttribute('aria-label', first);
