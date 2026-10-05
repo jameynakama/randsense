@@ -175,4 +175,5 @@ test('offers a fresh start when a remixed tree is no longer in the grammar', asy
 	await expect(page.getByRole('status')).toContainText('isn’t one the grammar makes anymore');
 	await page.getByRole('link', { name: 'Start over', exact: true }).click();
 	await expect(page.getByRole('button', { name: 'Choose sentence', exact: true })).toBeVisible();
+	await expect(page.getByRole('status')).toHaveText('');
 });

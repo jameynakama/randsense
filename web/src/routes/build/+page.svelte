@@ -25,12 +25,25 @@
 	// Builder functions return new state, and structuredClone can't copy a
 	// deep $state proxy; a derived isn't one.
 	let b = $derived<Builder>(data.from ? remix(data.from.tree) : start(data.grammar));
-	let stale = $state(false);
+	// These reset with it.
+	let stale = $derived.by(() => {
+		void data.from;
+		return false;
+	});
 	// The phrase whose sheet is open.
-	let open = $state<number[] | null>(null);
+	let open = $derived.by<number[] | null>(() => {
+		void data.from;
+		return null;
+	});
 	let busy = $state(false);
-	let problem = $state('');
-	let problemPath = $state<number[] | null>(null);
+	let problem = $derived.by(() => {
+		void data.from;
+		return '';
+	});
+	let problemPath = $derived.by<number[] | null>(() => {
+		void data.from;
+		return null;
+	});
 
 	const text = $derived(draftText(b.draft.tree));
 	const openNode = $derived(open && nodeAt(b.draft.tree, open));

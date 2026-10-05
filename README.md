@@ -56,20 +56,20 @@ reroll.
 
 ## Commands
 
-| Command                 | Description                                                 |
-| ----------------------- | ----------------------------------------------------------- |
-| `just`                  | Run tests (default)                                         |
-| `just run`              | Start the app with hot reload                               |
-| `just run-be`           | Start the Go server with hot reload                         |
-| `just test-be`          | Run the Go tests                                            |
-| `just run-fe`           | Start the SvelteKit dev server                              |
-| `just test-fe`          | Type-check, lint and test the web app                       |
-| `just build-be`         | Build binary to `service/bin/randsense`                     |
-| `just migrate-up`       | Apply pending migrations                                    |
-| `just migrate-down [n]` | Roll back n migrations (default 1)                          |
-| `just generate`         | Regenerate sqlc types after query changes                   |
-| `just hash-password`    | Print a bcrypt hash for `ADMIN_PASSWORD_HASH`               |
-| `just ingest`           | Load OEWN, SUBTLEX-US and the `service/data/lexicon/` lists |
+| Command                         | Description                              |
+| ------------------------------- | ---------------------------------------- |
+| `just`                          | Run tests (default)                      |
+| `just run`                      | Start the app with hot reload            |
+| `just run-be`                   | Start the Go server with hot reload      |
+| `just test-be`                  | Run the Go tests                         |
+| `just run-fe`                   | Start the SvelteKit dev server           |
+| `just test-fe`                  | Type-check, lint and test the web app    |
+| `just build-be`                 | Build binary to `service/bin/randsense`  |
+| `just migrate-up`               | Apply pending migrations                 |
+| `just migrate-down [n]`         | Roll back n migrations (default 1)       |
+| `just generate`                 | Regenerate sqlc types after query changes|
+| `just hash-password`            | Print a bcrypt hash for `ADMIN_PASSWORD_HASH` |
+| `just ingest`                   | Load OEWN, SUBTLEX-US and the `service/data/lexicon/` lists |
 
 ## API
 
