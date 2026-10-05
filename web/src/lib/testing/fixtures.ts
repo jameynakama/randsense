@@ -1,4 +1,4 @@
-import type { Sentence, TreeNode } from '#lib/types.js';
+import type { Grammar, Sentence, TreeNode } from '#lib/types.js';
 
 const leaf = (symbol: string, word: string, extra: Partial<TreeNode> = {}): TreeNode => ({
 	symbol,
@@ -60,3 +60,38 @@ export const sentence: Sentence = {
 export function another(id: string, text: string): Sentence {
 	return { ...structuredClone(sentence), id, text };
 }
+
+// grammar labels every symbol in sentence's tree.
+export const grammar: Grammar = {
+	start: 'S',
+	phrases: {
+		S: { label: 'sentence', description: 'A complete thought.', rules: [['Clause']] },
+		Clause: { label: 'clause', description: 'A subject and what it does.', rules: [['NP', 'VP']] },
+		NP: { label: 'noun phrase', description: 'Names a thing.', rules: [['Determiner', 'Noun']] },
+		VP: {
+			label: 'verb phrase',
+			description: 'A verb and what it takes.',
+			rules: [['Verb:transitive', 'NP']]
+		}
+	},
+	slots: {
+		Determiner: { label: 'determiner', description: 'Points at a noun.' },
+		Noun: { label: 'noun', description: 'A thing.' },
+		Pronoun: { label: 'pronoun', description: 'Stands in for a noun phrase.' },
+		Comma: { label: 'comma', description: 'Punctuation.' },
+		'Conjunction:coordinating': {
+			label: 'coordinating conjunction',
+			description: 'Joins clauses.'
+		},
+		'Verb:transitive': {
+			label: 'transitive verb',
+			description: 'Takes an object.',
+			example: 'devoured the goose'
+		},
+		'Verb:intransitive': {
+			label: 'intransitive verb',
+			description: 'Takes no object.',
+			example: 'slept'
+		}
+	}
+};

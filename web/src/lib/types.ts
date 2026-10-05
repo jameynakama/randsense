@@ -32,3 +32,20 @@ export interface Sentence {
 	star_count: number;
 	created_at: string;
 }
+
+export interface Label {
+	label: string;
+	description: string;
+	example?: string;
+}
+
+export interface Phrase extends Label {
+	// Each rule is the symbols a phrase can expand to, in grammar.toml order.
+	rules: string[][];
+}
+
+export interface Grammar {
+	start: string;
+	phrases: Record<string, Phrase>;
+	slots: Record<string, Label>;
+}
