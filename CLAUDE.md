@@ -63,8 +63,11 @@ Don't reopen these without new evidence.
 2. **Sentence diagram and builder.** Designed in
    `docs/superpowers/specs/2026-10-05-diagram-builder-design.md`: a drawn tree for every
    sentence, a top-down builder with word locks and rerolls, kept sentences with a Homemade
-   badge, and Remix. Its "Non-goals" lists the follow-ups (a diagram game, drag and drop,
-   picking words, a commonness slider, a Reed-Kellogg view).
+   badge, and Remix. The drawn tree is built; the spec's "Build order" lists what remains, and it
+   needs a separate implementation plan. Its "Non-goals" lists the follow-ups (a diagram game, drag
+   and drop, picking words, a commonness slider, a Reed-Kellogg view).
+   - **Default `commonness` to 1** in the API until a slider exposes it: 1 gives the best
+     sentences. The floor stays per-request.
 3. **Idioms with a broken object frame.** OEWN marks "give birth", "find fault" and "pull wires"
    transitive, which gives "gave birth the goose". Each idiom needs a label: keep the frame,
    drop object frames (keeping "she gave birth"), or move it to a fixed-preposition frame ("gave

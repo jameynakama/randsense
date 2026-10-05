@@ -162,6 +162,9 @@ package suffix (`randsense_test_api`), so packages can run in parallel.
 server if it isn't running, so they save sentences and stars there.
 Parallel workers share a live feed of 30 sentences, so e2e tests must not assert sentence
 positions. Generate only a few sentences per test; star existing sentences when many are needed.
+Every word of a random sentence is a button named by the word, and Playwright matches names and
+labels by case-insensitive substring, so a locator whose name might also be a word (`Generate`, `Zoom`,
+`About`) needs `exact: true`.
 
 ```bash
 just test

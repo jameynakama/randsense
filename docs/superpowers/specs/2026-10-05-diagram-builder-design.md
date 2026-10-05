@@ -7,7 +7,7 @@ lexicon are deterministic, and the builder only ever offers grammatical structur
 
 ## Goals
 
-- Draw every generated sentence as a constituency tree, replacing the structure outline.
+- Draw every generated sentence as a constituency tree.
 - Let anyone build a tree from `S` down, choosing only among the grammar's own expansions, so nobody can
   build an ungrammatical diagram.
 - Fill a full or partial tree with words, lock words, and reroll the rest with agreement intact.
@@ -66,9 +66,7 @@ The labels, descriptions and examples live in `grammar.toml`, in `[phrase.X]` an
 tables. `Load` rejects a label for a symbol the rules never use. `Grammar.Labeled` reports any
 phrase, or any slot a rule uses, that has no label. The server refuses to start on that error,
 and the project grammar's test checks it too, so a new construction can't ship unlabeled. Load
-itself doesn't require labels, so tests can keep their small unlabeled grammars. Verb frame
-descriptions move into the toml from Go comments. The frontend's hardcoded `phraseNames` is
-removed.
+itself doesn't require labels, so tests can keep their small unlabeled grammars.
 
 The grammar is fixed for the life of the process, so the response is cacheable. SvelteKit loads
 it server-side for `/build`.
@@ -82,9 +80,7 @@ it server-side for `/build`.
 - every leaf is a part of speech (optionally qualified, as today) or a phrase symbol with no
   children, which is a hole
 
-`realize` used to accept any tree whose leaves were parts of speech. Trees that skip a level, like
-the README's `S → NP VP` example, are now rejected with 400. Fix the README example
-(`S → Clause → NP VP`).
+A tree that skips a level (`S → NP VP` with no `Clause`) returns 400.
 
 ## Realize
 
@@ -144,9 +140,8 @@ in the builder.
   positioned by a computed layout. One SVG layer beneath them draws the connectors. Real elements
   keep focus, keyboard use, the font and the 44px targets working as elsewhere. SVG text can't
   be focused or wrapped the same way.
-- **Semantics.** The DOM is a nested list in tree order, the same structure the outline had.
-  Screen readers get the outline and sighted users get the tree. `Structure.svelte` and
-  `Branch.svelte` are removed.
+- **Semantics.** The DOM is a nested list in tree order, each item named by its grammar label.
+  Screen readers get an outline and sighted users get the tree.
 - **Layout** is a pure function in `lib/diagram.ts` from a tree and measured node sizes to
   positions:
   - leaves run left to right on the baseline, spaced by width
@@ -163,8 +158,8 @@ in the builder.
   down to fit would shrink them below 44px. The builder's editable mode settles its own targets.
 - **Editable mode** draws holes as dashed "NP ?" buttons and shows each word's lock state.
 
-On the home and permalink pages, "Show structure" becomes "Show diagram". A "Remix" button links
-to `/build?from={id}`.
+On the home and permalink pages, "Show diagram" opens it. A "Remix" button there links to
+`/build?from={id}`.
 
 ### Builder
 
@@ -224,11 +219,10 @@ color.
 
 ## Build order
 
-Each stage ends working and committed.
+Stages 1 (grammar labels, `Grammar.Check`, `GET /grammar`) and 2 (the read-only diagram) are
+built. The remaining stages each end working and committed:
 
-1. Grammar labels in `grammar.toml`, `Grammar.Check` in `realize`, and `GET /grammar`.
-2. `Diagram` replaces the outline on generated sentences.
-3. Holes and locks in `realize`.
+3. Holes and locks in `realize`. `Grammar.Check` rejects a childless phrase until holes land.
 4. The builder UI.
 5. Signature, Keep, `origin`, and the badge.
 6. Remix.
