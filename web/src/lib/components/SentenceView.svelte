@@ -72,6 +72,7 @@
 	onclick={() => (showDiagram = !showDiagram)}
 	>{showDiagram ? 'Hide diagram' : 'Show diagram'}</button
 >
+<a class="button plain" href="/build?from={sentence.id}">Remix</a>
 {#if showDiagram}
 	<Diagram tree={sentence.tree} {grammar} {selectedPath} />
 {/if}

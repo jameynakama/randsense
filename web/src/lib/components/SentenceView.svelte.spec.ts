@@ -104,4 +104,12 @@ describe('SentenceView', () => {
 		await rerender({ sentence: { ...sentence, origin: 'built' } });
 		await expect.element(page.getByText('Homemade')).toBeInTheDocument();
 	});
+
+	it('links to a remix of the sentence', async () => {
+		render(SentenceView, { sentence, grammar, count: 2 });
+
+		await expect
+			.element(page.getByRole('link', { name: 'Remix', exact: true }))
+			.toHaveAttribute('href', '/build?from=aaaaaaaa');
+	});
 });

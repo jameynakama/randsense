@@ -78,6 +78,19 @@ export function fill(b: Builder, realized: Realized): Builder {
 	};
 }
 
+function unlock(node: TreeNode) {
+	delete node.locked;
+	node.children?.forEach(unlock);
+}
+
+// remix starts from a saved tree and its words, with nothing locked. Only
+// realize's own output is signed, so Keep waits for a reroll.
+export function remix(tree: TreeNode): Builder {
+	const copy = structuredClone(tree);
+	unlock(copy);
+	return { draft: { tree: copy, filled: null }, undo: [] };
+}
+
 export function undo(b: Builder): Builder {
 	if (!b.undo.length) return b;
 	return { draft: b.undo[b.undo.length - 1], undo: b.undo.slice(0, -1) };

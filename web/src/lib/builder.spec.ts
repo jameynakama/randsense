@@ -6,6 +6,7 @@ import {
 	fill,
 	lockable,
 	nodeAt,
+	remix,
 	start,
 	toggleLock,
 	undo,
@@ -83,5 +84,17 @@ describe('builder', () => {
 	it('writes out a draft with every word, and nothing while a slot is empty', () => {
 		expect(draftText(sentence.tree)).toBe('The goose devoured her, but she sang.');
 		expect(draftText(choose(start(grammar), [], ['Clause']).draft.tree)).toBe('');
+	});
+
+	it('remixes a saved tree with its words, no locks and nothing to keep', () => {
+		const saved = structuredClone(sentence.tree);
+		saved.children![0].children![0].children![1].locked = true;
+
+		const b = remix(saved);
+		expect(nodeAt(b.draft.tree, [0, 0, 1])).toEqual(nodeAt(sentence.tree, [0, 0, 1]));
+		expect(nodeAt(b.draft.tree, [0, 0, 1]).locked).toBeUndefined();
+		expect(b.draft.filled).toBeNull();
+		expect(b.undo).toEqual([]);
+		expect(nodeAt(saved, [0, 0, 1]).locked).toBe(true);
 	});
 });

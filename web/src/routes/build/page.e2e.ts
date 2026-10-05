@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { expectNoAxeViolations, expectNoSidewaysScroll } from '../../lib/testing/e2e';
+import { expectNoAxeViolations, expectNoSidewaysScroll, newSentence } from '../../lib/testing/e2e';
 import { leaves } from '../../lib/tree';
 import type { TreeNode } from '../../lib/types';
 
@@ -148,4 +148,31 @@ test('keeps nothing until a fill', async ({ page }) => {
 	await page.goto('/build');
 
 	await expect(page.getByRole('button', { name: 'Keep this one', exact: true })).toBeDisabled();
+});
+
+test('remixes a saved sentence, keeping only after a reroll', async ({ page }) => {
+	const s = await newSentence(page.request);
+	await page.goto(`/s/${s.id}`);
+	await page.getByRole('link', { name: 'Remix', exact: true }).click();
+
+	await expect(page).toHaveURL(`/build?from=${s.id}`);
+	await expect(page.getByText(s.text, { exact: true })).toBeVisible();
+	const keep = page.getByRole('button', { name: 'Keep this one', exact: true });
+	await expect(keep).toBeDisabled();
+
+	await page.getByRole('button', { name: 'Reroll', exact: true }).click();
+	await expect(keep).toBeEnabled();
+});
+
+test('offers a fresh start when a remixed tree is no longer in the grammar', async ({ page }) => {
+	const s = await newSentence(page.request);
+	await page.route('**/api/v1/sentences/realize', (route) =>
+		route.fulfill({ status: 400, contentType: 'application/json', body: '{"error": "not a rule"}' })
+	);
+	await page.goto(`/build?from=${s.id}`);
+
+	await page.getByRole('button', { name: 'Reroll', exact: true }).click();
+	await expect(page.getByRole('status')).toContainText('isn’t one the grammar makes anymore');
+	await page.getByRole('link', { name: 'Start over', exact: true }).click();
+	await expect(page.getByRole('button', { name: 'Choose sentence', exact: true })).toBeVisible();
 });

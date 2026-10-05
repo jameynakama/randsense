@@ -9,6 +9,7 @@
 		draftText,
 		fill,
 		nodeAt,
+		remix,
 		start,
 		toggleLock,
 		undo,
@@ -20,10 +21,11 @@
 
 	let { data } = $props();
 
+	// Resets when the page moves to another sentence or to a fresh start.
 	// Builder functions return new state, and structuredClone can't copy a
-	// deep $state proxy, so the state is raw.
-	// svelte-ignore state_referenced_locally
-	let b = $state.raw<Builder>(start(data.grammar));
+	// deep $state proxy; a derived isn't one.
+	let b = $derived<Builder>(data.from ? remix(data.from.tree) : start(data.grammar));
+	let stale = $state(false);
 	// The phrase whose sheet is open.
 	let open = $state<number[] | null>(null);
 	let busy = $state(false);
@@ -39,6 +41,7 @@
 		const path = open;
 		b = next;
 		open = null;
+		stale = false;
 		problem = '';
 		problemPath = null;
 		if (!path) return;
@@ -48,6 +51,7 @@
 
 	async function realize() {
 		busy = true;
+		stale = false;
 		problem = '';
 		problemPath = null;
 		const posted = b;
@@ -57,11 +61,16 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(posted.draft.tree)
 			});
-			if (!res.ok && res.status !== 422) throw new Error(`status ${res.status}`);
+			if (!res.ok && res.status !== 422 && res.status !== 400)
+				throw new Error(`status ${res.status}`);
 			const body = await res.json();
 			// The diagram stays editable during the request. Edits made meanwhile
 			// win, and a response for the older draft would index the wrong tree.
 			if (b !== posted) return;
+			if (res.status === 400) {
+				stale = true;
+				return;
+			}
 			if (res.status === 422) {
 				const target = leaves(posted.draft.tree)[(body as { leaf: number }).leaf];
 				problemPath = target.path;
@@ -127,7 +136,13 @@
 		>Keep this one</button
 	>
 </div>
-<p class="problem" role="status">{problem}</p>
+<p class="problem" role="status">
+	{#if stale}
+		This sentence’s structure isn’t one the grammar makes anymore. <a href="/build">Start over</a>
+	{:else}
+		{problem}
+	{/if}
+</p>
 <p class="draft" aria-live="polite">{text}</p>
 
 <Diagram
