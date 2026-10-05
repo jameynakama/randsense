@@ -68,11 +68,10 @@ export function toggleLock(b: Builder, path: number[]): Builder {
 	);
 }
 
-// fill shows a realize response, keeping the locks it echoes. The draft
-// gets a copy, so locking a word never changes the tree Keep posts.
+// fill shows a realize response, keeping the locks it echoes.
 export function fill(b: Builder, realized: Realized): Builder {
 	return {
-		draft: { tree: structuredClone(realized.tree), filled: realized },
+		draft: { tree: realized.tree, filled: realized },
 		undo: [...b.undo, b.draft]
 	};
 }

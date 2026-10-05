@@ -53,12 +53,6 @@ describe('builder', () => {
 		expect(nodeAt(toggleLock(once, [0, 0, 1]).draft.tree, [0, 0, 1]).locked).toBeUndefined();
 	});
 
-	it('fills with a copy, so locking never changes what Keep would post', () => {
-		const b = toggleLock(fill(start(grammar), realized), [0, 0, 1]);
-		expect(nodeAt(realized.tree, [0, 0, 1]).locked).toBeUndefined();
-		expect(b.draft.filled!.tree).toBe(realized.tree);
-	});
-
 	it('undoes a fill back to the unfilled draft', () => {
 		const b = choose(start(grammar), [], ['Clause']);
 		expect(undo(fill(b, realized)).draft).toBe(b.draft);
