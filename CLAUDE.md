@@ -57,9 +57,9 @@ Don't reopen these without new evidence.
 
 1. **Frontend and saved sentences.** Designed in
    `docs/superpowers/specs/2026-10-03-frontend-design.md`: monorepo move, saved sentences, live
-   feed over SSE, permalinks, stars, flags and a single-admin flag viewer. The backend, the
-   public app and the admin flag viewer are built; the spec's "Build order" lists what remains.
-   Later, try other entrance animations for sentences arriving in the feed.
+   feed over SSE, permalinks, stars, flags and a single-admin flag viewer. The spec's "Build
+   order" lists what remains. Later, try other entrance animations for sentences arriving in the
+   feed.
 2. **Sentence diagram and builder.** Designed in
    `docs/superpowers/specs/2026-10-05-diagram-builder-design.md`: a drawn tree for every
    sentence, a top-down builder with word locks and rerolls, kept sentences with a Homemade

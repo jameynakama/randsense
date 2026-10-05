@@ -80,7 +80,9 @@ test('keeps paging when a page of new flags arrives between clicks', async ({ pa
 	await expect(items).toHaveCount(30);
 
 	// Exactly a page of new flags pushes everything shown down by a page, so
-	// the next page repeats only what's already shown.
+	// the next page repeats only what's already shown. The phone project's
+	// flags land in the same database at the same time, so run one project
+	// to see this fail.
 	await flagMany(page, 30);
 	await page.getByRole('button', { name: 'Show more' }).click();
 	await expect(page.getByRole('button', { name: 'Show more' })).toBeEnabled();
