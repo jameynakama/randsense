@@ -226,7 +226,7 @@ darker shades where a color fails WCAG AA contrast on white or the `#F2F2F7` gra
 - feed and other normal-size text in black or action blue, never `dodgerblue`
 - sentences set large (about 4rem on desktop), smaller on phones in a single column
 - one readable font for the UI and sentences, falling back to the system stack
-- the raw-JSON viewer is replaced by the word card and structure outline below
+- the raw-JSON viewer is replaced by the word card and diagram below
 
 ### Pages
 
@@ -247,8 +247,8 @@ Used on the home and permalink pages.
   position in the tree (subject, object, inside an infinitive or a prepositional phrase). A word
   with no recognizable role shows none. It's all computed from the tree, with no extra requests.
   Commas aren't clickable.
-- "Show structure" expands the tree as an indented, collapsible outline (S › NP › VP...). The
-  selected word highlights its branch. A drawn diagram waits for the diagram builder.
+- "Show diagram" draws the tree, and the selected word highlights its branch. See
+  `2026-10-05-diagram-builder-design.md`.
 - A star button with its live count.
 - A "Something's wrong" button opens the flag form. Its target selector defaults to "the whole
   sentence"; clicking a word switches the target to that word and highlights it. If a word was
@@ -294,8 +294,8 @@ Phones get the same features, laid out for one column and touch:
 - the word card opens as a bottom sheet on narrow screens, and never covers a focused control
   (WCAG 2.4.11)
 - at 320 CSS px wide the page reflows with no horizontal scrolling, and text enlarges to 200%
-  without losing content. The structure outline narrows its indents to fit, and scrolls
-  sideways inside its own box only for a branch too deep to fit any other way
+  without losing content. The diagram scales down to fit, and Zoom shows it full
+  size, scrolling sideways inside its own box
 
 ## Rate limits
 
@@ -315,7 +315,7 @@ The exact rates are set in the nginx config at deploy time.
 - **Web:** Vitest for logic (tree helpers, role detection, the voter token) and Playwright for the
   main flows: generate, star, flag a word, a feed update arriving over SSE, and admin login.
   Playwright runs axe (`@axe-core/playwright`) on every page and its key open states (word card,
-  flag form, structure outline) with no violations allowed, runs the main flows again in a
+  flag form, diagram) with no violations allowed, runs the main flows again in a
   phone viewport (about 390 by 844), and walks one flow by keyboard alone: generate, open a word,
   flag it. Axe can't prove conformance, so screen-reader behavior, reflow at 320 CSS px and 200%
   text get a manual check before each stage ships.
