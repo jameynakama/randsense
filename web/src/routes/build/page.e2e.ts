@@ -96,3 +96,18 @@ test('the header links to the builder', async ({ page }) => {
 
 	await expect(page.getByRole('heading', { name: 'Build a sentence', level: 1 })).toBeVisible();
 });
+
+test('marks the slot that no word fits', async ({ page }) => {
+	await page.route('**/api/v1/sentences/realize', (route) =>
+		route.fulfill({ status: 422, json: { error: 'no word fits', leaf: 0 } })
+	);
+	await page.goto('/build');
+	await page.getByRole('button', { name: 'Fill', exact: true }).click();
+
+	await expect(page.getByRole('status')).toHaveText(
+		'No word fits this slot right now. Change the phrase above it.'
+	);
+	await expect(
+		diagram(page).getByRole('button', { name: 'Choose sentence', exact: true })
+	).toHaveClass(/\bproblem\b/);
+});

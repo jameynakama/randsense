@@ -48,23 +48,27 @@
 		busy = true;
 		problem = '';
 		problemPath = null;
+		const posted = b;
 		try {
 			const res = await fetch('/api/v1/sentences/realize', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(b.draft.tree)
+				body: JSON.stringify(posted.draft.tree)
 			});
+			if (!res.ok && res.status !== 422) throw new Error(`status ${res.status}`);
+			const body = await res.json();
+			// The diagram stays editable during the request. Edits made meanwhile
+			// win, and a response for the older draft would index the wrong tree.
+			if (b !== posted) return;
 			if (res.status === 422) {
-				const { leaf } = (await res.json()) as { leaf: number };
-				const target = leaves(b.draft.tree)[leaf];
+				const target = leaves(posted.draft.tree)[(body as { leaf: number }).leaf];
 				problemPath = target.path;
 				problem = target.node.locked
 					? 'No word fits here with that word locked. Unlock it, or change the phrase above it.'
 					: 'No word fits this slot right now. Change the phrase above it.';
 				return;
 			}
-			if (!res.ok) throw new Error(`status ${res.status}`);
-			b = fill(b, await res.json());
+			b = fill(b, body);
 		} catch {
 			problem = 'Couldn’t fill the sentence. Try again.';
 		} finally {
