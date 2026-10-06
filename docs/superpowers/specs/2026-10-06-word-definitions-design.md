@@ -86,9 +86,3 @@ links to Wiktionary.
 - **`WordCard.svelte.spec.ts`:** no fetch for a closed-class word; three senses, then "Show all N"; no
   section without glosses; the Wiktionary href for a multiword and a capitalized lemma.
 - **e2e:** opening a noun's card shows a definition, against CI's freshly ingested database.
-
-## Rollout
-
-The deploy runs the migration. Until the lexicon is reingested on the droplet (the command is in
-`README.md`), every array is empty and cards simply show no definitions. Reingesting is safe:
-it truncates only the four content-word tables, and sentences, stars and flags don't reference them.
