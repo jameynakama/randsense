@@ -327,9 +327,5 @@ The exact rates are set in the nginx config at deploy time.
 
 ## Build order
 
-What remains, in order, each stage ending working and committed:
-
-6. SvelteKit app in `web/`, admin pages included: before it ships, someone checks it by hand with
-   a screen reader, at 320 CSS px and at 200% text.
-8. Deployment: the nginx site config (routing, SSE settings, rate limits), two systemd units, and
-   a build-and-deploy recipe.
+Everything is built and deployed. Still open from stage 6: the manual check with a screen reader,
+at 320 CSS px and at 200% text.

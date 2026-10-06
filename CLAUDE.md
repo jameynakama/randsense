@@ -57,9 +57,9 @@ Don't reopen these without new evidence.
 
 1. **Frontend and saved sentences.** Designed in
    `docs/superpowers/specs/2026-10-03-frontend-design.md`: monorepo move, saved sentences, live
-   feed over SSE, permalinks, stars, flags and a single-admin flag viewer. The spec's "Build
-   order" lists what remains. Later, try other entrance animations for sentences arriving in the
-   feed.
+   feed over SSE, permalinks, stars, flags and a single-admin flag viewer. Live at
+   randsense.online; the spec's "Build order" lists the one open check. Later, try other
+   entrance animations for sentences arriving in the feed.
 2. **Sentence diagram and builder.** Designed in
    `docs/superpowers/specs/2026-10-05-diagram-builder-design.md`: a drawn tree for every
    sentence, a top-down builder with word locks and rerolls, kept sentences with a Homemade
@@ -67,8 +67,8 @@ Don't reopen these without new evidence.
    words, a commonness slider, a Reed-Kellogg view). The API's default floor is 1, the best for
    sentences, until a slider exposes it.
    - **Keep can be replayed:** a signed tree can be kept again for 24 hours, each time a new row
-     in the feed. The tight nginx limit on keep is the only guard, so it has to be in the deploy
-     config.
+     in the feed. The tight `randsense_keep` limit in `deploy/randsense.nginx` is the only guard,
+     so don't loosen it without adding one in the API.
 3. **Idioms with a broken object frame.** OEWN marks "give birth", "find fault" and "pull wires"
    transitive, which gives "gave birth the goose". Each idiom needs a label: keep the frame,
    drop object frames (keeping "she gave birth"), or move it to a fixed-preposition frame ("gave
