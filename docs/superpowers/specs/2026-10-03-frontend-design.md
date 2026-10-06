@@ -20,7 +20,7 @@ anonymous stars, flags with comments, and a single-admin flag viewer. The projec
 ## Non-goals
 
 User accounts, an interactive diagram builder, educational features (lexicon browsing, grammar
-lessons, definitions, etymologies), disabling words through the admin (the roadmap's curation
+lessons, etymologies), disabling words through the admin (the roadmap's curation
 loop), and the compiled lexicon. These come later and nothing here should block them.
 
 ## Repository

@@ -77,7 +77,9 @@ Don't reopen these without new evidence.
      No user accounts. psql on the server was rejected as the admin UX.
    - **Prerequisite:** ingest currently truncates and reloads, which would wipe `active`,
      `vote_count` and corrections to the heuristic `nouns.plural` flag. That flag misfires on
-     Taos, Sauternes and tabes.
+     Taos, Sauternes and tabes. The content inserts also rely on the truncate: OEWN entries
+     sharing a lemma append their `definitions` on conflict, so an ingest that keeps rows must
+     reset `definitions` first or every run doubles them.
 5. **LLM batch labeling** for curation.
 6. **More sentence types:**
    - passive voice, from transitive frames only; `verb_morphology.toml` already has past
