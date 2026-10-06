@@ -121,7 +121,7 @@ func main() {
 	r := api.NewRouter(routerCfg)
 
 	log.Printf("starting server at http://localhost:%s", cfg.port)
-	if err := http.ListenAndServe(":"+cfg.port, r); err != nil {
+	if err := http.ListenAndServe("localhost:"+cfg.port, r); err != nil {
 		log.Fatalf("failed to start server: %v", err)
 	}
 }
