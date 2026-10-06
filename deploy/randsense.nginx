@@ -51,6 +51,12 @@ server {
         proxy_pass http://randsense_api;
     }
 
+    # Word lookups: cheap indexed reads, one per word card opened.
+    location ~ ^/api/v1/words/ {
+        limit_req zone=randsense_generate burst=30 nodelay;
+        proxy_pass http://randsense_api;
+    }
+
     location = /api/v1/sentences {
         limit_req zone=randsense_keep burst=3 nodelay;
         proxy_pass http://randsense_api;

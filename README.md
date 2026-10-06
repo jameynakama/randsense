@@ -79,6 +79,7 @@ the most-flagged words.
 ```
 GET /health
 GET /api/v1/words/random?pos=noun|verb|adjective|adverb[&commonness=N]
+GET /api/v1/words/{pos}/{lemma}               -> {definitions}
 GET /api/v1/grammar                           -> {start, phrases, slots}
 GET /api/v1/sentences/random[?commonness=N]   -> {id, text, tree, star_count, origin, created_at}
 POST /api/v1/sentences/realize[?commonness=N] -> {text, tree, signature}
@@ -119,6 +120,10 @@ List endpoints return newest first, `limit` 1 to 100 (default 30).
 `grammar` serves `grammar.toml` for the frontend: `start` is `S`; `phrases` maps each phrase to
 its `label`, `description` and `rules` (each a list of symbols, in file order); `slots` maps each
 part-of-speech symbol a rule uses to its `label`, `description` and, for verb frames, `example`.
+
+`words/{pos}/{lemma}` returns a content word's OEWN glosses in sense order, whether or not the
+word is active. `pos` is noun, verb, adjective or adverb; any other `pos`, or a lemma the lexicon
+lacks, is a 404. Glosses change only on reingest, so clients may cache them for a day.
 
 `realize` takes a tree in the shape `random` returns and fills it with fresh words, so a specific
 construction can be checked without fishing for it. The tree must derive from `grammar.toml`:
