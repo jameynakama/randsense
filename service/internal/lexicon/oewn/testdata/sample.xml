@@ -146,5 +146,21 @@
       <Sense id="oewn-oclock__4.02.00.." synset="oewn-00010000-r"/>
     </LexicalEntry>
 
+    <!-- synsets follow every entry, as in the release -->
+    <Synset id="oewn-01858313-n" partOfSpeech="n">
+      <Definition>web-footed long-necked migratory aquatic bird</Definition>
+    </Synset>
+    <Synset id="oewn-01459708-v" partOfSpeech="v">
+      <Definition>poke in the buttocks</Definition>
+    </Synset>
+    <Synset id="oewn-01233625-v" partOfSpeech="v">
+      <Definition>prod into action</Definition>
+    </Synset>
+    <!-- a few synsets have more than one Definition -->
+    <Synset id="oewn-02212345-s" partOfSpeech="s">
+      <Definition>marked by high spirits or excitement</Definition>
+      <Definition>giving off bubbles</Definition>
+    </Synset>
+
   </Lexicon>
 </LexicalResource>

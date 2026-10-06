@@ -38,6 +38,10 @@ type Entry struct {
 	// multiple space-separated codes; this field flattens them.
 	Frames []string
 
+	// Synsets is each <Sense>'s synset ID, in sense order. Glosses maps
+	// them to definitions.
+	Synsets []string
+
 	// Cardinal reports a sense that is a cardinal number ("lxxiii", "seven"),
 	// whose sense ID is headed by "cardinal".
 	Cardinal bool
@@ -57,6 +61,7 @@ type lexicalEntry struct {
 	Senses []struct {
 		ID     string `xml:"id,attr"`
 		Subcat string `xml:"subcat,attr"`
+		Synset string `xml:"synset,attr"`
 	} `xml:"Sense"`
 }
 
@@ -111,11 +116,12 @@ func toEntry(le lexicalEntry) Entry {
 		forms = append(forms, f.WrittenForm)
 	}
 
-	var frames []string
+	var frames, synsets []string
 	seen := map[string]bool{}
 	cardinal := false
 	for _, s := range le.Senses {
 		cardinal = cardinal || strings.Contains(s.ID, ".cardinal.")
+		synsets = append(synsets, s.Synset)
 		for f := range strings.FieldsSeq(s.Subcat) {
 			if !seen[f] {
 				frames = append(frames, f)
@@ -130,5 +136,43 @@ func toEntry(le lexicalEntry) Entry {
 		Forms:    forms,
 		Frames:   frames,
 		Cardinal: cardinal,
+		Synsets:  synsets,
+	}
+}
+
+// synset mirrors the part of <Synset> randsense uses.
+type synset struct {
+	ID          string   `xml:"id,attr"`
+	Definitions []string `xml:"Definition"`
+}
+
+// Glosses streams r as WN-LMF XML and maps each synset ID to its definition.
+// The few synsets with several <Definition>s get them joined with "; ".
+// Synsets follow every <LexicalEntry> in the release, so ingest reads the
+// file once for these before Parse.
+func Glosses(r io.Reader) (map[string]string, error) {
+	glosses := map[string]string{}
+	dec := xml.NewDecoder(r)
+	for {
+		tok, err := dec.Token()
+		if errors.Is(err, io.EOF) {
+			return glosses, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		se, ok := tok.(xml.StartElement)
+		if !ok || se.Name.Local != "Synset" {
+			continue
+		}
+
+		var s synset
+		if err := dec.DecodeElement(&s, &se); err != nil {
+			return nil, err
+		}
+		if len(s.Definitions) > 0 {
+			glosses[s.ID] = strings.Join(s.Definitions, "; ")
+		}
 	}
 }

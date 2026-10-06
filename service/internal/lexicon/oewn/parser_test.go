@@ -53,7 +53,7 @@ func TestParse(t *testing.T) {
 			  <Sense id="oewn-goose__1.05.00.." synset="oewn-01858313-n"/>
 			</LexicalEntry>
 			`,
-			[]oewn.Entry{{Lemma: "goose", POS: "n", Forms: []string{"geese"}, Frames: nil}},
+			[]oewn.Entry{{Lemma: "goose", POS: "n", Forms: []string{"geese"}, Frames: nil, Synsets: []string{"oewn-01858313-n"}}},
 		},
 		{
 			"noun without Form",
@@ -63,7 +63,7 @@ func TestParse(t *testing.T) {
 		      <Sense id="oewn-shrimp__1.05.00.." synset="oewn-02314320-n"/>
 		    </LexicalEntry>
 			`,
-			[]oewn.Entry{{Lemma: "shrimp", POS: "n", Forms: nil, Frames: nil}},
+			[]oewn.Entry{{Lemma: "shrimp", POS: "n", Forms: nil, Frames: nil, Synsets: []string{"oewn-02314320-n"}}},
 		},
 		{
 			"verb single sense single subcat code",
@@ -73,7 +73,7 @@ func TestParse(t *testing.T) {
 				<Sense id="oewn-sleep__2.29.00.." subcat="vita" synset="oewn-00018651-v"/>
 			</LexicalEntry>
 			`,
-			[]oewn.Entry{{Lemma: "sleep", POS: "v", Forms: nil, Frames: []string{"vita"}}},
+			[]oewn.Entry{{Lemma: "sleep", POS: "v", Forms: nil, Frames: []string{"vita"}, Synsets: []string{"oewn-00018651-v"}}},
 		},
 		{
 			"verb single sense multiple subcat codes",
@@ -83,7 +83,7 @@ func TestParse(t *testing.T) {
 		      <Sense id="oewn-devour__2.34.00.." subcat="vtaa vtai" synset="oewn-01172275-v"/>
 		    </LexicalEntry>
 			`,
-			[]oewn.Entry{{Lemma: "devour", POS: "v", Forms: nil, Frames: []string{"vtaa", "vtai"}}},
+			[]oewn.Entry{{Lemma: "devour", POS: "v", Forms: nil, Frames: []string{"vtaa", "vtai"}, Synsets: []string{"oewn-01172275-v"}}},
 		},
 		{
 			"verb multiple senses overlapping codes (dedup)",
@@ -96,7 +96,7 @@ func TestParse(t *testing.T) {
 		      <Sense id="oewn-goose__2.35.02.." subcat="vtaa" synset="oewn-01233625-v"/>
 		    </LexicalEntry>
 			`,
-			[]oewn.Entry{{Lemma: "goose", POS: "v", Forms: nil, Frames: []string{"vtaa", "vtai"}}},
+			[]oewn.Entry{{Lemma: "goose", POS: "v", Forms: nil, Frames: []string{"vtaa", "vtai"}, Synsets: []string{"oewn-01459708-v", "oewn-01233625-v"}}},
 		},
 		{
 			"verb with no subcat",
@@ -106,7 +106,7 @@ func TestParse(t *testing.T) {
 		      <Sense id="oewn-loiter__2.38.00.." synset="oewn-02061425-v"/>
 		    </LexicalEntry>
 			`,
-			[]oewn.Entry{{Lemma: "loiter", POS: "v", Forms: nil, Frames: nil}},
+			[]oewn.Entry{{Lemma: "loiter", POS: "v", Forms: nil, Frames: nil, Synsets: []string{"oewn-02061425-v"}}},
 		},
 		{
 			"adjective head (a)",
@@ -116,7 +116,7 @@ func TestParse(t *testing.T) {
 		      <Sense id="oewn-good__3.00.00.." synset="oewn-00231927-a"/>
 		    </LexicalEntry>
 			`,
-			[]oewn.Entry{{Lemma: "good", POS: "a", Forms: nil, Frames: nil}},
+			[]oewn.Entry{{Lemma: "good", POS: "a", Forms: nil, Frames: nil, Synsets: []string{"oewn-00231927-a"}}},
 		},
 		{
 			"adjective satellite (s)",
@@ -126,7 +126,7 @@ func TestParse(t *testing.T) {
 		      <Sense id="oewn-effervescent__5.00.00.." synset="oewn-02212345-s"/>
 		    </LexicalEntry>
 			`,
-			[]oewn.Entry{{Lemma: "effervescent", POS: "s", Forms: nil, Frames: nil}},
+			[]oewn.Entry{{Lemma: "effervescent", POS: "s", Forms: nil, Frames: nil, Synsets: []string{"oewn-02212345-s"}}},
 		},
 		{
 			"cardinal number",
@@ -136,7 +136,7 @@ func TestParse(t *testing.T) {
 		      <Sense id="oewn-lxxiii__5.00.00.cardinal.00" synset="oewn-02201083-s"/>
 		    </LexicalEntry>
 			`,
-			[]oewn.Entry{{Lemma: "lxxiii", POS: "a", Cardinal: true}},
+			[]oewn.Entry{{Lemma: "lxxiii", POS: "a", Cardinal: true, Synsets: []string{"oewn-02201083-s"}}},
 		},
 		{
 			"adverb (r)",
@@ -146,7 +146,7 @@ func TestParse(t *testing.T) {
 		      <Sense id="oewn-curly__4.02.00.." synset="oewn-00120000-r"/>
 		    </LexicalEntry>
 			`,
-			[]oewn.Entry{{Lemma: "curly", POS: "r", Forms: nil, Frames: nil}},
+			[]oewn.Entry{{Lemma: "curly", POS: "r", Forms: nil, Frames: nil, Synsets: []string{"oewn-00120000-r"}}},
 		},
 		{
 			"multi-word lemma with space",
@@ -156,7 +156,7 @@ func TestParse(t *testing.T) {
 		      <Sense id="oewn-sea_anemone__1.05.00.." synset="oewn-02316707-n"/>
 		    </LexicalEntry>
 			`,
-			[]oewn.Entry{{Lemma: "sea anemone", POS: "n", Forms: nil, Frames: nil}},
+			[]oewn.Entry{{Lemma: "sea anemone", POS: "n", Forms: nil, Frames: nil, Synsets: []string{"oewn-02316707-n"}}},
 		},
 		{
 			"lemma with apostrophe entity",
@@ -166,7 +166,7 @@ func TestParse(t *testing.T) {
 		      <Sense id="oewn-oclock__4.02.00.." synset="oewn-00010000-r"/>
 		    </LexicalEntry>
 			`,
-			[]oewn.Entry{{Lemma: "o'clock", POS: "r", Forms: nil, Frames: nil}},
+			[]oewn.Entry{{Lemma: "o'clock", POS: "r", Forms: nil, Frames: nil, Synsets: []string{"oewn-00010000-r"}}},
 		},
 		{
 			"lemma with Pronunciation child",
@@ -179,7 +179,7 @@ func TestParse(t *testing.T) {
 		      <Sense id="oewn-goose__2.35.02.." subcat="vtaa" synset="oewn-01233625-v"/>
 		    </LexicalEntry>
 			`,
-			[]oewn.Entry{{Lemma: "goose", POS: "v", Forms: nil, Frames: []string{"vtaa", "vtai"}}},
+			[]oewn.Entry{{Lemma: "goose", POS: "v", Forms: nil, Frames: []string{"vtaa", "vtai"}, Synsets: []string{"oewn-01459708-v", "oewn-01233625-v"}}},
 		},
 	}
 	for _, tt := range tests {
@@ -189,6 +189,29 @@ func TestParse(t *testing.T) {
 				t.Errorf("Parse mismatch\n got: %#v\nwant: %#v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestGlosses(t *testing.T) {
+	f, err := os.Open(filepath.Join("testdata", "sample.xml"))
+	if err != nil {
+		t.Fatalf("open fixture: %v", err)
+	}
+	defer f.Close()
+
+	got, err := oewn.Glosses(f)
+	if err != nil {
+		t.Fatalf("Glosses: %v", err)
+	}
+
+	want := map[string]string{
+		"oewn-01858313-n": "web-footed long-necked migratory aquatic bird",
+		"oewn-01459708-v": "poke in the buttocks",
+		"oewn-01233625-v": "prod into action",
+		"oewn-02212345-s": "marked by high spirits or excitement; giving off bubbles",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Glosses:\n got %v\nwant %v", got, want)
 	}
 }
 
