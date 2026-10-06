@@ -1,0 +1,14 @@
+# /etc/systemd/system/randsense-web.service
+[Unit]
+Description=randsense web
+After=network.target randsense-api.service
+
+[Service]
+User=deploy
+WorkingDirectory=/app/randsense/web
+Environment=HOST=127.0.0.1 PORT=3000 ORIGIN=https://randsense.online API_ORIGIN=http://127.0.0.1:8080
+ExecStart=/usr/bin/node build
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

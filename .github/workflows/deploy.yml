@@ -1,0 +1,104 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: randsense_dev
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      # The e2e tests log in with the development admin password it sets.
+      # Sourcing it first strips the quotes that keep the hash's $s literal.
+      - name: Load .env.example
+        run: |
+          set -a && . ./.env.example && set +a
+          for key in $(grep -o '^[A-Z_]*' .env.example); do echo "$key=${!key}" >> "$GITHUB_ENV"; done
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: service/go.mod
+          cache-dependency-path: service/go.sum
+      - name: Migrate and ingest the dev database for the e2e tests
+        working-directory: service
+        run: |
+          go run -tags postgres github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1 -path migrations -database "$DATABASE_URL" up
+          go run ./cmd/ingest
+      - run: go vet ./... && go test ./...
+        working-directory: service
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - working-directory: web
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run build
+          npm run check
+          npm run lint
+          npx vitest --run
+          npx playwright test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to droplet
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          echo "$SSH_PRIVATE_KEY" > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+          # `timeout` bounds the whole thing: ssh waits for EOF on the remote
+          # command's output, which a restarted service holding those
+          # descriptors open can withhold long after the work is done. `tee`
+          # keeps the log on the droplet, and the phase markers show where a
+          # slow deploy stalled. `|| status=$?` lets the step clean up instead
+          # of aborting under errexit.
+          status=0
+          timeout 600 ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
+            set -o pipefail
+            {
+              phase() { echo "== $(date -u +%H:%M:%S) $* =="; }
+              set -e
+              cd /app/randsense
+              phase "fetch"
+              git fetch origin main
+              git reset --hard FETCH_HEAD
+              phase "go build"
+              (cd service && /usr/local/go/bin/go build -o bin/randsense ./cmd/server)
+              phase "npm ci"
+              (cd web && npm ci)
+              phase "web build"
+              (cd web && npm run build)
+              phase "migrate"
+              set -a && . ./.env && set +a
+              migrate -path service/migrations -database "$DATABASE_URL" up
+              phase "restart"
+              sudo systemctl restart randsense-api < /dev/null > /dev/null 2>&1
+              sudo systemctl restart randsense-web < /dev/null > /dev/null 2>&1
+              phase "done"
+            } 2>&1 | tee -a "$HOME/randsense-deploy.log"
+          ' || status=$?
+          rm /tmp/deploy_key
+          if [ $status -eq 124 ]; then
+            echo "Deploy timed out after 600s. The work may have finished anyway:"
+            echo "check ~/randsense-deploy.log on the droplet for the last phase reached."
+          fi
+          exit $status

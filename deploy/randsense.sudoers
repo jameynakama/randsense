@@ -1,0 +1,2 @@
+# /etc/sudoers.d/randsense
+deploy ALL=(ALL) NOPASSWD: /bin/systemctl restart randsense-api, /bin/systemctl restart randsense-web

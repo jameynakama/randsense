@@ -1,0 +1,14 @@
+# /etc/systemd/system/randsense-api.service
+[Unit]
+Description=randsense API
+After=network.target postgresql.service
+
+[Service]
+User=deploy
+WorkingDirectory=/app/randsense/service
+EnvironmentFile=/app/randsense/.env
+ExecStart=/app/randsense/service/bin/randsense
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

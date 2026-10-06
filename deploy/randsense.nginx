@@ -1,0 +1,89 @@
+# /etc/nginx/sites-available/randsense
+#
+# The rate limits are the only guard on keep: a signed tree can be kept again
+# for 24 hours, each time a new row in the feed.
+
+# An empty key isn't counted, so reads skip the zones that guard writes.
+map $request_method $randsense_write_key {
+    GET     "";
+    HEAD    "";
+    default $binary_remote_addr;
+}
+
+limit_req_zone $binary_remote_addr  zone=randsense_generate:10m rate=10r/s;
+limit_req_zone $randsense_write_key zone=randsense_keep:10m     rate=6r/m;
+limit_req_zone $randsense_write_key zone=randsense_vote:10m     rate=30r/m;
+limit_req_zone $binary_remote_addr  zone=randsense_login:1m     rate=5r/m;
+
+upstream randsense_api {
+    server 127.0.0.1:8080;
+    keepalive 8;
+}
+
+upstream randsense_web {
+    server 127.0.0.1:3000;
+    keepalive 8;
+}
+
+server {
+    listen 443 ssl;
+    server_name randsense.online;
+
+    ssl_certificate /etc/letsencrypt/live/randsense.online/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/randsense.online/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    limit_req_status 429;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    include proxy_params;
+
+    # Generation and realize are generous: signature embeds load from each
+    # viewer's own IP, and every builder reroll calls realize.
+    location = /api/v1/sentences/random {
+        limit_req zone=randsense_generate burst=30 nodelay;
+        proxy_pass http://randsense_api;
+    }
+
+    location = /api/v1/sentences/realize {
+        limit_req zone=randsense_generate burst=30 nodelay;
+        proxy_pass http://randsense_api;
+    }
+
+    location = /api/v1/sentences {
+        limit_req zone=randsense_keep burst=3 nodelay;
+        proxy_pass http://randsense_api;
+    }
+
+    location ~ ^/api/v1/sentences/[^/]+/(stars|flags)$ {
+        limit_req zone=randsense_vote burst=10 nodelay;
+        proxy_pass http://randsense_api;
+    }
+
+    location = /api/v1/admin/login {
+        limit_req zone=randsense_login burst=3 nodelay;
+        proxy_pass http://randsense_api;
+    }
+
+    # The stream sends a keepalive every 25 seconds, well inside the timeout.
+    location = /api/v1/sentences/stream {
+        proxy_buffering off;
+        proxy_read_timeout 1h;
+        proxy_pass http://randsense_api;
+    }
+
+    location /api/ {
+        proxy_pass http://randsense_api;
+    }
+
+    location / {
+        proxy_pass http://randsense_web;
+    }
+}
+
+server {
+    listen 80;
+    server_name randsense.online;
+    return 301 https://$host$request_uri;
+}
