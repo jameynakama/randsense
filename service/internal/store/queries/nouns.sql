@@ -1,7 +1,8 @@
 -- name: InsertNoun :exec
-INSERT INTO nouns (lemma, inflections, source)
-VALUES ($1, $2, $3)
-ON CONFLICT (lemma, source) DO NOTHING;
+-- OEWN entries that share a lemma pool their definitions.
+INSERT INTO nouns (lemma, inflections, definitions, source)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (lemma, source) DO UPDATE SET definitions = nouns.definitions || EXCLUDED.definitions;
 
 -- name: TruncateNouns :exec
 TRUNCATE nouns RESTART IDENTITY CASCADE;
@@ -58,5 +59,12 @@ LIMIT 1;
 -- A locked word: the floor doesn't apply.
 SELECT * FROM nouns
 WHERE active AND lemma = $1
+ORDER BY id
+LIMIT 1;
+
+-- name: GetNounDefinitions :one
+-- Active or not: an old sentence's word still shows its meaning.
+SELECT definitions FROM nouns
+WHERE lemma = $1
 ORDER BY id
 LIMIT 1;

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/jameynakama/randsense/internal/lexicon/oewn"
@@ -26,7 +27,7 @@ func TestIngest(t *testing.T) {
 	}
 	defer f.Close()
 
-	stats, err := oewn.Ingest(ctx, testPool, f)
+	stats, err := oewn.Ingest(ctx, testPool, f, sampleGlosses(t))
 	if err != nil {
 		t.Fatalf("Ingest: %#v %v", stats, err)
 	}
@@ -186,4 +187,83 @@ func TestIngest(t *testing.T) {
 			t.Errorf("adverb lemma: got %q, want %q", adv.Lemma, "o'clock")
 		}
 	})
+
+	t.Run("definitions", func(t *testing.T) {
+		// in sense order
+		verb, err := q.GetVerbByLemma(ctx, "goose")
+		if err != nil {
+			t.Fatalf("GetVerbByLemma(goose): %v", err)
+		}
+		var defs []string
+		if err := json.Unmarshal(verb.Definitions, &defs); err != nil {
+			t.Fatalf("json.Unmarshal(goose.Definitions): %v", err)
+		}
+		if !slices.Equal(defs, []string{"poke in the buttocks", "prod into action"}) {
+			t.Errorf("goose definitions: got %v", defs)
+		}
+
+		// a synset without a gloss: an empty array, not null
+		noun, err := q.GetNounByLemma(ctx, "shrimp")
+		if err != nil {
+			t.Fatalf("GetNounByLemma(shrimp): %v", err)
+		}
+		if string(noun.Definitions) != "[]" {
+			t.Errorf("shrimp definitions: got %s, want []", noun.Definitions)
+		}
+	})
+}
+
+// TestIngestMergesDefinitions checks that OEWN entries sharing a lemma end
+// up in one row with every entry's glosses.
+func TestIngestMergesDefinitions(t *testing.T) {
+	ctx := context.Background()
+	xml := `<?xml version="1.0" encoding="UTF-8"?>
+<LexicalResource>
+  <Lexicon id="oewn" label="test" language="en" email="x@y" license="cc-by-4.0" version="test">
+    <LexicalEntry id="oewn-good-a">
+      <Lemma writtenForm="good" partOfSpeech="a"/>
+      <Sense id="oewn-good__3.00.00.." synset="oewn-1-a"/>
+    </LexicalEntry>
+    <LexicalEntry id="oewn-good-s">
+      <Lemma writtenForm="good" partOfSpeech="s"/>
+      <Sense id="oewn-good__5.00.00.." synset="oewn-2-s"/>
+    </LexicalEntry>
+  </Lexicon>
+</LexicalResource>`
+	glosses := map[string]string{"oewn-1-a": "having desirable qualities", "oewn-2-s": "morally admirable"}
+
+	if _, err := oewn.Ingest(ctx, testPool, strings.NewReader(xml), glosses); err != nil {
+		t.Fatalf("Ingest: %v", err)
+	}
+
+	q := store.New(testPool)
+	if n, err := q.CountAdjectives(ctx); err != nil || n != 1 {
+		t.Fatalf("CountAdjectives: got %d, %v; want 1", n, err)
+	}
+	adj, err := q.GetAdjectiveByLemma(ctx, "good")
+	if err != nil {
+		t.Fatalf("GetAdjectiveByLemma(good): %v", err)
+	}
+	var defs []string
+	if err := json.Unmarshal(adj.Definitions, &defs); err != nil {
+		t.Fatalf("json.Unmarshal: %v", err)
+	}
+	if !slices.Equal(defs, []string{"having desirable qualities", "morally admirable"}) {
+		t.Errorf("good definitions: got %v", defs)
+	}
+}
+
+// sampleGlosses is the fixture's synset glosses.
+func sampleGlosses(t *testing.T) map[string]string {
+	t.Helper()
+	f, err := os.Open(filepath.Join("testdata", "sample.xml"))
+	if err != nil {
+		t.Fatalf("open fixture: %v", err)
+	}
+	defer f.Close()
+	g, err := oewn.Glosses(f)
+	if err != nil {
+		t.Fatalf("Glosses: %v", err)
+	}
+	return g
 }

@@ -1,7 +1,8 @@
 -- name: InsertAdverb :exec
-INSERT INTO adverbs (lemma, inflections, source)
-VALUES ($1, $2, $3)
-ON CONFLICT (lemma, source) DO NOTHING;
+-- OEWN entries that share a lemma pool their definitions.
+INSERT INTO adverbs (lemma, inflections, definitions, source)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (lemma, source) DO UPDATE SET definitions = adverbs.definitions || EXCLUDED.definitions;
 
 -- name: TruncateAdverbs :exec
 TRUNCATE adverbs RESTART IDENTITY CASCADE;
@@ -29,5 +30,12 @@ WHERE adverbs.lemma = f.word;
 -- A locked word: the floor doesn't apply.
 SELECT * FROM adverbs
 WHERE active AND lemma = $1
+ORDER BY id
+LIMIT 1;
+
+-- name: GetAdverbDefinitions :one
+-- Active or not: an old sentence's word still shows its meaning.
+SELECT definitions FROM adverbs
+WHERE lemma = $1
 ORDER BY id
 LIMIT 1;

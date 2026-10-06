@@ -20,6 +20,7 @@ type Adjective struct {
 	VoteCount   int32              `db:"vote_count" json:"vote_count"`
 	CreateTime  pgtype.Timestamptz `db:"create_time" json:"create_time"`
 	UpdateTime  pgtype.Timestamptz `db:"update_time" json:"update_time"`
+	Definitions []byte             `db:"definitions" json:"definitions"`
 }
 
 type Adverb struct {
@@ -34,6 +35,7 @@ type Adverb struct {
 	VoteCount   int32              `db:"vote_count" json:"vote_count"`
 	CreateTime  pgtype.Timestamptz `db:"create_time" json:"create_time"`
 	UpdateTime  pgtype.Timestamptz `db:"update_time" json:"update_time"`
+	Definitions []byte             `db:"definitions" json:"definitions"`
 }
 
 type Conjunction struct {
@@ -75,6 +77,7 @@ type Noun struct {
 	CreateTime  pgtype.Timestamptz `db:"create_time" json:"create_time"`
 	UpdateTime  pgtype.Timestamptz `db:"update_time" json:"update_time"`
 	Plural      bool               `db:"plural" json:"plural"`
+	Definitions []byte             `db:"definitions" json:"definitions"`
 }
 
 type Preposition struct {
@@ -131,4 +134,5 @@ type Verb struct {
 	CreateTime  pgtype.Timestamptz `db:"create_time" json:"create_time"`
 	UpdateTime  pgtype.Timestamptz `db:"update_time" json:"update_time"`
 	Separable   bool               `db:"separable" json:"separable"`
+	Definitions []byte             `db:"definitions" json:"definitions"`
 }

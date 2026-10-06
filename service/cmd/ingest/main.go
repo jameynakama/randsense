@@ -50,8 +50,14 @@ func main() {
 	}
 	defer gz.Close()
 
+	log.Printf("reading glosses from %s ...", path)
+	glosses, err := readGlosses(path)
+	if err != nil {
+		log.Fatalf("glosses: %v", err)
+	}
+
 	log.Printf("ingesting %s ...", path)
-	stats, err := oewn.Ingest(ctx, db, gz)
+	stats, err := oewn.Ingest(ctx, db, gz, glosses)
 	if err != nil {
 		log.Fatalf("ingest: %v", err)
 	}
@@ -107,4 +113,22 @@ func main() {
 
 	log.Printf("done: determiners=%d prepositions=%d pronouns=%d conjunctions=%d",
 		cstats.Determiners, cstats.Prepositions, cstats.Pronouns, cstats.Conjunctions)
+}
+
+// readGlosses is ingest's first pass over the OEWN file. Synsets follow
+// every entry, so their glosses are read before the entries.
+func readGlosses(path string) (map[string]string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		return nil, err
+	}
+	defer gz.Close()
+
+	return oewn.Glosses(gz)
 }

@@ -18,7 +18,7 @@ func TestMarkSeparable(t *testing.T) {
 		t.Fatalf("open fixture: %v", err)
 	}
 	defer f.Close()
-	if _, err := oewn.Ingest(ctx, testPool, f); err != nil {
+	if _, err := oewn.Ingest(ctx, testPool, f, nil); err != nil {
 		t.Fatalf("Ingest: %v", err)
 	}
 

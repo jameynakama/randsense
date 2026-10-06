@@ -23,20 +23,20 @@ func seedLexicon(t *testing.T) {
 	// "In" (indium) must not pick up the frequency of "in", and "john" (the
 	// toilet) must not pick up the frequency of the name.
 	for _, lemma := range []string{"goose", "America", "john", "In", "hot dog"} {
-		if err := q.InsertNoun(ctx, store.InsertNounParams{Lemma: lemma, Inflections: []byte("{}"), Source: "test"}); err != nil {
+		if err := q.InsertNoun(ctx, store.InsertNounParams{Lemma: lemma, Inflections: []byte("{}"), Definitions: []byte("[]"), Source: "test"}); err != nil {
 			t.Fatalf("InsertNoun(%s): %v", lemma, err)
 		}
 	}
 	// SUBTLEX only has "baby" as a noun, so the verb gets no frequency.
 	for _, lemma := range []string{"devour", "baby"} {
-		if err := q.InsertVerb(ctx, store.InsertVerbParams{Lemma: lemma, Inflections: []byte("{}"), Frames: []byte("[]"), Source: "test"}); err != nil {
+		if err := q.InsertVerb(ctx, store.InsertVerbParams{Lemma: lemma, Inflections: []byte("{}"), Frames: []byte("[]"), Definitions: []byte("[]"), Source: "test"}); err != nil {
 			t.Fatalf("InsertVerb(%s): %v", lemma, err)
 		}
 	}
-	if err := q.InsertAdjective(ctx, store.InsertAdjectiveParams{Lemma: "good", Inflections: []byte("{}"), Source: "test"}); err != nil {
+	if err := q.InsertAdjective(ctx, store.InsertAdjectiveParams{Lemma: "good", Inflections: []byte("{}"), Definitions: []byte("[]"), Source: "test"}); err != nil {
 		t.Fatalf("InsertAdjective: %v", err)
 	}
-	if err := q.InsertAdverb(ctx, store.InsertAdverbParams{Lemma: "quickly", Inflections: []byte("{}"), Source: "test"}); err != nil {
+	if err := q.InsertAdverb(ctx, store.InsertAdverbParams{Lemma: "quickly", Inflections: []byte("{}"), Definitions: []byte("[]"), Source: "test"}); err != nil {
 		t.Fatalf("InsertAdverb: %v", err)
 	}
 }

@@ -21,7 +21,7 @@ func (q *Queries) CountVerbs(ctx context.Context) (int64, error) {
 }
 
 const getRandomVerb = `-- name: GetRandomVerb :one
-SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable FROM verbs
+SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable, definitions FROM verbs
 WHERE active AND coalesce(frequency, 0) >= $1::float8
 ORDER BY random()
 LIMIT 1
@@ -44,12 +44,13 @@ func (q *Queries) GetRandomVerb(ctx context.Context, commonness float64) (Verb, 
 		&i.CreateTime,
 		&i.UpdateTime,
 		&i.Separable,
+		&i.Definitions,
 	)
 	return i, err
 }
 
 const getRandomVerbWithFrame = `-- name: GetRandomVerbWithFrame :one
-SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable FROM verbs
+SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable, definitions FROM verbs
 WHERE active AND frames ? $1::text
   AND coalesce(frequency, 0) >= $2::float8
 ORDER BY random()
@@ -78,12 +79,13 @@ func (q *Queries) GetRandomVerbWithFrame(ctx context.Context, arg GetRandomVerbW
 		&i.CreateTime,
 		&i.UpdateTime,
 		&i.Separable,
+		&i.Definitions,
 	)
 	return i, err
 }
 
 const getVerbByLemma = `-- name: GetVerbByLemma :one
-SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable FROM verbs
+SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable, definitions FROM verbs
 WHERE lemma = $1
 `
 
@@ -104,35 +106,55 @@ func (q *Queries) GetVerbByLemma(ctx context.Context, lemma string) (Verb, error
 		&i.CreateTime,
 		&i.UpdateTime,
 		&i.Separable,
+		&i.Definitions,
 	)
 	return i, err
 }
 
+const getVerbDefinitions = `-- name: GetVerbDefinitions :one
+SELECT definitions FROM verbs
+WHERE lemma = $1
+ORDER BY id
+LIMIT 1
+`
+
+// Active or not: an old sentence's word still shows its meaning.
+func (q *Queries) GetVerbDefinitions(ctx context.Context, lemma string) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getVerbDefinitions, lemma)
+	var definitions []byte
+	err := row.Scan(&definitions)
+	return definitions, err
+}
+
 const insertVerb = `-- name: InsertVerb :exec
-INSERT INTO verbs (lemma, inflections, frames, source)
-VALUES ($1, $2, $3, $4)
-ON CONFLICT (lemma, source) DO NOTHING
+INSERT INTO verbs (lemma, inflections, frames, definitions, source)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (lemma, source) DO UPDATE SET definitions = verbs.definitions || EXCLUDED.definitions
 `
 
 type InsertVerbParams struct {
 	Lemma       string `db:"lemma" json:"lemma"`
 	Inflections []byte `db:"inflections" json:"inflections"`
 	Frames      []byte `db:"frames" json:"frames"`
+	Definitions []byte `db:"definitions" json:"definitions"`
 	Source      string `db:"source" json:"source"`
 }
 
+// OEWN entries that share a lemma pool their definitions; frames come from
+// the first.
 func (q *Queries) InsertVerb(ctx context.Context, arg InsertVerbParams) error {
 	_, err := q.db.Exec(ctx, insertVerb,
 		arg.Lemma,
 		arg.Inflections,
 		arg.Frames,
+		arg.Definitions,
 		arg.Source,
 	)
 	return err
 }
 
 const lookupVerb = `-- name: LookupVerb :one
-SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable FROM verbs
+SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable, definitions FROM verbs
 WHERE active AND lemma = $1 AND ($2::text = '' OR frames ? $2::text)
 ORDER BY id
 LIMIT 1
@@ -161,6 +183,7 @@ func (q *Queries) LookupVerb(ctx context.Context, arg LookupVerbParams) (Verb, e
 		&i.CreateTime,
 		&i.UpdateTime,
 		&i.Separable,
+		&i.Definitions,
 	)
 	return i, err
 }

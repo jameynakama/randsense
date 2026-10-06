@@ -21,7 +21,7 @@ func (q *Queries) CountNouns(ctx context.Context) (int64, error) {
 }
 
 const getNounByLemma = `-- name: GetNounByLemma :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural FROM nouns
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural, definitions FROM nouns
 WHERE lemma = $1
 `
 
@@ -41,12 +41,28 @@ func (q *Queries) GetNounByLemma(ctx context.Context, lemma string) (Noun, error
 		&i.CreateTime,
 		&i.UpdateTime,
 		&i.Plural,
+		&i.Definitions,
 	)
 	return i, err
 }
 
+const getNounDefinitions = `-- name: GetNounDefinitions :one
+SELECT definitions FROM nouns
+WHERE lemma = $1
+ORDER BY id
+LIMIT 1
+`
+
+// Active or not: an old sentence's word still shows its meaning.
+func (q *Queries) GetNounDefinitions(ctx context.Context, lemma string) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getNounDefinitions, lemma)
+	var definitions []byte
+	err := row.Scan(&definitions)
+	return definitions, err
+}
+
 const getRandomNoun = `-- name: GetRandomNoun :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural FROM nouns
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural, definitions FROM nouns
 WHERE active AND coalesce(frequency, 0) >= $1::float8
 ORDER BY random()
 LIMIT 1
@@ -68,12 +84,13 @@ func (q *Queries) GetRandomNoun(ctx context.Context, commonness float64) (Noun, 
 		&i.CreateTime,
 		&i.UpdateTime,
 		&i.Plural,
+		&i.Definitions,
 	)
 	return i, err
 }
 
 const getRandomSingularNoun = `-- name: GetRandomSingularNoun :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural FROM nouns
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural, definitions FROM nouns
 WHERE active AND NOT plural AND coalesce(frequency, 0) >= $1::float8
 ORDER BY random()
 LIMIT 1
@@ -96,29 +113,37 @@ func (q *Queries) GetRandomSingularNoun(ctx context.Context, commonness float64)
 		&i.CreateTime,
 		&i.UpdateTime,
 		&i.Plural,
+		&i.Definitions,
 	)
 	return i, err
 }
 
 const insertNoun = `-- name: InsertNoun :exec
-INSERT INTO nouns (lemma, inflections, source)
-VALUES ($1, $2, $3)
-ON CONFLICT (lemma, source) DO NOTHING
+INSERT INTO nouns (lemma, inflections, definitions, source)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (lemma, source) DO UPDATE SET definitions = nouns.definitions || EXCLUDED.definitions
 `
 
 type InsertNounParams struct {
 	Lemma       string `db:"lemma" json:"lemma"`
 	Inflections []byte `db:"inflections" json:"inflections"`
+	Definitions []byte `db:"definitions" json:"definitions"`
 	Source      string `db:"source" json:"source"`
 }
 
+// OEWN entries that share a lemma pool their definitions.
 func (q *Queries) InsertNoun(ctx context.Context, arg InsertNounParams) error {
-	_, err := q.db.Exec(ctx, insertNoun, arg.Lemma, arg.Inflections, arg.Source)
+	_, err := q.db.Exec(ctx, insertNoun,
+		arg.Lemma,
+		arg.Inflections,
+		arg.Definitions,
+		arg.Source,
+	)
 	return err
 }
 
 const lookupNoun = `-- name: LookupNoun :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural FROM nouns
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural, definitions FROM nouns
 WHERE active AND lemma = $1
 ORDER BY id
 LIMIT 1
@@ -141,6 +166,7 @@ func (q *Queries) LookupNoun(ctx context.Context, lemma string) (Noun, error) {
 		&i.CreateTime,
 		&i.UpdateTime,
 		&i.Plural,
+		&i.Definitions,
 	)
 	return i, err
 }

@@ -21,7 +21,7 @@ func (q *Queries) CountAdverbs(ctx context.Context) (int64, error) {
 }
 
 const getAdverbByLemma = `-- name: GetAdverbByLemma :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM adverbs
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, definitions FROM adverbs
 WHERE lemma = $1
 `
 
@@ -40,12 +40,28 @@ func (q *Queries) GetAdverbByLemma(ctx context.Context, lemma string) (Adverb, e
 		&i.VoteCount,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.Definitions,
 	)
 	return i, err
 }
 
+const getAdverbDefinitions = `-- name: GetAdverbDefinitions :one
+SELECT definitions FROM adverbs
+WHERE lemma = $1
+ORDER BY id
+LIMIT 1
+`
+
+// Active or not: an old sentence's word still shows its meaning.
+func (q *Queries) GetAdverbDefinitions(ctx context.Context, lemma string) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getAdverbDefinitions, lemma)
+	var definitions []byte
+	err := row.Scan(&definitions)
+	return definitions, err
+}
+
 const getRandomAdverb = `-- name: GetRandomAdverb :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM adverbs
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, definitions FROM adverbs
 WHERE active AND coalesce(frequency, 0) >= $1::float8
 ORDER BY random()
 LIMIT 1
@@ -66,29 +82,37 @@ func (q *Queries) GetRandomAdverb(ctx context.Context, commonness float64) (Adve
 		&i.VoteCount,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.Definitions,
 	)
 	return i, err
 }
 
 const insertAdverb = `-- name: InsertAdverb :exec
-INSERT INTO adverbs (lemma, inflections, source)
-VALUES ($1, $2, $3)
-ON CONFLICT (lemma, source) DO NOTHING
+INSERT INTO adverbs (lemma, inflections, definitions, source)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (lemma, source) DO UPDATE SET definitions = adverbs.definitions || EXCLUDED.definitions
 `
 
 type InsertAdverbParams struct {
 	Lemma       string `db:"lemma" json:"lemma"`
 	Inflections []byte `db:"inflections" json:"inflections"`
+	Definitions []byte `db:"definitions" json:"definitions"`
 	Source      string `db:"source" json:"source"`
 }
 
+// OEWN entries that share a lemma pool their definitions.
 func (q *Queries) InsertAdverb(ctx context.Context, arg InsertAdverbParams) error {
-	_, err := q.db.Exec(ctx, insertAdverb, arg.Lemma, arg.Inflections, arg.Source)
+	_, err := q.db.Exec(ctx, insertAdverb,
+		arg.Lemma,
+		arg.Inflections,
+		arg.Definitions,
+		arg.Source,
+	)
 	return err
 }
 
 const lookupAdverb = `-- name: LookupAdverb :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM adverbs
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, definitions FROM adverbs
 WHERE active AND lemma = $1
 ORDER BY id
 LIMIT 1
@@ -110,6 +134,7 @@ func (q *Queries) LookupAdverb(ctx context.Context, lemma string) (Adverb, error
 		&i.VoteCount,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.Definitions,
 	)
 	return i, err
 }

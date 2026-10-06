@@ -17,8 +17,14 @@ type Querier interface {
 	CountNouns(ctx context.Context) (int64, error)
 	CountVerbs(ctx context.Context) (int64, error)
 	GetAdjectiveByLemma(ctx context.Context, lemma string) (Adjective, error)
+	// Active or not: an old sentence's word still shows its meaning.
+	GetAdjectiveDefinitions(ctx context.Context, lemma string) ([]byte, error)
 	GetAdverbByLemma(ctx context.Context, lemma string) (Adverb, error)
+	// Active or not: an old sentence's word still shows its meaning.
+	GetAdverbDefinitions(ctx context.Context, lemma string) ([]byte, error)
 	GetNounByLemma(ctx context.Context, lemma string) (Noun, error)
+	// Active or not: an old sentence's word still shows its meaning.
+	GetNounDefinitions(ctx context.Context, lemma string) ([]byte, error)
 	GetRandomAdjective(ctx context.Context, commonness float64) (Adjective, error)
 	GetRandomAdverb(ctx context.Context, commonness float64) (Adverb, error)
 	GetRandomConjunction(ctx context.Context) (Conjunction, error)
@@ -37,15 +43,22 @@ type Querier interface {
 	GetRandomVerbWithFrame(ctx context.Context, arg GetRandomVerbWithFrameParams) (Verb, error)
 	GetSentence(ctx context.Context, id string) (Sentence, error)
 	GetVerbByLemma(ctx context.Context, lemma string) (Verb, error)
+	// Active or not: an old sentence's word still shows its meaning.
+	GetVerbDefinitions(ctx context.Context, lemma string) ([]byte, error)
+	// OEWN entries that share a lemma pool their definitions.
 	InsertAdjective(ctx context.Context, arg InsertAdjectiveParams) error
+	// OEWN entries that share a lemma pool their definitions.
 	InsertAdverb(ctx context.Context, arg InsertAdverbParams) error
 	InsertConjunction(ctx context.Context, arg InsertConjunctionParams) error
 	InsertDeterminer(ctx context.Context, arg InsertDeterminerParams) error
 	InsertFlag(ctx context.Context, arg InsertFlagParams) (int64, error)
+	// OEWN entries that share a lemma pool their definitions.
 	InsertNoun(ctx context.Context, arg InsertNounParams) error
 	InsertPreposition(ctx context.Context, lemma string) error
 	InsertPronoun(ctx context.Context, arg InsertPronounParams) error
 	InsertSentence(ctx context.Context, arg InsertSentenceParams) (Sentence, error)
+	// OEWN entries that share a lemma pool their definitions; frames come from
+	// the first.
 	InsertVerb(ctx context.Context, arg InsertVerbParams) error
 	ListConjunctions(ctx context.Context) ([]Conjunction, error)
 	ListDeterminers(ctx context.Context) ([]Determiner, error)

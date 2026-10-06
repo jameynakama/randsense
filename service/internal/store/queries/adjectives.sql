@@ -1,7 +1,8 @@
 -- name: InsertAdjective :exec
-INSERT INTO adjectives (lemma, inflections, source)
-VALUES ($1, $2, $3)
-ON CONFLICT (lemma, source) DO NOTHING;
+-- OEWN entries that share a lemma pool their definitions.
+INSERT INTO adjectives (lemma, inflections, definitions, source)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (lemma, source) DO UPDATE SET definitions = adjectives.definitions || EXCLUDED.definitions;
 
 -- name: TruncateAdjectives :exec
 TRUNCATE adjectives RESTART IDENTITY CASCADE;
@@ -29,5 +30,12 @@ WHERE adjectives.lemma = f.word;
 -- A locked word: the floor doesn't apply.
 SELECT * FROM adjectives
 WHERE active AND lemma = $1
+ORDER BY id
+LIMIT 1;
+
+-- name: GetAdjectiveDefinitions :one
+-- Active or not: an old sentence's word still shows its meaning.
+SELECT definitions FROM adjectives
+WHERE lemma = $1
 ORDER BY id
 LIMIT 1;

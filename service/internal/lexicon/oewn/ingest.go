@@ -28,8 +28,8 @@ type Stats struct {
 
 // Ingest streams r as OEW WN-LMF XML, applies AllowLemma (and AllowNoun for
 // nouns, AllowAdjective for adjectives), dispatches each entry to the per-POS
-// table by Entry.POS, and inserts, then marks nouns whose lemma is already
-// plural. The whole run is
+// table by Entry.POS with its definitions from glosses, and inserts, then
+// marks nouns whose lemma is already plural. The whole run is
 // one transaction -- any error rolls back. Each per-POS table is
 // truncated first so re-runs produce identical state regardless of prior
 // content (idempotency by clean slate).
@@ -37,7 +37,7 @@ type Stats struct {
 // Pass the gzipped XML pre-wrapped in a gzip.Reader if you're reading
 // data/oewn-2025/english-wordnet-2025.xml.gz; Ingest itself only cares
 // that it gets parseable XML bytes.
-func Ingest(ctx context.Context, pool *pgxpool.Pool, r io.Reader) (Stats, error) {
+func Ingest(ctx context.Context, pool *pgxpool.Pool, r io.Reader, glosses map[string]string) (Stats, error) {
 	var stats Stats
 
 	tx, err := pool.Begin(ctx)
@@ -64,7 +64,7 @@ func Ingest(ctx context.Context, pool *pgxpool.Pool, r io.Reader) (Stats, error)
 	}
 
 	err = Parse(r, func(e Entry) error {
-		return ingestEntry(ctx, q, e, &stats)
+		return ingestEntry(ctx, q, e, glosses, &stats)
 	})
 	if err != nil {
 		return stats, fmt.Errorf("Ingest, Parse: %v", err)
@@ -80,10 +80,14 @@ func Ingest(ctx context.Context, pool *pgxpool.Pool, r io.Reader) (Stats, error)
 
 // ingestEntry routes a single Entry to its table. Unknown POS codes increment
 // Skipped; lemmas that fail AllowLemma are also Skipped.
-func ingestEntry(ctx context.Context, q *store.Queries, e Entry, stats *Stats) error {
+func ingestEntry(ctx context.Context, q *store.Queries, e Entry, glosses map[string]string, stats *Stats) error {
 	if !AllowLemma(e.Lemma) {
 		stats.Skipped++
 		return nil
+	}
+	defs, err := definitionsJSON(e.Synsets, glosses)
+	if err != nil {
+		return err
 	}
 
 	switch e.POS {
@@ -99,6 +103,7 @@ func ingestEntry(ctx context.Context, q *store.Queries, e Entry, stats *Stats) e
 		err = q.InsertNoun(ctx, store.InsertNounParams{
 			Lemma:       e.Lemma,
 			Inflections: infl,
+			Definitions: defs,
 			Source:      SourceName,
 		})
 		if err != nil {
@@ -114,6 +119,7 @@ func ingestEntry(ctx context.Context, q *store.Queries, e Entry, stats *Stats) e
 			Lemma:       e.Lemma,
 			Inflections: []byte("{}"),
 			Frames:      frames,
+			Definitions: defs,
 			Source:      SourceName,
 		})
 		if err != nil {
@@ -125,9 +131,10 @@ func ingestEntry(ctx context.Context, q *store.Queries, e Entry, stats *Stats) e
 			stats.Skipped++
 			return nil
 		}
-		err := q.InsertAdjective(ctx, store.InsertAdjectiveParams{
+		err = q.InsertAdjective(ctx, store.InsertAdjectiveParams{
 			Lemma:       e.Lemma,
 			Inflections: []byte("{}"),
+			Definitions: defs,
 			Source:      SourceName,
 		})
 		if err != nil {
@@ -135,9 +142,10 @@ func ingestEntry(ctx context.Context, q *store.Queries, e Entry, stats *Stats) e
 		}
 		stats.Adjectives++
 	case "r":
-		err := q.InsertAdverb(ctx, store.InsertAdverbParams{
+		err = q.InsertAdverb(ctx, store.InsertAdverbParams{
 			Lemma:       e.Lemma,
 			Inflections: []byte("{}"),
+			Definitions: defs,
 			Source:      SourceName,
 		})
 		if err != nil {
@@ -166,4 +174,16 @@ func nounInflectionsJSON(forms []string) ([]byte, error) {
 
 func verbFramesJSON(lemma string, codes []string) ([]byte, error) {
 	return json.Marshal(MapFrames(lemma, codes))
+}
+
+// definitionsJSON is the glosses of synsets, in sense order, as a JSON
+// array. A synset without a gloss is skipped.
+func definitionsJSON(synsets []string, glosses map[string]string) ([]byte, error) {
+	defs := []string{}
+	for _, id := range synsets {
+		if g, ok := glosses[id]; ok {
+			defs = append(defs, g)
+		}
+	}
+	return json.Marshal(defs)
 }

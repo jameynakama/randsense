@@ -1,7 +1,9 @@
 -- name: InsertVerb :exec
-INSERT INTO verbs (lemma, inflections, frames, source)
-VALUES ($1, $2, $3, $4)
-ON CONFLICT (lemma, source) DO NOTHING;
+-- OEWN entries that share a lemma pool their definitions; frames come from
+-- the first.
+INSERT INTO verbs (lemma, inflections, frames, definitions, source)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (lemma, source) DO UPDATE SET definitions = verbs.definitions || EXCLUDED.definitions;
 
 -- name: TruncateVerbs :exec
 TRUNCATE verbs RESTART IDENTITY CASCADE;
@@ -40,5 +42,12 @@ WHERE lemma = ANY(@lemmas::text[]);
 -- A locked word: the floor doesn't apply. An empty frame matches any verb.
 SELECT * FROM verbs
 WHERE active AND lemma = @lemma AND (@frame::text = '' OR frames ? @frame::text)
+ORDER BY id
+LIMIT 1;
+
+-- name: GetVerbDefinitions :one
+-- Active or not: an old sentence's word still shows its meaning.
+SELECT definitions FROM verbs
+WHERE lemma = $1
 ORDER BY id
 LIMIT 1;

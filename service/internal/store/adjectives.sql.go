@@ -21,7 +21,7 @@ func (q *Queries) CountAdjectives(ctx context.Context) (int64, error) {
 }
 
 const getAdjectiveByLemma = `-- name: GetAdjectiveByLemma :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM adjectives
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, definitions FROM adjectives
 WHERE lemma = $1
 `
 
@@ -40,12 +40,28 @@ func (q *Queries) GetAdjectiveByLemma(ctx context.Context, lemma string) (Adject
 		&i.VoteCount,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.Definitions,
 	)
 	return i, err
 }
 
+const getAdjectiveDefinitions = `-- name: GetAdjectiveDefinitions :one
+SELECT definitions FROM adjectives
+WHERE lemma = $1
+ORDER BY id
+LIMIT 1
+`
+
+// Active or not: an old sentence's word still shows its meaning.
+func (q *Queries) GetAdjectiveDefinitions(ctx context.Context, lemma string) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getAdjectiveDefinitions, lemma)
+	var definitions []byte
+	err := row.Scan(&definitions)
+	return definitions, err
+}
+
 const getRandomAdjective = `-- name: GetRandomAdjective :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM adjectives
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, definitions FROM adjectives
 WHERE active AND coalesce(frequency, 0) >= $1::float8
 ORDER BY random()
 LIMIT 1
@@ -66,29 +82,37 @@ func (q *Queries) GetRandomAdjective(ctx context.Context, commonness float64) (A
 		&i.VoteCount,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.Definitions,
 	)
 	return i, err
 }
 
 const insertAdjective = `-- name: InsertAdjective :exec
-INSERT INTO adjectives (lemma, inflections, source)
-VALUES ($1, $2, $3)
-ON CONFLICT (lemma, source) DO NOTHING
+INSERT INTO adjectives (lemma, inflections, definitions, source)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (lemma, source) DO UPDATE SET definitions = adjectives.definitions || EXCLUDED.definitions
 `
 
 type InsertAdjectiveParams struct {
 	Lemma       string `db:"lemma" json:"lemma"`
 	Inflections []byte `db:"inflections" json:"inflections"`
+	Definitions []byte `db:"definitions" json:"definitions"`
 	Source      string `db:"source" json:"source"`
 }
 
+// OEWN entries that share a lemma pool their definitions.
 func (q *Queries) InsertAdjective(ctx context.Context, arg InsertAdjectiveParams) error {
-	_, err := q.db.Exec(ctx, insertAdjective, arg.Lemma, arg.Inflections, arg.Source)
+	_, err := q.db.Exec(ctx, insertAdjective,
+		arg.Lemma,
+		arg.Inflections,
+		arg.Definitions,
+		arg.Source,
+	)
 	return err
 }
 
 const lookupAdjective = `-- name: LookupAdjective :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time FROM adjectives
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, definitions FROM adjectives
 WHERE active AND lemma = $1
 ORDER BY id
 LIMIT 1
@@ -110,6 +134,7 @@ func (q *Queries) LookupAdjective(ctx context.Context, lemma string) (Adjective,
 		&i.VoteCount,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.Definitions,
 	)
 	return i, err
 }

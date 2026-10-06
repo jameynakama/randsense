@@ -39,6 +39,7 @@ func seedWords(t *testing.T) {
 	if err := q.InsertNoun(ctx, store.InsertNounParams{
 		Lemma:       "goose",
 		Inflections: []byte(`{"plural":"geese"}`),
+		Definitions: []byte(`[]`),
 		Source:      "test",
 	}); err != nil {
 		t.Fatalf("seed noun: %v", err)
@@ -47,6 +48,7 @@ func seedWords(t *testing.T) {
 		Lemma:       "devour",
 		Inflections: []byte(`{}`),
 		Frames:      []byte(`["transitive"]`),
+		Definitions: []byte(`[]`),
 		Source:      "test",
 	}); err != nil {
 		t.Fatalf("seed verb: %v", err)
@@ -54,6 +56,7 @@ func seedWords(t *testing.T) {
 	if err := q.InsertAdjective(ctx, store.InsertAdjectiveParams{
 		Lemma:       "good",
 		Inflections: []byte(`{}`),
+		Definitions: []byte(`[]`),
 		Source:      "test",
 	}); err != nil {
 		t.Fatalf("seed adjective: %v", err)
@@ -61,6 +64,7 @@ func seedWords(t *testing.T) {
 	if err := q.InsertAdverb(ctx, store.InsertAdverbParams{
 		Lemma:       "quickly",
 		Inflections: []byte(`{}`),
+		Definitions: []byte(`[]`),
 		Source:      "test",
 	}); err != nil {
 		t.Fatalf("seed adverb: %v", err)
@@ -251,6 +255,7 @@ func seedRareNoun(t *testing.T) {
 	if err := store.New(testPool).InsertNoun(ctx, store.InsertNounParams{
 		Lemma:       "goffer",
 		Inflections: []byte(`{}`),
+		Definitions: []byte(`[]`),
 		Source:      "test",
 	}); err != nil {
 		t.Fatalf("seed noun: %v", err)
