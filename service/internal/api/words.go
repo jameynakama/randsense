@@ -34,6 +34,10 @@ func (h *Handler) getDefinitions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// chi hands over the raw path segment when the client escapes a character
+	// Go wouldn't ("A%2FC"), so the lemma comes through still escaped. That
+	// can't happen while AllowLemma admits only letters, apostrophes, spaces
+	// and hyphens; widen it and this needs url.PathUnescape.
 	defs, err := lookup(r.Context(), chi.URLParam(r, "lemma"))
 	if errors.Is(err, pgx.ErrNoRows) {
 		writeError(w, http.StatusNotFound, "no such word")

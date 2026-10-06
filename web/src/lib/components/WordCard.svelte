@@ -90,7 +90,9 @@
 		</p>
 	{/if}
 	<p>
-		<a href={wiktionaryUrl(lemma)} target="_blank" rel="noopener">Open in Wiktionary</a>
+		<a href={wiktionaryUrl(lemma)} target="_blank" rel="noopener"
+			>Open in Wiktionary<span class="visually-hidden"> (opens in a new tab)</span></a
+		>
 	</p>
 	<button type="button" class="button" onclick={onclose}>Close</button>
 </section>

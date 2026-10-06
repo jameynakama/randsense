@@ -91,6 +91,7 @@ describe('WordCard', () => {
 			.element(link)
 			.toHaveAttribute('href', 'https://en.wiktionary.org/wiki/the#English');
 		await expect.element(link).toHaveAttribute('target', '_blank');
+		await expect.element(link).toHaveAccessibleName('Open in Wiktionary (opens in a new tab)');
 		expect(fetch).not.toHaveBeenCalled();
 	});
 
