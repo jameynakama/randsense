@@ -4,6 +4,7 @@ import {
 	expectNoSidewaysScroll,
 	newSentence
 } from '../../../lib/testing/e2e';
+import { leaves, pos } from '../../../lib/tree';
 
 test('shows a saved sentence with link preview tags', async ({ page }) => {
 	const s = await newSentence(page.request);
@@ -31,7 +32,7 @@ test('opens a word card by keyboard and returns focus on Escape', async ({ page 
 	await first.focus();
 	await page.keyboard.press('Enter');
 	await expect(page.getByRole('region')).toBeVisible();
-	await expect(page.getByRole('region').getByRole('heading')).toBeFocused();
+	await expect(page.getByRole('region').getByRole('heading', { level: 2 })).toBeFocused();
 	await expectNoAxeViolations(page);
 
 	await page.keyboard.press('Escape');
@@ -132,5 +133,29 @@ test('lets the keyboard reach a zoomed diagram', async ({ page }) => {
 
 	await page.keyboard.press('Tab');
 	await expect(page.getByRole('region', { name: 'Sentence diagram, full size' })).toBeFocused();
+	await expectNoAxeViolations(page);
+});
+
+test("shows a noun's definitions and a Wiktionary link on its card", async ({ page }) => {
+	// Sentences don't always have a noun ("You told either..."), so fish for one.
+	let s = await newSentence(page.request);
+	let index = leaves(s.tree).findIndex((l) => pos(l.node) === 'Noun');
+	for (let tries = 0; index < 0 && tries < 20; tries++) {
+		s = await newSentence(page.request);
+		index = leaves(s.tree).findIndex((l) => pos(l.node) === 'Noun');
+	}
+	expect(index).toBeGreaterThanOrEqual(0);
+
+	await page.goto(`/s/${s.id}`);
+	await page.locator(`#word-${s.id}-${index}`).click();
+
+	const card = page.getByRole('region');
+	await expect(
+		card.getByRole('list', { name: 'Definitions' }).getByRole('listitem').first()
+	).toBeVisible();
+	await expect(card.getByRole('link', { name: 'Open in Wiktionary' })).toHaveAttribute(
+		'href',
+		/^https:\/\/en\.wiktionary\.org\/wiki\/.+#English$/
+	);
 	await expectNoAxeViolations(page);
 });

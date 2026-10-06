@@ -1,10 +1,19 @@
 import { page, userEvent } from 'vitest/browser';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import { another, grammar, sentence } from '#lib/testing/fixtures.js';
 import SentenceView from './SentenceView.svelte';
 
 describe('SentenceView', () => {
+	// Word cards look up definitions; these tests don't need any.
+	beforeEach(() =>
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => new Response(null, { status: 404 }))
+		)
+	);
+	afterEach(() => vi.unstubAllGlobals());
+
 	it('opens a word’s card and keeps the diagram closed until asked', async () => {
 		render(SentenceView, { sentence, grammar, count: 2 });
 
