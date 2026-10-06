@@ -215,6 +215,6 @@ Deploys never ingest, since ingest truncates and reloads the lexicon. Run it by 
 lexicon change:
 
 ```bash
-ssh root@178.128.78.239
+ssh root@randsense.online
 cd /app/randsense/service && sudo -u deploy bash -c 'set -a && . ../.env && set +a && /usr/local/go/bin/go run ./cmd/ingest'
 ```
