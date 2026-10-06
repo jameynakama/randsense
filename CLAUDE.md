@@ -55,17 +55,13 @@ Don't reopen these without new evidence.
 
 ## Roadmap
 
-1. **Frontend and saved sentences.** Designed in
-   `docs/superpowers/specs/2026-10-03-frontend-design.md`: monorepo move, saved sentences, live
-   feed over SSE, permalinks, stars, flags and a single-admin flag viewer. Live at
-   randsense.online; the spec's "Build order" lists the one open check. Later, try other
+1. **Frontend follow-ups.** The manual screen reader check in the "Build order" of
+   `docs/superpowers/specs/2026-10-03-frontend-design.md` is still open. Later, try other
    entrance animations for sentences arriving in the feed.
-2. **Sentence diagram and builder.** Designed in
-   `docs/superpowers/specs/2026-10-05-diagram-builder-design.md`: a drawn tree for every
-   sentence, a top-down builder with word locks and rerolls, kept sentences with a Homemade
-   badge, and Remix. What's left is its "Non-goals" list (a diagram game, drag and drop, picking
-   words, a commonness slider, a Reed-Kellogg view). The API's default floor is 1, the best for
-   sentences, until a slider exposes it.
+2. **Diagram and builder follow-ups.** The "Non-goals" list in
+   `docs/superpowers/specs/2026-10-05-diagram-builder-design.md` (a diagram game, drag and drop,
+   picking words, a commonness slider, a Reed-Kellogg view). The API's default floor is 1, the
+   best for sentences, until a slider exposes it.
    - **Keep can be replayed:** a signed tree can be kept again for 24 hours, each time a new row
      in the feed. The tight `randsense_keep` limit in `deploy/randsense.nginx` is the only guard,
      so don't loosen it without adding one in the API.

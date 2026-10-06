@@ -149,7 +149,7 @@ Every `/admin/*` route except `login` requires a valid session.
 
 There's one admin and no user table.
 
-- `ADMIN_PASSWORD_HASH` holds a bcrypt hash and is set in the systemd unit's environment. The
+- `ADMIN_PASSWORD_HASH` holds a bcrypt hash and is set in the API's environment (`/app/randsense/.env`). The
   password itself is never stored. `just hash-password` prints a hash for a typed password.
 - A successful login sets a cookie holding an expiry time signed with HMAC-SHA256, keyed by
   `SESSION_SECRET` (also from the environment). The cookie is `HttpOnly`, `Secure` (except in
@@ -311,7 +311,7 @@ nginx `limit_req` per IP:
 - stars and flags: tight
 - admin login: tight
 
-The exact rates are set in the nginx config at deploy time.
+The rates live in `deploy/randsense.nginx`.
 
 ## Testing
 
