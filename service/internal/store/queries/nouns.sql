@@ -24,7 +24,7 @@ LIMIT 1;
 -- A lemma is plural if it ends in -s and its singular (minus -s, or minus
 -- -es) is also a lemma ("Rastas"/"Rasta", "eyeglasses"/"eyeglass"). Short
 -- words and -ss/-us/-is endings ("Ms", "Mass", "Pus") are left singular.
-UPDATE nouns p SET plural = TRUE
+UPDATE nouns p SET plural_guess = TRUE
 WHERE p.lemma ~ 's$'
   AND length(p.lemma) > 3
   AND p.lemma !~ '(ss|us|is)$'

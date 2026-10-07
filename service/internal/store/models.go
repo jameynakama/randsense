@@ -65,19 +65,21 @@ type Flag struct {
 }
 
 type Noun struct {
-	ID          int64              `db:"id" json:"id"`
-	Lemma       string             `db:"lemma" json:"lemma"`
-	Inflections []byte             `db:"inflections" json:"inflections"`
-	Source      string             `db:"source" json:"source"`
-	SourceID    pgtype.Text        `db:"source_id" json:"source_id"`
-	Register    pgtype.Text        `db:"register" json:"register"`
-	Frequency   pgtype.Numeric     `db:"frequency" json:"frequency"`
-	Active      bool               `db:"active" json:"active"`
-	VoteCount   int32              `db:"vote_count" json:"vote_count"`
-	CreateTime  pgtype.Timestamptz `db:"create_time" json:"create_time"`
-	UpdateTime  pgtype.Timestamptz `db:"update_time" json:"update_time"`
-	Plural      bool               `db:"plural" json:"plural"`
-	Definitions []byte             `db:"definitions" json:"definitions"`
+	ID             int64              `db:"id" json:"id"`
+	Lemma          string             `db:"lemma" json:"lemma"`
+	Inflections    []byte             `db:"inflections" json:"inflections"`
+	Source         string             `db:"source" json:"source"`
+	SourceID       pgtype.Text        `db:"source_id" json:"source_id"`
+	Register       pgtype.Text        `db:"register" json:"register"`
+	Frequency      pgtype.Numeric     `db:"frequency" json:"frequency"`
+	Active         bool               `db:"active" json:"active"`
+	VoteCount      int32              `db:"vote_count" json:"vote_count"`
+	CreateTime     pgtype.Timestamptz `db:"create_time" json:"create_time"`
+	UpdateTime     pgtype.Timestamptz `db:"update_time" json:"update_time"`
+	PluralGuess    bool               `db:"plural_guess" json:"plural_guess"`
+	Definitions    []byte             `db:"definitions" json:"definitions"`
+	PluralOverride pgtype.Bool        `db:"plural_override" json:"plural_override"`
+	Plural         bool               `db:"plural" json:"plural"`
 }
 
 type Preposition struct {

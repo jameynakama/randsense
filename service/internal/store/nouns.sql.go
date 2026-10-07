@@ -21,7 +21,7 @@ func (q *Queries) CountNouns(ctx context.Context) (int64, error) {
 }
 
 const getNounByLemma = `-- name: GetNounByLemma :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural, definitions FROM nouns
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural_guess, definitions, plural_override, plural FROM nouns
 WHERE lemma = $1
 `
 
@@ -40,8 +40,10 @@ func (q *Queries) GetNounByLemma(ctx context.Context, lemma string) (Noun, error
 		&i.VoteCount,
 		&i.CreateTime,
 		&i.UpdateTime,
-		&i.Plural,
+		&i.PluralGuess,
 		&i.Definitions,
+		&i.PluralOverride,
+		&i.Plural,
 	)
 	return i, err
 }
@@ -62,7 +64,7 @@ func (q *Queries) GetNounDefinitions(ctx context.Context, lemma string) ([]byte,
 }
 
 const getRandomNoun = `-- name: GetRandomNoun :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural, definitions FROM nouns
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural_guess, definitions, plural_override, plural FROM nouns
 WHERE active AND coalesce(frequency, 0) >= $1::float8
 ORDER BY random()
 LIMIT 1
@@ -83,14 +85,16 @@ func (q *Queries) GetRandomNoun(ctx context.Context, commonness float64) (Noun, 
 		&i.VoteCount,
 		&i.CreateTime,
 		&i.UpdateTime,
-		&i.Plural,
+		&i.PluralGuess,
 		&i.Definitions,
+		&i.PluralOverride,
+		&i.Plural,
 	)
 	return i, err
 }
 
 const getRandomSingularNoun = `-- name: GetRandomSingularNoun :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural, definitions FROM nouns
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural_guess, definitions, plural_override, plural FROM nouns
 WHERE active AND NOT plural AND coalesce(frequency, 0) >= $1::float8
 ORDER BY random()
 LIMIT 1
@@ -112,8 +116,10 @@ func (q *Queries) GetRandomSingularNoun(ctx context.Context, commonness float64)
 		&i.VoteCount,
 		&i.CreateTime,
 		&i.UpdateTime,
-		&i.Plural,
+		&i.PluralGuess,
 		&i.Definitions,
+		&i.PluralOverride,
+		&i.Plural,
 	)
 	return i, err
 }
@@ -143,7 +149,7 @@ func (q *Queries) InsertNoun(ctx context.Context, arg InsertNounParams) error {
 }
 
 const lookupNoun = `-- name: LookupNoun :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural, definitions FROM nouns
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural_guess, definitions, plural_override, plural FROM nouns
 WHERE active AND lemma = $1
 ORDER BY id
 LIMIT 1
@@ -165,14 +171,16 @@ func (q *Queries) LookupNoun(ctx context.Context, lemma string) (Noun, error) {
 		&i.VoteCount,
 		&i.CreateTime,
 		&i.UpdateTime,
-		&i.Plural,
+		&i.PluralGuess,
 		&i.Definitions,
+		&i.PluralOverride,
+		&i.Plural,
 	)
 	return i, err
 }
 
 const markPluralNouns = `-- name: MarkPluralNouns :execrows
-UPDATE nouns p SET plural = TRUE
+UPDATE nouns p SET plural_guess = TRUE
 WHERE p.lemma ~ 's$'
   AND length(p.lemma) > 3
   AND p.lemma !~ '(ss|us|is)$'

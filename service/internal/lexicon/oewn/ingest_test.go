@@ -19,6 +19,7 @@ import (
 // pass the filters; 3 nouns (.22-caliber, Sorex araneus, OWLT) and the
 // Roman-numeral adjective lxxiii are Skipped.
 func TestIngest(t *testing.T) {
+	truncateLexicon(t)
 	ctx := context.Background()
 
 	f, err := os.Open(filepath.Join("testdata", "sample.xml"))
@@ -216,6 +217,7 @@ func TestIngest(t *testing.T) {
 // TestIngestMergesDefinitions checks that OEWN entries sharing a lemma end
 // up in one row with every entry's glosses.
 func TestIngestMergesDefinitions(t *testing.T) {
+	truncateLexicon(t)
 	ctx := context.Background()
 	xml := `<?xml version="1.0" encoding="UTF-8"?>
 <LexicalResource>
@@ -266,4 +268,46 @@ func sampleGlosses(t *testing.T) map[string]string {
 		t.Fatalf("Glosses: %v", err)
 	}
 	return g
+}
+
+// TestPluralOverride checks that a curated correction beats the heuristic in
+// both directions.
+func TestPluralOverride(t *testing.T) {
+	truncateLexicon(t)
+	ingestSample(t)
+	ctx := context.Background()
+
+	_, err := testPool.Exec(ctx, `
+		UPDATE nouns SET plural_override = FALSE WHERE lemma = 'Rastas';
+		UPDATE nouns SET plural_override = TRUE WHERE lemma = 'goose';
+	`)
+	if err != nil {
+		t.Fatalf("set overrides: %v", err)
+	}
+
+	q := store.New(testPool)
+	for lemma, want := range map[string]bool{"Rastas": false, "goose": true, "eyeglasses": true} {
+		noun, err := q.GetNounByLemma(ctx, lemma)
+		if err != nil {
+			t.Fatalf("GetNounByLemma(%s): %v", lemma, err)
+		}
+		if noun.Plural != want {
+			t.Errorf("%s plural: got %t, want %t", lemma, noun.Plural, want)
+		}
+	}
+}
+
+// ingestSample ingests testdata/sample.xml.
+func ingestSample(t *testing.T) oewn.Stats {
+	t.Helper()
+	f, err := os.Open(filepath.Join("testdata", "sample.xml"))
+	if err != nil {
+		t.Fatalf("open fixture: %v", err)
+	}
+	defer f.Close()
+	stats, err := oewn.Ingest(context.Background(), testPool, f, sampleGlosses(t))
+	if err != nil {
+		t.Fatalf("Ingest: %v", err)
+	}
+	return stats
 }

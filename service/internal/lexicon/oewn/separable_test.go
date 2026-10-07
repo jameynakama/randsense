@@ -12,6 +12,7 @@ import (
 )
 
 func TestMarkSeparable(t *testing.T) {
+	truncateLexicon(t)
 	ctx := context.Background()
 	f, err := os.Open(filepath.Join("testdata", "sample.xml"))
 	if err != nil {

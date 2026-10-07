@@ -90,3 +90,13 @@ func swapDBName(oldDB, newDB string) string {
 	u.Path = "/" + newDB
 	return u.String()
 }
+
+// truncateLexicon empties the content-word tables, since Ingest keeps rows
+// between runs.
+func truncateLexicon(t *testing.T) {
+	t.Helper()
+	_, err := testPool.Exec(context.Background(), "TRUNCATE nouns, verbs, adjectives, adverbs RESTART IDENTITY")
+	if err != nil {
+		t.Fatalf("truncate: %v", err)
+	}
+}
