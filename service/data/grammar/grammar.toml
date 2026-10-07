@@ -1,8 +1,8 @@
 # Weighted grammar for sentence generation. Weights are relative among a
 # symbol's rules and default to 1. Terminals are the POS names in
 # grammar.POS (Noun, Verb, Determiner, ..., Comma for punctuation, and
-# Complementizer and To, which are "that" and "to"); any other symbol needs
-# rules. Verb and Conjunction slots can be qualified (see
+# Complementizer, To and Be, which are "that", "to" and "be"); any other
+# symbol needs rules. Verb and Conjunction slots can be qualified (see
 # grammar.qualifiers): "Verb:transitive" requires that frame, and
 # "Conjunction:np" an and/or that can join noun phrases, while
 # "Conjunction:neither" and "Conjunction:nor" are those words. A
@@ -14,12 +14,14 @@
 # agrees like a verb, so it belongs in a VP or PP and never in an NP.
 # Unqualified slots take any word.
 #
-# Agreement depends on five symbol names, NP, VP, PP, InfVP and GerVP: an NP
-# followed by a VP among its siblings is the subject (nominative pronouns, and
-# the VP's verbs and reflexives, including those in a PP, agree with it). An NP's person and number come from its
-# Pronoun, its Determiner, or "NP Conjunction NP" coordination. Verbs under an
-# InfVP keep their base form and verbs under a GerVP take -ing, up to any
-# clause nested inside them.
+# Agreement depends on seven symbol names, NP, VP, PP, InfVP, GerVP, PassVP
+# and Agent: an NP followed by a VP among its siblings is the subject
+# (nominative pronouns, and the VP's verbs and reflexives, including those in
+# a PP, a PassVP or an Agent, agree with it). An NP's person and number come
+# from its Pronoun, its Determiner, or "NP Conjunction NP" coordination. Be
+# inflects like a verb. Verbs under an InfVP keep their base form, verbs under
+# a GerVP take -ing and verbs under a PassVP take the past participle, up to
+# any clause nested inside them.
 #
 # Every phrase needs a [phrase.X] table and every slot a rule uses a
 # [slot."X"] table, each with a label and a description; verb frames also
@@ -228,6 +230,16 @@ weight = 0.2
 
 [[rule]]
 symbol = "VP"
+expansion = ["Be", "PassVP"]
+weight = 0.6
+
+[[rule]]
+symbol = "VP"
+expansion = ["Be", "PassVP", "Agent"]
+weight = 0.5
+
+[[rule]]
+symbol = "VP"
 expansion = ["VP", "Adverb"]
 
 [[rule]]
@@ -242,6 +254,94 @@ expansion = ["To", "VP"]
 [[rule]]
 symbol = "GerVP"
 expansion = ["VP"]
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive"]
+weight = 4
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive-pp", "PP"]
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:ditransitive", "NP"]
+weight = 0.5
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive-from", "Preposition:from", "NP"]
+weight = 0.25
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive-from", "Preposition:from", "Pronoun:reflexive"]
+weight = 0.05
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive-of", "Preposition:of", "NP"]
+weight = 0.25
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive-of", "Preposition:of", "Pronoun:reflexive"]
+weight = 0.05
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive-on", "Preposition:on", "NP"]
+weight = 0.25
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive-on", "Preposition:on", "Pronoun:reflexive"]
+weight = 0.05
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive-to", "Preposition:to", "NP"]
+weight = 0.25
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive-to", "Preposition:to", "Pronoun:reflexive"]
+weight = 0.05
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive-with", "Preposition:with", "NP"]
+weight = 0.25
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive-with", "Preposition:with", "Pronoun:reflexive"]
+weight = 0.05
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive-to-infinitive", "InfVP"]
+weight = 0.25
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive-adjective", "Adjective"]
+weight = 0.2
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive-into-gerund", "Preposition:into", "GerVP"]
+weight = 0.15
+
+[[rule]]
+symbol = "Agent"
+expansion = ["Preposition:by", "NP"]
+
+[[rule]]
+symbol = "Agent"
+expansion = ["Preposition:by", "Pronoun:reflexive"]
+weight = 0.1
 
 [[rule]]
 symbol = "PP"
@@ -284,6 +384,14 @@ description = "\"To\" and a verb phrase in its base form."
 [phrase.GerVP]
 label = "gerund phrase"
 description = "A verb phrase in its -ing form, used like a noun."
+
+[phrase.PassVP]
+label = "passive verb phrase"
+description = "A verb in its past participle form and whatever else it takes. Its object has become the subject."
+
+[phrase.Agent]
+label = "agent"
+description = "\"By\" and whoever or whatever does the action in a passive."
 
 [phrase.PP]
 label = "prepositional phrase"
@@ -337,6 +445,10 @@ description = "The preposition its verb asks for."
 label = "\"into\""
 description = "The preposition its verb asks for."
 
+[slot."Preposition:by"]
+label = "\"by\""
+description = "Introduces the agent of a passive."
+
 [slot.Pronoun]
 label = "pronoun"
 description = "Stands in for a noun phrase: she, them, you."
@@ -388,6 +500,10 @@ description = "Introduces a choice the verb weighs."
 [slot.To]
 label = "\"to\""
 description = "Marks an infinitive."
+
+[slot.Be]
+label = "\"be\""
+description = "Helps a passive verb and agrees with the subject: is, was, were."
 
 [slot."Verb:intransitive"]
 label = "intransitive verb"

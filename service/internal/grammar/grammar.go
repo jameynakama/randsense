@@ -297,7 +297,7 @@ type Features struct {
 	// Commonness is the root's commonness floor. It's a pointer because 0
 	// is a floor too.
 	Commonness *float64 `json:"commonness,omitempty"`
-	// Form is a verb's: "finite", "base" or "gerund".
+	// Form is a verb's: "finite", "base", "gerund" or "participle".
 	Form   string `json:"form,omitempty"`
 	Person int    `json:"person,omitempty"`
 	Number string `json:"number,omitempty"`

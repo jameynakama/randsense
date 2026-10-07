@@ -149,7 +149,7 @@ Fixed words (a comma, `to`, a complementizer, `neither`, `nor`, a qualified prep
 
 Every node in a returned tree may carry a `features` object with what generation worked out:
 the root's `tense` and `commonness`; an NP's `person` and `number`; a noun's `number`; a verb's
-`form` (`finite`, `base` or `gerund`), `frames` (every frame its lemma has) and `separable`,
+`form` (`finite`, `base`, `gerund` or `participle`), `frames` (every frame its lemma has) and `separable`,
 plus `tense`, `person` and `number` when it's finite; a pronoun's `case`, `person`, `number`
 and `gender`; a determiner's `type` and `number`. Content words carry their Zipf `frequency`
 when SUBTLEX-US has it. Empty fields are omitted. A leaf whose written form differs from `word`,
