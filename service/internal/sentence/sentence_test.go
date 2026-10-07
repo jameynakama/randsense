@@ -1166,6 +1166,141 @@ func TestRealizeRecordsNonFiniteVerbForms(t *testing.T) {
 	}
 }
 
+// passive is a VP of "be", a passive verb with the given frame and its
+// complements, and an optional agent.
+func passive(frame string, rest []*grammar.Node, agent ...*grammar.Node) *grammar.Node {
+	pass := node("PassVP", append([]*grammar.Node{leaf("Verb:" + frame)}, rest...)...)
+	return node("VP", append([]*grammar.Node{leaf("Be"), pass}, agent...)...)
+}
+
+func TestRealizePassiveBeAgreesWithSubject(t *testing.T) {
+	this := store.Determiner{Lemma: "this", Number: "singular"}
+	these := store.Determiner{Lemma: "these", Number: "plural"}
+	i := store.Pronoun{Lemma: "I", Person: 1, Number: "singular", Gender: "epicene"}
+	you := store.Pronoun{Lemma: "you", Person: 2, Number: "singular", Gender: "epicene"}
+	she := store.Pronoun{Lemma: "she", Person: 3, Number: "singular", Gender: "fem"}
+	pronoun := func() *grammar.Node { return node("NP", leaf("Pronoun")) }
+	tests := []struct {
+		name    string
+		subject func() *grammar.Node
+		det     store.Determiner
+		noms    []store.Pronoun
+		want    []string
+	}{
+		{"singular noun", detNoun, this, nil, []string{"This goose is given.", "This goose was given."}},
+		{"plural noun", detNoun, these, nil, []string{"These geese are given.", "These geese were given."}},
+		{"first person", pronoun, this, []store.Pronoun{i}, []string{"I am given.", "I was given."}},
+		{"second person", pronoun, this, []store.Pronoun{you}, []string{"You are given.", "You were given."}},
+		{"coordinated", func() *grammar.Node {
+			return node("NP", pronoun(), leaf("Conjunction:np"), pronoun())
+		}, this, []store.Pronoun{she, i}, []string{"She and I are given.", "She and I were given."}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			seen := realized(t, func() *grammar.Node {
+				return node("S", tc.subject(), passive("transitive", nil))
+			}, func() *fakeQuerier {
+				q := newFake(tc.det)
+				q.nominatives = tc.noms
+				return q
+			}, 20)
+
+			assertExactly(t, seen, tc.want...)
+		})
+	}
+}
+
+func TestRealizePassiveInNonFinitePhrases(t *testing.T) {
+	tests := []struct {
+		name  string
+		build func() *grammar.Node
+		want  []string
+	}{
+		{"infinitive", func() *grammar.Node {
+			inf := node("InfVP", leaf("To"), passive("transitive", nil))
+			return node("S", detNoun(), node("VP", leaf("Verb:to-infinitive"), inf))
+		}, []string{"These geese give to be given.", "These geese gave to be given."}},
+		{"gerund", func() *grammar.Node {
+			return node("S", detNoun(), node("VP", leaf("Verb:gerund"), node("GerVP", passive("transitive", nil))))
+		}, []string{"These geese give being given.", "These geese gave being given."}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			seen := realized(t, tc.build, func() *fakeQuerier {
+				return newFake(store.Determiner{Lemma: "these", Number: "plural"})
+			}, 20)
+
+			assertExactly(t, seen, tc.want...)
+		})
+	}
+}
+
+func TestRealizePassiveComplementsAndAgent(t *testing.T) {
+	pronoun := func() *grammar.Node { return node("NP", leaf("Pronoun")) }
+	tests := []struct {
+		name  string
+		build func() *grammar.Node
+		want  []string
+	}{
+		{"agent pronoun is accusative", func() *grammar.Node {
+			return node("S", pronoun(), passive("transitive", nil, node("Agent", leaf("Preposition:by"), pronoun())))
+		}, []string{"She is given by her.", "She was given by her."}},
+		{"agent reflexive agrees with the subject", func() *grammar.Node {
+			return node("S", pronoun(), passive("transitive", nil, node("Agent", leaf("Preposition:by"), leaf("Pronoun:reflexive"))))
+		}, []string{"She is given by herself.", "She was given by herself."}},
+		{"reflexive object agrees with the subject", func() *grammar.Node {
+			return node("S", pronoun(), passive("transitive-to", []*grammar.Node{leaf("Preposition:to"), leaf("Pronoun:reflexive")}))
+		}, []string{"She is given to herself.", "She was given to herself."}},
+		{"ditransitive keeps its object", func() *grammar.Node {
+			return node("S", pronoun(), passive("ditransitive", []*grammar.Node{pronoun()}))
+		}, []string{"She is given her.", "She was given her."}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			seen := realized(t, tc.build, func() *fakeQuerier {
+				q := newFake()
+				q.pronouns["nominative"] = store.Pronoun{Lemma: "she", Person: 3, Number: "singular", Gender: "fem"}
+				return q
+			}, 20)
+
+			assertExactly(t, seen, tc.want...)
+		})
+	}
+}
+
+func TestRealizePassiveKeepsSeparableVerbWhole(t *testing.T) {
+	seen := realized(t, func() *grammar.Node {
+		return node("S", detNoun(), passive("transitive", nil))
+	}, func() *fakeQuerier {
+		q := newFake(store.Determiner{Lemma: "this", Number: "singular"})
+		q.framed = &store.Verb{Lemma: "look up", Separable: true}
+		return q
+	}, 20)
+
+	assertExactly(t, seen, "This goose is looked up.", "This goose was looked up.")
+}
+
+func TestRealizeRecordsPassiveVerbForms(t *testing.T) {
+	tree := node("S", detNoun(), passive("transitive", nil))
+
+	s, err := sentence.Realize(context.Background(), newFake(), mustLoad(t, simpleGrammar), tree, loadVerbs(t), newRNG(), 0)
+	if err != nil {
+		t.Fatalf("Realize: %v", err)
+	}
+
+	vp := s.Tree.Children[1]
+	if got := vp.Children[0].Features.Form; got != "finite" {
+		t.Errorf("expected be to be finite; got %q", got)
+	}
+	want := grammar.Features{Form: "participle", Frames: []string{"transitive"}}
+	if got := vp.Children[1].Children[0].Features; !reflect.DeepEqual(got, want) {
+		t.Errorf("expected %+v; got %+v", want, got)
+	}
+}
+
 func TestRealizeRecordsPronounFeatures(t *testing.T) {
 	q := newFake()
 	q.pronouns["nominative"] = store.Pronoun{Lemma: "she", Person: 3, Number: "singular", Gender: "fem"}

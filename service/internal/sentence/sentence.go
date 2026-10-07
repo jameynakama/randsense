@@ -25,16 +25,20 @@ import (
 
 // Agreement relies on these grammar symbols. An NP followed by a VP among its
 // siblings is that VP's subject: its pronouns are nominative and the VP's
-// verbs and reflexives agree with it, including reflexives in a PP. An NP's
-// person and number come from its pronoun, its determiner, or, for "NP
-// Conjunction NP", the coordination. Verbs under an InfVP stay in their base
-// form and verbs under a GerVP take -ing, up to any clause nested inside them.
+// verbs and reflexives agree with it, including reflexives in a PP, a PassVP
+// or an Agent. An NP's person and number come from its pronoun, its
+// determiner, or, for "NP Conjunction NP", the coordination. A Be leaf
+// inflects like a verb. Verbs under an InfVP stay in their base form, verbs
+// under a GerVP take -ing and verbs under a PassVP take the past participle,
+// up to any clause nested inside them.
 const (
 	nounPhrase       = "NP"
 	verbPhrase       = "VP"
 	prepPhrase       = "PP"
 	infinitivePhrase = "InfVP"
 	gerundPhrase     = "GerVP"
+	passivePhrase    = "PassVP"
+	agentPhrase      = "Agent"
 )
 
 // verbForm is how agreeWithSubjects inflects the verbs in a phrase.
@@ -44,6 +48,7 @@ const (
 	finite verbForm = iota
 	base
 	gerund
+	participle
 )
 
 // Sentence is a generated sentence and the parse tree it was built from.
@@ -454,6 +459,8 @@ func (gen *generator) chooseWord(n *grammar.Node, pluralNoun, singularNoun, subj
 		return "that", leafInfo{}, nil
 	case grammar.To:
 		return "to", leafInfo{}, nil
+	case grammar.Be:
+		return "be", leafInfo{}, nil
 	default: // Conjunction: Load guarantees every leaf is a POS.
 		var w store.Conjunction
 		var err error
@@ -559,7 +566,8 @@ func (gen *generator) npAgreement(n *grammar.Node) agreement {
 // agreement down to the words inside it, and so does a PP, so a reflexive in
 // an infinitive or a PP agrees with the object before it ("urge her to devour
 // herself", "send the goose to itself"). Verbs in an infinitive keep their
-// base form; verbs in a gerund take -ing.
+// base form, verbs in a gerund take -ing and verbs in a passive take the past
+// participle; "be" inflects like any verb.
 func (gen *generator) agreeWithSubjects(n *grammar.Node, agr agreement, form verbForm) error {
 	for _, c := range n.Children {
 		if c.Symbol == nounPhrase {
@@ -581,7 +589,7 @@ func (gen *generator) agreeWithSubjects(n *grammar.Node, agr agreement, form ver
 			c.Lemma, c.Word = w.Lemma, w.Lemma
 			c.Features = grammar.Features{Case: grammar.Reflexive, Person: int(w.Person), Number: w.Number, Gender: w.Gender}
 		}
-		if len(c.Children) == 0 && c.POS() == grammar.Verb {
+		if len(c.Children) == 0 && (c.POS() == grammar.Verb || c.POS() == grammar.Be) {
 			switch form {
 			case finite:
 				c.Word = gen.verbs.Conjugate(c.Lemma, gen.tense, agr.person, agr.number)
@@ -592,12 +600,17 @@ func (gen *generator) agreeWithSubjects(n *grammar.Node, agr agreement, form ver
 			case gerund:
 				c.Word = gen.verbs.Participle(c.Lemma)
 				c.Features.Form = "gerund"
+			case participle:
+				c.Word = gen.verbs.PastParticiple(c.Lemma)
+				c.Features.Form = "participle"
 			}
 		}
 		var err error
 		switch c.Symbol {
-		case verbPhrase, prepPhrase:
+		case verbPhrase, prepPhrase, agentPhrase:
 			err = gen.agreeWithSubjects(c, agr, form)
+		case passivePhrase:
+			err = gen.agreeWithSubjects(c, agr, participle)
 		case infinitivePhrase:
 			err = gen.agreeWithSubjects(c, agr, base)
 		case gerundPhrase:
