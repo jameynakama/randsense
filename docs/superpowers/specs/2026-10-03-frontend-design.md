@@ -101,7 +101,7 @@ word) and `word` (as inflected); the slot's frame is the qualifier in `symbol`
 | root | `tense`, `commonness` |
 | NP | `person`, `number` (its agreement) |
 | noun | `number`, `frequency` |
-| verb | `tense`, `form` (`finite`, `base` or `gerund`), `person`, `number` (what it agreed with), `frames` (every frame the lemma has), `separable`, `frequency` |
+| verb | `tense`, `form` (`finite`, `base`, `gerund` or `participle`), `person`, `number` (what it agreed with), `frames` (every frame the lemma has), `separable`, `frequency` |
 | adjective, adverb | `frequency` |
 | pronoun | `case`, `person`, `number`, `gender` |
 | determiner | `type`, `number` |
