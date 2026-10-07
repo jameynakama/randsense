@@ -73,7 +73,8 @@ Don't reopen these without new evidence.
    transitive, which gives "gave birth the goose". Each idiom needs a label: keep the frame,
    drop object frames (keeping "she gave birth"), or move it to a fixed-preposition frame ("gave
    birth to mud"). Some prepositions ("find fault with", "take kindly to") would need new
-   frames. Keep the idioms themselves.
+   frames. Keep the idioms themselves. Passives show the same break ("the goose was given
+   birth").
 4. **Curation loop, after the frontend.**
    - **Flags are the votes:** the frontend's flags, with their copied lemma and part of speech,
      are what flag words for review.
@@ -84,8 +85,8 @@ Don't reopen these without new evidence.
      No user accounts. psql on the server was rejected as the admin UX.
 5. **LLM batch labeling** for curation.
 6. **More sentence types:**
-   - passive voice, from transitive frames only; `verb_morphology.toml` already has past
-     participles
+   - progressive and perfect ("was devouring", "has devoured"), reusing `Be` and the past
+     participle
    - questions
    - conditionals
 7. **Compiled lexicon, once a base version feels done.** Build every source (OEWN, SUBTLEX-US,
@@ -115,5 +116,7 @@ These are deliberately left alone.
 - **"neither X or Y":** the determiner "neither" in the first part of an "or" coordination reads
   like a broken "neither...nor". Under evaluation; a possible fix is removing "neither" from the
   determiners.
+- **Adverbs before "be":** `VP → Adverb VP` gives "the goose quickly was devoured". A fix would
+  place adverbs between `Be` and `PassVP`.
 - **Genitive "his" as a subject** can be mistaken for a determiner when the verb is also a
   noun ("His look deficient").
