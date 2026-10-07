@@ -6,3 +6,4 @@ coverage.out
 
 service/data/**/*.xml
 service/data/subtlex-us/*.xlsx
+.superpowers/
