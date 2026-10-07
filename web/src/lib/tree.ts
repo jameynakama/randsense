@@ -44,7 +44,7 @@ export function tokens(tree: TreeNode): Token[] {
 
 // role is where the leaf at path sits in its clause, from the nearest
 // phrase that says: a prepositional phrase, an infinitive, a gerund phrase,
-// or the subject or object. null when none applies.
+// a passive's agent, or the subject or object. null when none applies.
 export function role(tree: TreeNode, path: number[]): string | null {
 	const chain = [tree];
 	for (const i of path) chain.push(chain[chain.length - 1].children![i]);
@@ -59,13 +59,18 @@ export function role(tree: TreeNode, path: number[]): string | null {
 				return 'in an infinitive';
 			case 'GerVP':
 				return 'in a gerund phrase';
+			case 'Agent':
+				return 'in the agent';
 		}
 		const nominal = node.symbol === 'NP' || ['Noun', 'Pronoun'].includes(pos(node));
 		if (!nominal || parent.symbol === 'NP') continue;
 		const at = path[depth - 1];
 		const siblings = parent.children!;
 		if (siblings.slice(at + 1).some((s) => s.symbol === 'VP')) return 'in the subject';
-		if (parent.symbol === 'VP' && siblings.slice(0, at).some((s) => pos(s) === 'Verb')) {
+		if (
+			['VP', 'PassVP'].includes(parent.symbol) &&
+			siblings.slice(0, at).some((s) => pos(s) === 'Verb')
+		) {
 			return 'in the object';
 		}
 	}
@@ -73,7 +78,12 @@ export function role(tree: TreeNode, path: number[]): string | null {
 }
 
 const ordinals: Record<number, string> = { 1: '1st', 2: '2nd', 3: '3rd' };
-const forms: Record<string, string> = { finite: 'finite', base: 'base form', gerund: '-ing form' };
+const forms: Record<string, string> = {
+	finite: 'finite',
+	base: 'base form',
+	gerund: '-ing form',
+	participle: 'past participle'
+};
 const genders: Record<string, string> = {
 	fem: 'feminine',
 	masc: 'masculine',

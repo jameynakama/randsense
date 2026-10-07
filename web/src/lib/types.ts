@@ -3,7 +3,7 @@
 export interface Features {
 	tense?: string;
 	commonness?: number;
-	form?: 'finite' | 'base' | 'gerund';
+	form?: 'finite' | 'base' | 'gerund' | 'participle';
 	person?: number;
 	number?: string;
 	case?: string;

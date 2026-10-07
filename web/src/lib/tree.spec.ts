@@ -96,6 +96,35 @@ describe('role', () => {
 	it.each(['devoured', ',', 'but', 'urged'])('%s has no role', (word) => {
 		expect(roleOf(word)).toBeNull();
 	});
+
+	// "the goose was given her by them"
+	const passive = node(
+		'S',
+		node('NP', leaf('Determiner', 'the'), leaf('Noun', 'goose')),
+		node(
+			'VP',
+			leaf('Be', 'was'),
+			node('PassVP', leaf('Verb:ditransitive', 'given'), node('NP', leaf('Pronoun', 'her'))),
+			node('Agent', leaf('Preposition:by', 'by'), node('NP', leaf('Pronoun', 'them')))
+		)
+	);
+	const passiveRoleOf = (word: string) => {
+		const l = leaves(passive).find((l) => l.node.word === word)!;
+		return role(passive, l.path);
+	};
+
+	it.each([
+		['goose', 'in the subject'],
+		['her', 'in the object'],
+		['by', 'in the agent'],
+		['them', 'in the agent']
+	])('in a passive, %s is %s', (word, want) => {
+		expect(passiveRoleOf(word)).toBe(want);
+	});
+
+	it.each(['was', 'given'])('in a passive, %s has no role', (word) => {
+		expect(passiveRoleOf(word)).toBeNull();
+	});
 });
 
 describe('frame', () => {
@@ -139,6 +168,10 @@ describe('featureLabels', () => {
 			'present tense',
 			'commonness floor 0'
 		]);
+	});
+
+	it('labels a past participle', () => {
+		expect(featureLabels({ form: 'participle' })).toEqual(['past participle']);
 	});
 
 	it('has nothing to say without features', () => {
