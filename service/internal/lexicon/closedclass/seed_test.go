@@ -2,6 +2,7 @@ package closedclass_test
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -109,9 +110,26 @@ func takeSnapshot(t *testing.T) snapshot {
 	return s
 }
 
+// seed runs Seed in a transaction, committing on success and rolling back on
+// an error, as ingest does.
+func seed(t *testing.T, r io.Reader) (closedclass.Stats, error) {
+	t.Helper()
+	ctx := context.Background()
+	tx, err := testPool.Begin(ctx)
+	if err != nil {
+		t.Fatalf("Begin: %v", err)
+	}
+	defer tx.Rollback(ctx)
+	stats, err := closedclass.Seed(ctx, tx, r)
+	if err != nil {
+		return stats, err
+	}
+	return stats, tx.Commit(ctx)
+}
+
 func mustSeed(t *testing.T, in string) closedclass.Stats {
 	t.Helper()
-	stats, err := closedclass.Seed(context.Background(), testPool, strings.NewReader(in))
+	stats, err := seed(t, strings.NewReader(in))
 	if err != nil {
 		t.Fatalf("Seed: %v", err)
 	}
@@ -270,7 +288,7 @@ func TestSeedRejectsInvalidEntries(t *testing.T) {
 			mustSeed(t, fixture)
 			before := takeSnapshot(t)
 
-			_, err := closedclass.Seed(context.Background(), testPool, strings.NewReader(tc.in))
+			_, err := seed(t, strings.NewReader(tc.in))
 
 			if err == nil {
 				t.Fatal("expected an error; got nil")
@@ -292,7 +310,7 @@ func TestProjectClosedClassSeeds(t *testing.T) {
 	}
 	defer f.Close()
 
-	stats, err := closedclass.Seed(context.Background(), testPool, f)
+	stats, err := seed(t, f)
 	if err != nil {
 		t.Fatalf("Seed: %v", err)
 	}

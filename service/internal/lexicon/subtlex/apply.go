@@ -15,8 +15,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"github.com/jameynakama/randsense/internal/store"
 )
 
@@ -40,9 +38,9 @@ type tagged struct {
 
 // Apply reads r as the word, part of speech and count rows of
 // data/subtlex-us/subtlex-us-pos.tsv.gz and sets the frequency of every lemma
-// SUBTLEX has in that part of speech, in one transaction. It runs after the
-// OEWN ingest, whose truncation clears old frequencies.
-func Apply(ctx context.Context, pool *pgxpool.Pool, r io.Reader) (Stats, error) {
+// SUBTLEX has in that part of speech. It runs after the OEWN ingest, whose
+// upsert clears old frequencies, and doesn't begin or commit a transaction.
+func Apply(ctx context.Context, db store.DBTX, r io.Reader) (Stats, error) {
 	var stats Stats
 
 	byTag, err := parse(r)
@@ -50,13 +48,7 @@ func Apply(ctx context.Context, pool *pgxpool.Pool, r io.Reader) (Stats, error) 
 		return stats, fmt.Errorf("Apply: %w", err)
 	}
 
-	tx, err := pool.Begin(ctx)
-	if err != nil {
-		return stats, fmt.Errorf("Apply, pool.Begin: %w", err)
-	}
-	defer tx.Rollback(ctx)
-
-	q := store.New(tx)
+	q := store.New(db)
 	var properNouns int64
 	for _, set := range []struct {
 		kind  string
@@ -92,7 +84,7 @@ func Apply(ctx context.Context, pool *pgxpool.Pool, r io.Reader) (Stats, error) 
 	}
 	stats.Nouns += properNouns
 
-	return stats, tx.Commit(ctx)
+	return stats, nil
 }
 
 // parse groups the words by part-of-speech tag, skipping the header row.

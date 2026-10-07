@@ -38,6 +38,15 @@ func main() {
 	}
 	defer db.Close()
 
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		log.Fatalf("begin: %v", err)
+	}
+	// Every step writes through tx, so any failure leaves the previous
+	// lexicon. log.Fatalf skips this, and the rollback happens when the
+	// connection closes.
+	defer tx.Rollback(ctx)
+
 	f, err := os.Open(path)
 	if err != nil {
 		log.Fatalf("open %s: %v", path, err)
@@ -57,7 +66,7 @@ func main() {
 	}
 
 	log.Printf("ingesting %s ...", path)
-	stats, err := oewn.Ingest(ctx, db, gz, glosses)
+	stats, err := oewn.Ingest(ctx, tx, gz, glosses)
 	if err != nil {
 		log.Fatalf("ingest: %v", err)
 	}
@@ -72,7 +81,7 @@ func main() {
 	defer pf.Close()
 
 	log.Printf("marking %s ...", separablePath)
-	separable, err := oewn.MarkSeparable(ctx, db, pf)
+	separable, err := oewn.MarkSeparable(ctx, tx, pf)
 	if err != nil {
 		log.Fatalf("separable: %v", err)
 	}
@@ -91,7 +100,7 @@ func main() {
 	defer sgz.Close()
 
 	log.Printf("applying %s ...", subtlexPath)
-	sstats, err := subtlex.Apply(ctx, db, sgz)
+	sstats, err := subtlex.Apply(ctx, tx, sgz)
 	if err != nil {
 		log.Fatalf("subtlex: %v", err)
 	}
@@ -106,13 +115,18 @@ func main() {
 	defer cf.Close()
 
 	log.Printf("seeding %s ...", closedClassPath)
-	cstats, err := closedclass.Seed(ctx, db, cf)
+	cstats, err := closedclass.Seed(ctx, tx, cf)
 	if err != nil {
 		log.Fatalf("seed: %v", err)
 	}
 
 	log.Printf("done: determiners=%d prepositions=%d pronouns=%d conjunctions=%d",
 		cstats.Determiners, cstats.Prepositions, cstats.Pronouns, cstats.Conjunctions)
+
+	if err := tx.Commit(ctx); err != nil {
+		log.Fatalf("commit: %v", err)
+	}
+	log.Print("committed")
 }
 
 // readGlosses is ingest's first pass over the OEWN file. Synsets follow

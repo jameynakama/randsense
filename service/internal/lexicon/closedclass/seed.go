@@ -10,8 +10,6 @@ import (
 	"slices"
 
 	"github.com/BurntSushi/toml"
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"github.com/jameynakama/randsense/internal/store"
 )
 
@@ -65,8 +63,10 @@ var (
 )
 
 // Seed validates r as closed-class TOML, then replaces the contents of all
-// four tables in one transaction. Invalid input writes nothing.
-func Seed(ctx context.Context, pool *pgxpool.Pool, r io.Reader) (Stats, error) {
+// four tables. Seed doesn't begin or commit a transaction: pass the ingest
+// run's. A validation error comes before any write, but a duplicate entry
+// fails at its insert, after the truncate, so the caller must roll back.
+func Seed(ctx context.Context, db store.DBTX, r io.Reader) (Stats, error) {
 	var f file
 	if _, err := toml.NewDecoder(r).Decode(&f); err != nil {
 		return Stats{}, fmt.Errorf("Seed, decode toml: %w", err)
@@ -75,13 +75,7 @@ func Seed(ctx context.Context, pool *pgxpool.Pool, r io.Reader) (Stats, error) {
 		return Stats{}, fmt.Errorf("Seed: %w", err)
 	}
 
-	tx, err := pool.Begin(ctx)
-	if err != nil {
-		return Stats{}, fmt.Errorf("Seed, pool.Begin: %w", err)
-	}
-	defer tx.Rollback(ctx)
-
-	q := store.New(tx)
+	q := store.New(db)
 
 	for _, tr := range []struct {
 		kind string
@@ -129,7 +123,7 @@ func Seed(ctx context.Context, pool *pgxpool.Pool, r io.Reader) (Stats, error) {
 		Pronouns:     len(f.Pronouns),
 		Conjunctions: len(f.Conjunctions),
 	}
-	return stats, tx.Commit(ctx)
+	return stats, nil
 }
 
 func (f file) validate() error {
