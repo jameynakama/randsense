@@ -398,6 +398,7 @@ func TestIngestRefreshesSourcedColumns(t *testing.T) {
 	_, err := testPool.Exec(ctx, `
 		UPDATE nouns SET definitions = '["hand edit"]', inflections = '{"plural":"x"}', plural_guess = FALSE, frequency = 9
 			WHERE lemma = 'Rastas';
+		UPDATE nouns SET plural_guess = TRUE WHERE lemma = 'goose';
 		UPDATE verbs SET frames = '["bogus"]', separable = TRUE, frequency = 9 WHERE lemma = 'devour';
 		UPDATE adjectives SET definitions = '["hand edit"]', frequency = 9;
 		UPDATE adverbs SET definitions = '["hand edit"]', frequency = 9;
