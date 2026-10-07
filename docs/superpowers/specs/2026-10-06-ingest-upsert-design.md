@@ -66,7 +66,8 @@ For each of `nouns`, `verbs`, `adjectives`, and `adverbs`:
 ## Ingest flow
 
 `cmd/ingest` begins one transaction, passes it to each step, and commits at the end. Each step takes
-a `pgx.Tx` instead of a pool and no longer begins or commits a transaction:
+a `store.DBTX` instead of a pool and no longer begins or commits a transaction. A transaction
+and a pool both satisfy `store.DBTX`, so tests keep passing the pool:
 
 1. `oewn.Ingest(ctx, tx, r, glosses)` parses with the same filters and frame mapping. It collects
    each table into an ordered map from lemma to pending row. A repeated lemma appends its
@@ -103,6 +104,7 @@ In `internal/lexicon/oewn`:
 - **Stale rows:** a seeded `oewn-2025` row whose lemma isn't in the fixture is deleted. A row from
   another source with a lemma the fixture lacks is kept.
 
-`subtlex`, `closedclass`, and the separable test pass a transaction and commit it. Their assertions
-don't change. There is no rollback test: once the steps take the caller's transaction, rollback is
-`cmd/ingest`'s job, and a test that rolls back its own transaction can't fail.
+The `subtlex` and separable tests don't change. The `closedclass` tests call `Seed` in a
+transaction, the way `cmd/ingest` does: a duplicate entry fails after the truncate, so "existing rows
+untouched" depends on the caller's rollback. There is no rollback test for `oewn.Ingest`: once the
+steps take the caller's transaction, rollback is `cmd/ingest`'s job.
