@@ -197,6 +197,7 @@ func loadVerbs(t *testing.T) *morph.Verbs {
 	base = "give"
 	third = "gives"
 	past = "gave"
+	past_participle = "given"
 	present_participle = "giving"
 	`))
 	if err != nil {

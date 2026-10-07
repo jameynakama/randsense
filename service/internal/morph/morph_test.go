@@ -49,6 +49,13 @@ past_participle = "panicked"
 present_participle = "panicking"
 
 [[irregular]]
+base = "take"
+third = "takes"
+past = "took"
+past_participle = "taken"
+present_participle = "taking"
+
+[[irregular]]
 base = "feed"
 third = "feeds"
 past = "fed"
@@ -163,6 +170,49 @@ func TestParticiple(t *testing.T) {
 				t.Errorf("expected %q; got %q", tc.want, got)
 			}
 		})
+	}
+}
+
+func TestPastParticiple(t *testing.T) {
+	v := loadVerbs(t)
+	tests := []struct {
+		lemma string
+		want  string
+	}{
+		{"walk", "walked"},
+		{"bake", "baked"},
+		{"carry", "carried"},
+		{"stop", "stopped"},
+		{"eat", "eaten"},
+		{"panic", "panicked"},
+		{"be", "been"},
+		{"give up", "given up"},
+		{"take care of", "taken care of"},
+		{"talk turkey", "talked turkey"},
+		{"stir fry", "stir fried"},
+		{"spoon-feed", "spoon-fed"},
+		{"double-check", "double-checked"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.lemma, func(t *testing.T) {
+			if got := v.PastParticiple(tc.lemma); got != tc.want {
+				t.Errorf("expected %q; got %q", tc.want, got)
+			}
+		})
+	}
+}
+
+func TestLoadVerbsRejectsIrregularWithoutPastParticiple(t *testing.T) {
+	_, err := morph.LoadVerbs(strings.NewReader(`
+	[[irregular]]
+	base = "eat"
+	third = "eats"
+	past = "ate"
+	present_participle = "eating"
+	`))
+	if err == nil || !strings.Contains(err.Error(), `"eat"`) {
+		t.Errorf("expected an error naming eat; got %v", err)
 	}
 }
 
@@ -293,6 +343,9 @@ func TestLoadVerbsMergesFiles(t *testing.T) {
 	}
 	if got := v.Participle("wine and dine"); got != "wining and dining" {
 		t.Errorf("expected wining and dining; got %q", got)
+	}
+	if got := v.PastParticiple("wine and dine"); got != "wined and dined" {
+		t.Errorf("expected wined and dined; got %q", got)
 	}
 }
 

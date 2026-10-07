@@ -45,6 +45,7 @@ type irregular struct {
 	Base              string `toml:"base"`
 	Third             string `toml:"third"`
 	Past              string `toml:"past"`
+	PastParticiple    string `toml:"past_participle"`
 	PresentParticiple string `toml:"present_participle"`
 }
 
@@ -77,6 +78,9 @@ func LoadVerbs(rs ...io.Reader) (*Verbs, error) {
 			v.compounds[c] = true
 		}
 		for _, irr := range f.Irregular {
+			if irr.PastParticiple == "" {
+				return nil, fmt.Errorf("morph: irregular %q has no past_participle", irr.Base)
+			}
 			v.irregular[irr.Base] = irr
 		}
 	}
@@ -109,6 +113,18 @@ func (v *Verbs) Participle(lemma string) string {
 	return strings.Join(words, " ")
 }
 
+// PastParticiple gives a verb lemma's past participle ("taken", "looked up"),
+// changing the same head word as Conjugate.
+func (v *Verbs) PastParticiple(lemma string) string {
+	if _, ok := v.irregular[lemma]; ok {
+		return v.pastParticipleWord(lemma)
+	}
+	words := strings.Fields(lemma)
+	head := v.head(words)
+	words[head] = v.pastParticipleWord(words[head])
+	return strings.Join(words, " ")
+}
+
 func (v *Verbs) head(words []string) int {
 	if v.compounds[strings.Join(words, " ")] {
 		return len(words) - 1
@@ -138,6 +154,19 @@ func (v *Verbs) participleWord(w string) string {
 	default:
 		return w + "ing"
 	}
+}
+
+func (v *Verbs) pastParticipleWord(w string) string {
+	if irr, ok := v.irregular[w]; ok {
+		return irr.PastParticiple
+	}
+	if i := strings.LastIndex(w, "-"); i >= 0 && !v.doubled[w] {
+		return w[:i+1] + v.pastParticipleWord(w[i+1:])
+	}
+	if w == "be" {
+		return "been"
+	}
+	return v.regularPast(w)
 }
 
 func (v *Verbs) conjugateWord(w string, t Tense, p Person, n Number) string {
@@ -176,6 +205,15 @@ func (v *Verbs) conjugateWord(w string, t Tense, p Person, n Number) string {
 		return addS(w)
 	case ok:
 		return irr.Past
+	default:
+		return v.regularPast(w)
+	}
+}
+
+// regularPast is the past form the spelling rules give a word with no
+// irregular paradigm.
+func (v *Verbs) regularPast(w string) string {
+	switch {
 	case v.doubled[w]:
 		return w + w[len(w)-1:] + "ed"
 	case strings.HasSuffix(w, "e"):
