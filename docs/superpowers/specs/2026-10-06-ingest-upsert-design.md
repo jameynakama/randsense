@@ -87,8 +87,6 @@ entries counts once.
 - `deploy.yml`'s `go build` phase also builds `bin/ingest`.
 - A new `ingest` phase runs `(cd service && bin/ingest)` after `migrate` and before `restart`.
   Data paths are relative to `service/`.
-- The README's "Deploys never ingest" paragraph and manual command are replaced by a line saying
-  deploy runs ingest. The roadmap's curation prerequisite in `CLAUDE.md` is removed.
 
 ## Testing
 

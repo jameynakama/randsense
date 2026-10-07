@@ -79,8 +79,9 @@ Don't reopen these without new evidence.
      are what flag words for review.
    - **Admin:** grow the frontend's flag viewer into a UI for disabling entries and setting
      `nouns.plural_override` (the plural heuristic misfires on Taos, Sauternes, and tabes).
-     Disable rather than delete: every deploy ingests, so a deleted OEWN row comes back. No user
-     accounts. psql on the server was rejected as the admin UX.
+     Disable rather than delete: every deploy ingests, so a deleted OEWN row comes back. Ingest
+     also rewrites every content row's `update_time`, so it can't record when a word was curated.
+     No user accounts. psql on the server was rejected as the admin UX.
 5. **LLM batch labeling** for curation.
 6. **More sentence types:**
    - passive voice, from transitive frames only; `verb_morphology.toml` already has past

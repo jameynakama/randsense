@@ -41,10 +41,8 @@ links to Wiktionary.
   maps synset ID to its `<Definition>` text, the second ingests entries and resolves their synset IDs
   to glosses, in sense order.
 - Several LexicalEntries can share a lemma and table: the `a` and `s` adjective codes, and
-  entries split by etymology. Inserts currently `DO NOTHING` on `(lemma, source)`, which would
-  retain only the first entry's glosses. The four content inserts instead append the new entry's
-  definitions to the existing row on conflict. Nothing else about the conflict changes: verb
-  frames still come from the first entry.
+  entries split by etymology. Ingest pools them into one row with every entry's glosses, in entry
+  order; verb frames come from the first entry. The ingest upsert design covers how.
 
 ## API
 
