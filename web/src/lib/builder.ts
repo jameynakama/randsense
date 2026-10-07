@@ -101,6 +101,7 @@ export function undo(b: Builder): Builder {
 const fixed = new Set([
 	'Comma',
 	'To',
+	'Be',
 	'Complementizer',
 	'Pronoun:it',
 	'Pronoun:reflexive',

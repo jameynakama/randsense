@@ -143,7 +143,7 @@ have `origin: "generated"`.
 A leaf with `"locked": true` keeps its `lemma` and is inflected again to agree, so a locked
 noun still follows its determiner. It must fit its slot, as a verb with the slot's frame or a
 pronoun of the slot's case, or the 422 says so. The commonness floor doesn't apply to it.
-Fixed words (a comma, `to`, a complementizer, `neither`, `nor`, a qualified preposition and
+Fixed words (a comma, `to`, `be`, a complementizer, `neither`, `nor`, a qualified preposition and
 `Pronoun:it`) and reflexives ignore a lock. A locked singular determiner keeps plural-only nouns
 ("Rastas") out of its noun phrase.
 

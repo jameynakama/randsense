@@ -72,6 +72,7 @@ describe('builder', () => {
 		['Conjunction:coordinating', true],
 		['Comma', false],
 		['To', false],
+		['Be', false],
 		['Complementizer:whether', false],
 		['Preposition:with', false],
 		['Pronoun:it', false],
