@@ -35,9 +35,11 @@ const (
 	Complementizer POS = "Complementizer"
 	// To marks an infinitive and is always "to".
 	To POS = "To"
+	// Be is the passive auxiliary and is always "be".
+	Be POS = "Be"
 )
 
-var allPOS = []POS{Noun, Verb, Adjective, Adverb, Determiner, Preposition, Pronoun, Conjunction, Comma, Complementizer, To}
+var allPOS = []POS{Noun, Verb, Adjective, Adverb, Determiner, Preposition, Pronoun, Conjunction, Comma, Complementizer, To, Be}
 
 // Frame is a verb's complement structure. A grammar can require one on a
 // verb slot: "Verb:transitive". A fixed-preposition frame ("transitive-with")
@@ -121,7 +123,7 @@ var qualifiers = map[POS][]string{
 		string(Weather), string(DummyThatClause),
 	},
 	Pronoun:        {"it", Genitive, Reflexive},
-	Preposition:    {"from", "into", "of", "on", "to", "with"},
+	Preposition:    {"by", "from", "into", "of", "on", "to", "with"},
 	Complementizer: {"whether"},
 	Conjunction:    {Coordinating, Subordinating, JoinsNPs, Neither, Nor},
 }

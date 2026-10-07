@@ -356,6 +356,14 @@ func TestLoadAcceptsAdjectiveComplements(t *testing.T) {
 	`)
 }
 
+func TestLoadAcceptsPassive(t *testing.T) {
+	mustLoad(t, `
+	[[rule]]
+	symbol = "S"
+	expansion = ["Noun", "Be", "Verb:transitive", "Preposition:by", "Noun"]
+	`)
+}
+
 func TestLoadAcceptsDummySubjects(t *testing.T) {
 	mustLoad(t, `
 	[[rule]]
