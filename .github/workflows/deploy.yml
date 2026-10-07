@@ -82,7 +82,7 @@ jobs:
               git fetch origin main
               git reset --hard FETCH_HEAD
               phase "go build"
-              (cd service && /usr/local/go/bin/go build -o bin/randsense ./cmd/server)
+              (cd service && /usr/local/go/bin/go build -o bin/randsense ./cmd/server && /usr/local/go/bin/go build -o bin/ingest ./cmd/ingest)
               phase "npm ci"
               (cd web && npm ci)
               phase "web build"
@@ -90,6 +90,8 @@ jobs:
               phase "migrate"
               set -a && . ./.env && set +a
               migrate -path service/migrations -database "$DATABASE_URL" up
+              phase "ingest"
+              (cd service && bin/ingest)
               phase "restart"
               sudo systemctl restart randsense-api < /dev/null > /dev/null 2>&1
               sudo systemctl restart randsense-web < /dev/null > /dev/null 2>&1

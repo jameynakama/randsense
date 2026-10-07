@@ -208,13 +208,8 @@ Node server as systemd units on localhost. `deploy/` holds the nginx site, the u
 sudoers rule as installed; changes to them are applied by hand.
 
 Pushing to `main` runs `.github/workflows/deploy.yml`: the full test suite, then a deploy as the
-`deploy` user that pulls, builds, migrates and restarts both services. Production settings live in
+`deploy` user that pulls, builds, migrates, ingests, and restarts both services. Production settings live in
 `/app/randsense/.env` on the droplet.
 
-Deploys never ingest, since ingest truncates and reloads the lexicon. Run it by hand after a
-lexicon change:
-
-```bash
-ssh root@randsense.online
-cd /app/randsense/service && sudo -u deploy bash -c 'set -a && . ../.env && set +a && /usr/local/go/bin/go run ./cmd/ingest'
-```
+Ingest updates the lexicon in place and keeps curation (`active`, `vote_count`, and
+`nouns.plural_override`), so every deploy runs it. Lexicon changes ship with the code.

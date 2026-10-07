@@ -49,6 +49,10 @@ Don't reopen these without new evidence.
 - **Separable verbs are syntax only.** `service/data/lexicon/separable_verbs.toml` lists multiword
   verbs whose object goes after the head verb ("look it up", "set the goose on fire"). An idiom
   is listed only when the other order breaks the syntax, never to keep its meaning.
+- **Ingest keeps curation.** Every deploy runs ingest, which upserts the content-word tables
+  in one transaction: sourced columns are replaced and derived ones reset, while `active`,
+  `vote_count`, and `nouns.plural_override` are never written. Rows whose lemma leaves the
+  sources are deleted. A new curated column must stay out of the upserts' `SET` lists.
 - **One test database per package.** `go test ./...` runs packages in parallel, and each
   database-backed package drops and recreates its database. Each derives its own name from
   `TEST_DATABASE_URL` with a package suffix (`_api`, `_oewn`); a new one needs its own.
@@ -73,13 +77,10 @@ Don't reopen these without new evidence.
 4. **Curation loop, after the frontend.**
    - **Flags are the votes:** the frontend's flags, with their copied lemma and part of speech,
      are what flag words for review.
-   - **Admin:** grow the frontend's flag viewer into a UI for disabling or removing entries.
-     No user accounts. psql on the server was rejected as the admin UX.
-   - **Prerequisite:** ingest currently truncates and reloads, which would wipe `active`,
-     `vote_count` and corrections to the heuristic `nouns.plural` flag. That flag misfires on
-     Taos, Sauternes and tabes. The content inserts also rely on the truncate: OEWN entries
-     sharing a lemma append their `definitions` on conflict, so an ingest that keeps rows must
-     reset `definitions` first or every run doubles them.
+   - **Admin:** grow the frontend's flag viewer into a UI for disabling entries and setting
+     `nouns.plural_override` (the plural heuristic misfires on Taos, Sauternes, and tabes).
+     Disable rather than delete: every deploy ingests, so a deleted OEWN row comes back. No user
+     accounts. psql on the server was rejected as the admin UX.
 5. **LLM batch labeling** for curation.
 6. **More sentence types:**
    - passive voice, from transitive frames only; `verb_morphology.toml` already has past
@@ -88,8 +89,8 @@ Don't reopen these without new evidence.
    - conditionals
 7. **Compiled lexicon, once a base version feels done.** Build every source (OEWN, SUBTLEX-US,
    `mislabeled`, the `service/data/lexicon/` lists) into one versioned file that ingest loads
-   and that can be shared as research. It could also become where curation corrections live, so they
-   survive re-ingest. Gzipped JSON Lines diffs well; WN-LMF XML fits poorly once synsets are
+   and that can be shared as research. It could also carry curation corrections, so they travel with
+   the lexicon. Gzipped JSON Lines diffs well; WN-LMF XML fits poorly once synsets are
    gone. Check whether SUBTLEX-US and SPECIALIST allow redistribution before publishing; OEWN is
    CC BY 4.0.
 
