@@ -1,12 +1,29 @@
--- name: InsertVerb :exec
--- OEWN entries that share a lemma pool their definitions; frames come from
--- the first.
-INSERT INTO verbs (lemma, inflections, frames, definitions, source)
-VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (lemma, source) DO UPDATE SET definitions = verbs.definitions || EXCLUDED.definitions;
+-- name: UpsertVerbs :exec
+-- One row per lemma: ingest pools the entries sharing one first, since an
+-- upsert can't hit the same row twice. Sourced columns are replaced and
+-- derived ones reset for the later ingest passes. Curated columns
+-- (active, vote_count) are never written.
+INSERT INTO verbs (lemma, frames, definitions, source)
+SELECT run.lemma, run.frames::jsonb, run.definitions::jsonb, @source::text
+FROM (
+    SELECT unnest(@lemmas::text[]) AS lemma,
+           unnest(@frames::text[]) AS frames,
+           unnest(@definitions::text[]) AS definitions
+) run
+ON CONFLICT (lemma, source) DO UPDATE SET
+    frames      = EXCLUDED.frames,
+    definitions = EXCLUDED.definitions,
+    frequency   = NULL,
+    separable   = FALSE;
 
--- name: TruncateVerbs :exec
-TRUNCATE verbs RESTART IDENTITY CASCADE;
+-- name: DeleteStaleVerbs :exec
+-- An anti-join, not <> ALL, which would compare every row with every lemma.
+DELETE FROM verbs
+WHERE source = @source::text
+  AND NOT EXISTS (
+    SELECT 1 FROM (SELECT unnest(@lemmas::text[]) AS lemma) run
+    WHERE run.lemma = verbs.lemma
+  );
 
 -- name: CountVerbs :one
 SELECT COUNT(*) FROM verbs;

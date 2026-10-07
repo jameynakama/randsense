@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"github.com/jameynakama/randsense/internal/store"
 )
 
@@ -15,7 +13,7 @@ import (
 // column so later ingest passes can reconcile rows by lemma+source.
 const SourceName = "oewn-2025"
 
-// Stats reports per-POS row counts from a successful Ingest run, plus a
+// Stats reports how many distinct lemmas Ingest wrote per POS, plus a
 // Skipped count covering both filtered-out lemmas (failed AllowLemma) and
 // entries with a POS code we don't handle.
 type Stats struct {
@@ -27,47 +25,119 @@ type Stats struct {
 }
 
 // Ingest streams r as OEW WN-LMF XML, applies AllowLemma (and AllowNoun for
-// nouns, AllowAdjective for adjectives), dispatches each entry to the per-POS
-// table by Entry.POS with its definitions from glosses, and inserts, then
-// marks nouns whose lemma is already plural. The whole run is
-// one transaction -- any error rolls back. Each per-POS table is
-// truncated first so re-runs produce identical state regardless of prior
-// content (idempotency by clean slate).
+// nouns, AllowAdjective for adjectives), and groups each entry by lemma into
+// its per-POS table with its definitions from glosses. Each table is then
+// made to match the run: rows from SourceName whose lemma the run lacks are
+// deleted, and the rest are upserted, which replaces sourced columns, resets
+// derived ones, and never writes curated ones. Last, it marks nouns whose
+// lemma is already plural.
+//
+// Ingest doesn't begin or commit a transaction: pass the run's transaction
+// as db, so a failure in any ingest step leaves the previous lexicon.
 //
 // Pass the gzipped XML pre-wrapped in a gzip.Reader if you're reading
 // data/oewn-2025/english-wordnet-2025.xml.gz; Ingest itself only cares
 // that it gets parseable XML bytes.
-func Ingest(ctx context.Context, pool *pgxpool.Pool, r io.Reader, glosses map[string]string) (Stats, error) {
+func Ingest(ctx context.Context, db store.DBTX, r io.Reader, glosses map[string]string) (Stats, error) {
 	var stats Stats
+	var nouns, verbs, adjectives, adverbs table
 
-	tx, err := pool.Begin(ctx)
-	if err != nil {
-		return stats, fmt.Errorf("Ingest, pool.Begin: %v", err)
-	}
-	defer tx.Rollback(ctx)
-
-	q := store.New(tx)
-
-	for _, tr := range []struct {
-		kind string
-		op   func(context.Context) error
-	}{
-		{"Nouns", q.TruncateNouns},
-		{"Verbs", q.TruncateVerbs},
-		{"Adjectives", q.TruncateAdjectives},
-		{"Adverbs", q.TruncateAdverbs},
-	} {
-		err := tr.op(ctx)
-		if err != nil {
-			return stats, fmt.Errorf("Ingest, Truncate%s: %v", tr.kind, err)
+	err := Parse(r, func(e Entry) error {
+		if !AllowLemma(e.Lemma) {
+			stats.Skipped++
+			return nil
 		}
-	}
+		defs := definitions(e.Synsets, glosses)
 
-	err = Parse(r, func(e Entry) error {
-		return ingestEntry(ctx, q, e, glosses, &stats)
+		switch e.POS {
+		case "n":
+			if !AllowNoun(e.Lemma) {
+				stats.Skipped++
+				return nil
+			}
+			infl, err := nounInflectionsJSON(e.Forms)
+			if err != nil {
+				return err
+			}
+			nouns.add(e.Lemma, row{inflections: string(infl), definitions: defs})
+		case "v":
+			frames, err := verbFramesJSON(e.Lemma, e.Frames)
+			if err != nil {
+				return err
+			}
+			verbs.add(e.Lemma, row{frames: string(frames), definitions: defs})
+		case "a", "s":
+			if !AllowAdjective(e.Lemma, e.Cardinal) {
+				stats.Skipped++
+				return nil
+			}
+			adjectives.add(e.Lemma, row{definitions: defs})
+		case "r":
+			adverbs.add(e.Lemma, row{definitions: defs})
+		default:
+			// Anything else (proper-name codes, unknowns) gets skipped.
+			stats.Skipped++
+		}
+		return nil
 	})
 	if err != nil {
 		return stats, fmt.Errorf("Ingest, Parse: %v", err)
+	}
+
+	q := store.New(db)
+	for _, w := range []struct {
+		kind   string
+		t      *table
+		count  *int
+		delete func() error
+		upsert func(defs []string) error
+	}{
+		{"Nouns", &nouns, &stats.Nouns,
+			func() error {
+				return q.DeleteStaleNouns(ctx, store.DeleteStaleNounsParams{Source: SourceName, Lemmas: nouns.lemmas})
+			},
+			func(defs []string) error {
+				return q.UpsertNouns(ctx, store.UpsertNounsParams{
+					Lemmas: nouns.lemmas, Inflections: nouns.column(func(r *row) string { return r.inflections }),
+					Definitions: defs, Source: SourceName,
+				})
+			}},
+		{"Verbs", &verbs, &stats.Verbs,
+			func() error {
+				return q.DeleteStaleVerbs(ctx, store.DeleteStaleVerbsParams{Source: SourceName, Lemmas: verbs.lemmas})
+			},
+			func(defs []string) error {
+				return q.UpsertVerbs(ctx, store.UpsertVerbsParams{
+					Lemmas: verbs.lemmas, Frames: verbs.column(func(r *row) string { return r.frames }),
+					Definitions: defs, Source: SourceName,
+				})
+			}},
+		{"Adjectives", &adjectives, &stats.Adjectives,
+			func() error {
+				return q.DeleteStaleAdjectives(ctx, store.DeleteStaleAdjectivesParams{Source: SourceName, Lemmas: adjectives.lemmas})
+			},
+			func(defs []string) error {
+				return q.UpsertAdjectives(ctx, store.UpsertAdjectivesParams{Lemmas: adjectives.lemmas, Definitions: defs, Source: SourceName})
+			}},
+		{"Adverbs", &adverbs, &stats.Adverbs,
+			func() error {
+				return q.DeleteStaleAdverbs(ctx, store.DeleteStaleAdverbsParams{Source: SourceName, Lemmas: adverbs.lemmas})
+			},
+			func(defs []string) error {
+				return q.UpsertAdverbs(ctx, store.UpsertAdverbsParams{Lemmas: adverbs.lemmas, Definitions: defs, Source: SourceName})
+			}},
+	} {
+		if err := w.delete(); err != nil {
+			return stats, fmt.Errorf("Ingest, DeleteStale%s: %v", w.kind, err)
+		}
+		defs, err := w.t.definitionsColumn()
+		if err != nil {
+			return stats, fmt.Errorf("Ingest, %s definitions: %v", w.kind, err)
+		}
+		if err := w.upsert(defs); err != nil {
+			return stats, fmt.Errorf("Ingest, Upsert%s: %v", w.kind, err)
+		}
+		*w.count = len(w.t.lemmas)
 	}
 
 	// Runs after every noun is in, since a singular can follow its plural.
@@ -75,88 +145,58 @@ func Ingest(ctx context.Context, pool *pgxpool.Pool, r io.Reader, glosses map[st
 		return stats, fmt.Errorf("Ingest, MarkPluralNouns: %v", err)
 	}
 
-	return stats, tx.Commit(ctx)
+	return stats, nil
 }
 
-// ingestEntry routes a single Entry to its table. Unknown POS codes increment
-// Skipped; lemmas that fail AllowLemma are also Skipped.
-func ingestEntry(ctx context.Context, q *store.Queries, e Entry, glosses map[string]string, stats *Stats) error {
-	if !AllowLemma(e.Lemma) {
-		stats.Skipped++
-		return nil
-	}
-	defs, err := definitionsJSON(e.Synsets, glosses)
-	if err != nil {
-		return err
-	}
+// row is one lemma's sourced columns. inflections is set for nouns and
+// frames for verbs, both as JSON.
+type row struct {
+	inflections string
+	frames      string
+	definitions []string
+}
 
-	switch e.POS {
-	case "n":
-		if !AllowNoun(e.Lemma) {
-			stats.Skipped++
-			return nil
-		}
-		infl, err := nounInflectionsJSON(e.Forms)
-		if err != nil {
-			return err
-		}
-		err = q.InsertNoun(ctx, store.InsertNounParams{
-			Lemma:       e.Lemma,
-			Inflections: infl,
-			Definitions: defs,
-			Source:      SourceName,
-		})
-		if err != nil {
-			return err
-		}
-		stats.Nouns++
-	case "v":
-		frames, err := verbFramesJSON(e.Lemma, e.Frames)
-		if err != nil {
-			return err
-		}
-		err = q.InsertVerb(ctx, store.InsertVerbParams{
-			Lemma:       e.Lemma,
-			Inflections: []byte("{}"),
-			Frames:      frames,
-			Definitions: defs,
-			Source:      SourceName,
-		})
-		if err != nil {
-			return err
-		}
-		stats.Verbs++
-	case "a", "s":
-		if !AllowAdjective(e.Lemma, e.Cardinal) {
-			stats.Skipped++
-			return nil
-		}
-		err = q.InsertAdjective(ctx, store.InsertAdjectiveParams{
-			Lemma:       e.Lemma,
-			Inflections: []byte("{}"),
-			Definitions: defs,
-			Source:      SourceName,
-		})
-		if err != nil {
-			return err
-		}
-		stats.Adjectives++
-	case "r":
-		err = q.InsertAdverb(ctx, store.InsertAdverbParams{
-			Lemma:       e.Lemma,
-			Inflections: []byte("{}"),
-			Definitions: defs,
-			Source:      SourceName,
-		})
-		if err != nil {
-			return err
-		}
-		stats.Adverbs++
-	default:
-		// Anything else (proper-name codes, unknowns) gets skipped.
-		stats.Skipped++
+// table is one part of speech's rows by lemma, in first-seen order.
+type table struct {
+	lemmas []string
+	rows   map[string]*row
+}
+
+// add pools entries that share a lemma: the first supplies inflections and
+// frames, and each later one appends its definitions.
+func (t *table) add(lemma string, r row) {
+	if prev, ok := t.rows[lemma]; ok {
+		prev.definitions = append(prev.definitions, r.definitions...)
+		return
 	}
-	return nil
+	if t.rows == nil {
+		t.rows = map[string]*row{}
+	}
+	t.lemmas = append(t.lemmas, lemma)
+	t.rows[lemma] = &r
+}
+
+// column is one field of every row, in lemma order, for an upsert array.
+func (t *table) column(field func(*row) string) []string {
+	col := make([]string, len(t.lemmas))
+	for i, l := range t.lemmas {
+		col[i] = field(t.rows[l])
+	}
+	return col
+}
+
+// definitionsColumn is every row's definitions as a JSON array, in lemma
+// order.
+func (t *table) definitionsColumn() ([]string, error) {
+	col := make([]string, len(t.lemmas))
+	for i, l := range t.lemmas {
+		b, err := json.Marshal(t.rows[l].definitions)
+		if err != nil {
+			return nil, err
+		}
+		col[i] = string(b)
+	}
+	return col, nil
 }
 
 // nounInflectionsJSON converts the parser's Forms slice into the JSONB
@@ -176,14 +216,14 @@ func verbFramesJSON(lemma string, codes []string) ([]byte, error) {
 	return json.Marshal(MapFrames(lemma, codes))
 }
 
-// definitionsJSON is the glosses of synsets, in sense order, as a JSON
-// array. A synset without a gloss is skipped.
-func definitionsJSON(synsets []string, glosses map[string]string) ([]byte, error) {
+// definitions is the glosses of synsets, in sense order. A synset without a
+// gloss is skipped. It is never nil, so a row with no glosses stores [].
+func definitions(synsets []string, glosses map[string]string) []string {
 	defs := []string{}
 	for _, id := range synsets {
 		if g, ok := glosses[id]; ok {
 			defs = append(defs, g)
 		}
 	}
-	return json.Marshal(defs)
+	return defs
 }

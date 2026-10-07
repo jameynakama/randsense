@@ -16,6 +16,14 @@ type Querier interface {
 	CountAdverbs(ctx context.Context) (int64, error)
 	CountNouns(ctx context.Context) (int64, error)
 	CountVerbs(ctx context.Context) (int64, error)
+	// An anti-join, not <> ALL, which would compare every row with every lemma.
+	DeleteStaleAdjectives(ctx context.Context, arg DeleteStaleAdjectivesParams) error
+	// An anti-join, not <> ALL, which would compare every row with every lemma.
+	DeleteStaleAdverbs(ctx context.Context, arg DeleteStaleAdverbsParams) error
+	// An anti-join, not <> ALL, which would compare every row with every lemma.
+	DeleteStaleNouns(ctx context.Context, arg DeleteStaleNounsParams) error
+	// An anti-join, not <> ALL, which would compare every row with every lemma.
+	DeleteStaleVerbs(ctx context.Context, arg DeleteStaleVerbsParams) error
 	GetAdjectiveByLemma(ctx context.Context, lemma string) (Adjective, error)
 	// Active or not: an old sentence's word still shows its meaning.
 	GetAdjectiveDefinitions(ctx context.Context, lemma string) ([]byte, error)
@@ -45,21 +53,12 @@ type Querier interface {
 	GetVerbByLemma(ctx context.Context, lemma string) (Verb, error)
 	// Active or not: an old sentence's word still shows its meaning.
 	GetVerbDefinitions(ctx context.Context, lemma string) ([]byte, error)
-	// OEWN entries that share a lemma pool their definitions.
-	InsertAdjective(ctx context.Context, arg InsertAdjectiveParams) error
-	// OEWN entries that share a lemma pool their definitions.
-	InsertAdverb(ctx context.Context, arg InsertAdverbParams) error
 	InsertConjunction(ctx context.Context, arg InsertConjunctionParams) error
 	InsertDeterminer(ctx context.Context, arg InsertDeterminerParams) error
 	InsertFlag(ctx context.Context, arg InsertFlagParams) (int64, error)
-	// OEWN entries that share a lemma pool their definitions.
-	InsertNoun(ctx context.Context, arg InsertNounParams) error
 	InsertPreposition(ctx context.Context, lemma string) error
 	InsertPronoun(ctx context.Context, arg InsertPronounParams) error
 	InsertSentence(ctx context.Context, arg InsertSentenceParams) (Sentence, error)
-	// OEWN entries that share a lemma pool their definitions; frames come from
-	// the first.
-	InsertVerb(ctx context.Context, arg InsertVerbParams) error
 	ListConjunctions(ctx context.Context) ([]Conjunction, error)
 	ListDeterminers(ctx context.Context) ([]Determiner, error)
 	ListFlaggedWords(ctx context.Context, arg ListFlaggedWordsParams) ([]ListFlaggedWordsRow, error)
@@ -102,14 +101,30 @@ type Querier interface {
 	SetSeparableVerbs(ctx context.Context, lemmas []string) (int64, error)
 	// Words are lowercase, so only lowercase lemmas match.
 	SetVerbFrequencies(ctx context.Context, arg SetVerbFrequenciesParams) (int64, error)
-	TruncateAdjectives(ctx context.Context) error
-	TruncateAdverbs(ctx context.Context) error
 	TruncateConjunctions(ctx context.Context) error
 	TruncateDeterminers(ctx context.Context) error
-	TruncateNouns(ctx context.Context) error
 	TruncatePrepositions(ctx context.Context) error
 	TruncatePronouns(ctx context.Context) error
-	TruncateVerbs(ctx context.Context) error
+	// One row per lemma: ingest pools the entries sharing one first, since an
+	// upsert can't hit the same row twice. Sourced columns are replaced and
+	// derived ones reset for the later ingest passes. Curated columns
+	// (active, vote_count) are never written.
+	UpsertAdjectives(ctx context.Context, arg UpsertAdjectivesParams) error
+	// One row per lemma: ingest pools the entries sharing one first, since an
+	// upsert can't hit the same row twice. Sourced columns are replaced and
+	// derived ones reset for the later ingest passes. Curated columns
+	// (active, vote_count) are never written.
+	UpsertAdverbs(ctx context.Context, arg UpsertAdverbsParams) error
+	// One row per lemma: ingest pools the entries sharing one first, since an
+	// upsert can't hit the same row twice. Sourced columns are replaced and
+	// derived ones reset for the later ingest passes. Curated columns
+	// (active, vote_count, plural_override) are never written.
+	UpsertNouns(ctx context.Context, arg UpsertNounsParams) error
+	// One row per lemma: ingest pools the entries sharing one first, since an
+	// upsert can't hit the same row twice. Sourced columns are replaced and
+	// derived ones reset for the later ingest passes. Curated columns
+	// (active, vote_count) are never written.
+	UpsertVerbs(ctx context.Context, arg UpsertVerbsParams) error
 }
 
 var _ Querier = (*Queries)(nil)

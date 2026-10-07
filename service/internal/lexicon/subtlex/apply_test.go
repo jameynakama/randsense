@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -22,23 +23,29 @@ func seedLexicon(t *testing.T) {
 	}
 	// "In" (indium) must not pick up the frequency of "in", and "john" (the
 	// toilet) must not pick up the frequency of the name.
-	for _, lemma := range []string{"goose", "America", "john", "In", "hot dog"} {
-		if err := q.InsertNoun(ctx, store.InsertNounParams{Lemma: lemma, Inflections: []byte("{}"), Definitions: []byte("[]"), Source: "test"}); err != nil {
-			t.Fatalf("InsertNoun(%s): %v", lemma, err)
-		}
+	nouns := []string{"goose", "America", "john", "In", "hot dog"}
+	if err := q.UpsertNouns(ctx, store.UpsertNounsParams{
+		Lemmas: nouns, Inflections: repeat("{}", len(nouns)), Definitions: repeat("[]", len(nouns)), Source: "test",
+	}); err != nil {
+		t.Fatalf("UpsertNouns: %v", err)
 	}
 	// SUBTLEX only has "baby" as a noun, so the verb gets no frequency.
-	for _, lemma := range []string{"devour", "baby"} {
-		if err := q.InsertVerb(ctx, store.InsertVerbParams{Lemma: lemma, Inflections: []byte("{}"), Frames: []byte("[]"), Definitions: []byte("[]"), Source: "test"}); err != nil {
-			t.Fatalf("InsertVerb(%s): %v", lemma, err)
-		}
+	verbs := []string{"devour", "baby"}
+	if err := q.UpsertVerbs(ctx, store.UpsertVerbsParams{
+		Lemmas: verbs, Frames: repeat("[]", len(verbs)), Definitions: repeat("[]", len(verbs)), Source: "test",
+	}); err != nil {
+		t.Fatalf("UpsertVerbs: %v", err)
 	}
-	if err := q.InsertAdjective(ctx, store.InsertAdjectiveParams{Lemma: "good", Inflections: []byte("{}"), Definitions: []byte("[]"), Source: "test"}); err != nil {
-		t.Fatalf("InsertAdjective: %v", err)
+	if err := q.UpsertAdjectives(ctx, store.UpsertAdjectivesParams{Lemmas: []string{"good"}, Definitions: []string{"[]"}, Source: "test"}); err != nil {
+		t.Fatalf("UpsertAdjectives: %v", err)
 	}
-	if err := q.InsertAdverb(ctx, store.InsertAdverbParams{Lemma: "quickly", Inflections: []byte("{}"), Definitions: []byte("[]"), Source: "test"}); err != nil {
-		t.Fatalf("InsertAdverb: %v", err)
+	if err := q.UpsertAdverbs(ctx, store.UpsertAdverbsParams{Lemmas: []string{"quickly"}, Definitions: []string{"[]"}, Source: "test"}); err != nil {
+		t.Fatalf("UpsertAdverbs: %v", err)
 	}
+}
+
+func repeat(s string, n int) []string {
+	return slices.Repeat([]string{s}, n)
 }
 
 func frequency(t *testing.T, table, lemma string) *float64 {

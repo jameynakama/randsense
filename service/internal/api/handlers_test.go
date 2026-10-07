@@ -36,36 +36,23 @@ func seedWords(t *testing.T) {
 		t.Fatalf("seedWords#truncate: %v", err)
 	}
 
-	if err := q.InsertNoun(ctx, store.InsertNounParams{
-		Lemma:       "goose",
-		Inflections: []byte(`{"plural":"geese"}`),
-		Definitions: []byte(`[]`),
-		Source:      "test",
+	if err := q.UpsertNouns(ctx, store.UpsertNounsParams{
+		Lemmas: []string{"goose"}, Inflections: []string{`{"plural":"geese"}`}, Definitions: []string{`[]`}, Source: "test",
 	}); err != nil {
 		t.Fatalf("seed noun: %v", err)
 	}
-	if err := q.InsertVerb(ctx, store.InsertVerbParams{
-		Lemma:       "devour",
-		Inflections: []byte(`{}`),
-		Frames:      []byte(`["transitive"]`),
-		Definitions: []byte(`[]`),
-		Source:      "test",
+	if err := q.UpsertVerbs(ctx, store.UpsertVerbsParams{
+		Lemmas: []string{"devour"}, Frames: []string{`["transitive"]`}, Definitions: []string{`[]`}, Source: "test",
 	}); err != nil {
 		t.Fatalf("seed verb: %v", err)
 	}
-	if err := q.InsertAdjective(ctx, store.InsertAdjectiveParams{
-		Lemma:       "good",
-		Inflections: []byte(`{}`),
-		Definitions: []byte(`[]`),
-		Source:      "test",
+	if err := q.UpsertAdjectives(ctx, store.UpsertAdjectivesParams{
+		Lemmas: []string{"good"}, Definitions: []string{`[]`}, Source: "test",
 	}); err != nil {
 		t.Fatalf("seed adjective: %v", err)
 	}
-	if err := q.InsertAdverb(ctx, store.InsertAdverbParams{
-		Lemma:       "quickly",
-		Inflections: []byte(`{}`),
-		Definitions: []byte(`[]`),
-		Source:      "test",
+	if err := q.UpsertAdverbs(ctx, store.UpsertAdverbsParams{
+		Lemmas: []string{"quickly"}, Definitions: []string{`[]`}, Source: "test",
 	}); err != nil {
 		t.Fatalf("seed adverb: %v", err)
 	}
@@ -252,11 +239,8 @@ func TestInvalidCommonnessReturns400(t *testing.T) {
 func seedRareNoun(t *testing.T) {
 	t.Helper()
 	ctx := context.Background()
-	if err := store.New(testPool).InsertNoun(ctx, store.InsertNounParams{
-		Lemma:       "goffer",
-		Inflections: []byte(`{}`),
-		Definitions: []byte(`[]`),
-		Source:      "test",
+	if err := store.New(testPool).UpsertNouns(ctx, store.UpsertNounsParams{
+		Lemmas: []string{"goffer"}, Inflections: []string{`{}`}, Definitions: []string{`[]`}, Source: "test",
 	}); err != nil {
 		t.Fatalf("seed noun: %v", err)
 	}

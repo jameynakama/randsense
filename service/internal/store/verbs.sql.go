@@ -20,6 +20,26 @@ func (q *Queries) CountVerbs(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const deleteStaleVerbs = `-- name: DeleteStaleVerbs :exec
+DELETE FROM verbs
+WHERE source = $1::text
+  AND NOT EXISTS (
+    SELECT 1 FROM (SELECT unnest($2::text[]) AS lemma) run
+    WHERE run.lemma = verbs.lemma
+  )
+`
+
+type DeleteStaleVerbsParams struct {
+	Source string   `db:"source" json:"source"`
+	Lemmas []string `db:"lemmas" json:"lemmas"`
+}
+
+// An anti-join, not <> ALL, which would compare every row with every lemma.
+func (q *Queries) DeleteStaleVerbs(ctx context.Context, arg DeleteStaleVerbsParams) error {
+	_, err := q.db.Exec(ctx, deleteStaleVerbs, arg.Source, arg.Lemmas)
+	return err
+}
+
 const getRandomVerb = `-- name: GetRandomVerb :one
 SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable, definitions FROM verbs
 WHERE active AND coalesce(frequency, 0) >= $1::float8
@@ -126,33 +146,6 @@ func (q *Queries) GetVerbDefinitions(ctx context.Context, lemma string) ([]byte,
 	return definitions, err
 }
 
-const insertVerb = `-- name: InsertVerb :exec
-INSERT INTO verbs (lemma, inflections, frames, definitions, source)
-VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (lemma, source) DO UPDATE SET definitions = verbs.definitions || EXCLUDED.definitions
-`
-
-type InsertVerbParams struct {
-	Lemma       string `db:"lemma" json:"lemma"`
-	Inflections []byte `db:"inflections" json:"inflections"`
-	Frames      []byte `db:"frames" json:"frames"`
-	Definitions []byte `db:"definitions" json:"definitions"`
-	Source      string `db:"source" json:"source"`
-}
-
-// OEWN entries that share a lemma pool their definitions; frames come from
-// the first.
-func (q *Queries) InsertVerb(ctx context.Context, arg InsertVerbParams) error {
-	_, err := q.db.Exec(ctx, insertVerb,
-		arg.Lemma,
-		arg.Inflections,
-		arg.Frames,
-		arg.Definitions,
-		arg.Source,
-	)
-	return err
-}
-
 const lookupVerb = `-- name: LookupVerb :one
 SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable, definitions FROM verbs
 WHERE active AND lemma = $1 AND ($2::text = '' OR frames ? $2::text)
@@ -221,11 +214,38 @@ func (q *Queries) SetVerbFrequencies(ctx context.Context, arg SetVerbFrequencies
 	return result.RowsAffected(), nil
 }
 
-const truncateVerbs = `-- name: TruncateVerbs :exec
-TRUNCATE verbs RESTART IDENTITY CASCADE
+const upsertVerbs = `-- name: UpsertVerbs :exec
+INSERT INTO verbs (lemma, frames, definitions, source)
+SELECT run.lemma, run.frames::jsonb, run.definitions::jsonb, $1::text
+FROM (
+    SELECT unnest($2::text[]) AS lemma,
+           unnest($3::text[]) AS frames,
+           unnest($4::text[]) AS definitions
+) run
+ON CONFLICT (lemma, source) DO UPDATE SET
+    frames      = EXCLUDED.frames,
+    definitions = EXCLUDED.definitions,
+    frequency   = NULL,
+    separable   = FALSE
 `
 
-func (q *Queries) TruncateVerbs(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, truncateVerbs)
+type UpsertVerbsParams struct {
+	Source      string   `db:"source" json:"source"`
+	Lemmas      []string `db:"lemmas" json:"lemmas"`
+	Frames      []string `db:"frames" json:"frames"`
+	Definitions []string `db:"definitions" json:"definitions"`
+}
+
+// One row per lemma: ingest pools the entries sharing one first, since an
+// upsert can't hit the same row twice. Sourced columns are replaced and
+// derived ones reset for the later ingest passes. Curated columns
+// (active, vote_count) are never written.
+func (q *Queries) UpsertVerbs(ctx context.Context, arg UpsertVerbsParams) error {
+	_, err := q.db.Exec(ctx, upsertVerbs,
+		arg.Source,
+		arg.Lemmas,
+		arg.Frames,
+		arg.Definitions,
+	)
 	return err
 }

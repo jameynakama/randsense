@@ -20,6 +20,26 @@ func (q *Queries) CountNouns(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const deleteStaleNouns = `-- name: DeleteStaleNouns :exec
+DELETE FROM nouns
+WHERE source = $1::text
+  AND NOT EXISTS (
+    SELECT 1 FROM (SELECT unnest($2::text[]) AS lemma) run
+    WHERE run.lemma = nouns.lemma
+  )
+`
+
+type DeleteStaleNounsParams struct {
+	Source string   `db:"source" json:"source"`
+	Lemmas []string `db:"lemmas" json:"lemmas"`
+}
+
+// An anti-join, not <> ALL, which would compare every row with every lemma.
+func (q *Queries) DeleteStaleNouns(ctx context.Context, arg DeleteStaleNounsParams) error {
+	_, err := q.db.Exec(ctx, deleteStaleNouns, arg.Source, arg.Lemmas)
+	return err
+}
+
 const getNounByLemma = `-- name: GetNounByLemma :one
 SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural_guess, definitions, plural_override, plural FROM nouns
 WHERE lemma = $1
@@ -124,30 +144,6 @@ func (q *Queries) GetRandomSingularNoun(ctx context.Context, commonness float64)
 	return i, err
 }
 
-const insertNoun = `-- name: InsertNoun :exec
-INSERT INTO nouns (lemma, inflections, definitions, source)
-VALUES ($1, $2, $3, $4)
-ON CONFLICT (lemma, source) DO UPDATE SET definitions = nouns.definitions || EXCLUDED.definitions
-`
-
-type InsertNounParams struct {
-	Lemma       string `db:"lemma" json:"lemma"`
-	Inflections []byte `db:"inflections" json:"inflections"`
-	Definitions []byte `db:"definitions" json:"definitions"`
-	Source      string `db:"source" json:"source"`
-}
-
-// OEWN entries that share a lemma pool their definitions.
-func (q *Queries) InsertNoun(ctx context.Context, arg InsertNounParams) error {
-	_, err := q.db.Exec(ctx, insertNoun,
-		arg.Lemma,
-		arg.Inflections,
-		arg.Definitions,
-		arg.Source,
-	)
-	return err
-}
-
 const lookupNoun = `-- name: LookupNoun :one
 SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural_guess, definitions, plural_override, plural FROM nouns
 WHERE active AND lemma = $1
@@ -244,11 +240,38 @@ func (q *Queries) SetProperNounFrequencies(ctx context.Context, arg SetProperNou
 	return result.RowsAffected(), nil
 }
 
-const truncateNouns = `-- name: TruncateNouns :exec
-TRUNCATE nouns RESTART IDENTITY CASCADE
+const upsertNouns = `-- name: UpsertNouns :exec
+INSERT INTO nouns (lemma, inflections, definitions, source)
+SELECT run.lemma, run.inflections::jsonb, run.definitions::jsonb, $1::text
+FROM (
+    SELECT unnest($2::text[]) AS lemma,
+           unnest($3::text[]) AS inflections,
+           unnest($4::text[]) AS definitions
+) run
+ON CONFLICT (lemma, source) DO UPDATE SET
+    inflections  = EXCLUDED.inflections,
+    definitions  = EXCLUDED.definitions,
+    frequency    = NULL,
+    plural_guess = FALSE
 `
 
-func (q *Queries) TruncateNouns(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, truncateNouns)
+type UpsertNounsParams struct {
+	Source      string   `db:"source" json:"source"`
+	Lemmas      []string `db:"lemmas" json:"lemmas"`
+	Inflections []string `db:"inflections" json:"inflections"`
+	Definitions []string `db:"definitions" json:"definitions"`
+}
+
+// One row per lemma: ingest pools the entries sharing one first, since an
+// upsert can't hit the same row twice. Sourced columns are replaced and
+// derived ones reset for the later ingest passes. Curated columns
+// (active, vote_count, plural_override) are never written.
+func (q *Queries) UpsertNouns(ctx context.Context, arg UpsertNounsParams) error {
+	_, err := q.db.Exec(ctx, upsertNouns,
+		arg.Source,
+		arg.Lemmas,
+		arg.Inflections,
+		arg.Definitions,
+	)
 	return err
 }

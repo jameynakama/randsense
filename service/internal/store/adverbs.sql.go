@@ -20,6 +20,26 @@ func (q *Queries) CountAdverbs(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const deleteStaleAdverbs = `-- name: DeleteStaleAdverbs :exec
+DELETE FROM adverbs
+WHERE source = $1::text
+  AND NOT EXISTS (
+    SELECT 1 FROM (SELECT unnest($2::text[]) AS lemma) run
+    WHERE run.lemma = adverbs.lemma
+  )
+`
+
+type DeleteStaleAdverbsParams struct {
+	Source string   `db:"source" json:"source"`
+	Lemmas []string `db:"lemmas" json:"lemmas"`
+}
+
+// An anti-join, not <> ALL, which would compare every row with every lemma.
+func (q *Queries) DeleteStaleAdverbs(ctx context.Context, arg DeleteStaleAdverbsParams) error {
+	_, err := q.db.Exec(ctx, deleteStaleAdverbs, arg.Source, arg.Lemmas)
+	return err
+}
+
 const getAdverbByLemma = `-- name: GetAdverbByLemma :one
 SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, definitions FROM adverbs
 WHERE lemma = $1
@@ -87,30 +107,6 @@ func (q *Queries) GetRandomAdverb(ctx context.Context, commonness float64) (Adve
 	return i, err
 }
 
-const insertAdverb = `-- name: InsertAdverb :exec
-INSERT INTO adverbs (lemma, inflections, definitions, source)
-VALUES ($1, $2, $3, $4)
-ON CONFLICT (lemma, source) DO UPDATE SET definitions = adverbs.definitions || EXCLUDED.definitions
-`
-
-type InsertAdverbParams struct {
-	Lemma       string `db:"lemma" json:"lemma"`
-	Inflections []byte `db:"inflections" json:"inflections"`
-	Definitions []byte `db:"definitions" json:"definitions"`
-	Source      string `db:"source" json:"source"`
-}
-
-// OEWN entries that share a lemma pool their definitions.
-func (q *Queries) InsertAdverb(ctx context.Context, arg InsertAdverbParams) error {
-	_, err := q.db.Exec(ctx, insertAdverb,
-		arg.Lemma,
-		arg.Inflections,
-		arg.Definitions,
-		arg.Source,
-	)
-	return err
-}
-
 const lookupAdverb = `-- name: LookupAdverb :one
 SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, definitions FROM adverbs
 WHERE active AND lemma = $1
@@ -159,11 +155,29 @@ func (q *Queries) SetAdverbFrequencies(ctx context.Context, arg SetAdverbFrequen
 	return result.RowsAffected(), nil
 }
 
-const truncateAdverbs = `-- name: TruncateAdverbs :exec
-TRUNCATE adverbs RESTART IDENTITY CASCADE
+const upsertAdverbs = `-- name: UpsertAdverbs :exec
+INSERT INTO adverbs (lemma, definitions, source)
+SELECT run.lemma, run.definitions::jsonb, $1::text
+FROM (
+    SELECT unnest($2::text[]) AS lemma,
+           unnest($3::text[]) AS definitions
+) run
+ON CONFLICT (lemma, source) DO UPDATE SET
+    definitions = EXCLUDED.definitions,
+    frequency   = NULL
 `
 
-func (q *Queries) TruncateAdverbs(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, truncateAdverbs)
+type UpsertAdverbsParams struct {
+	Source      string   `db:"source" json:"source"`
+	Lemmas      []string `db:"lemmas" json:"lemmas"`
+	Definitions []string `db:"definitions" json:"definitions"`
+}
+
+// One row per lemma: ingest pools the entries sharing one first, since an
+// upsert can't hit the same row twice. Sourced columns are replaced and
+// derived ones reset for the later ingest passes. Curated columns
+// (active, vote_count) are never written.
+func (q *Queries) UpsertAdverbs(ctx context.Context, arg UpsertAdverbsParams) error {
+	_, err := q.db.Exec(ctx, upsertAdverbs, arg.Source, arg.Lemmas, arg.Definitions)
 	return err
 }

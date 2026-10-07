@@ -1,11 +1,26 @@
--- name: InsertAdjective :exec
--- OEWN entries that share a lemma pool their definitions.
-INSERT INTO adjectives (lemma, inflections, definitions, source)
-VALUES ($1, $2, $3, $4)
-ON CONFLICT (lemma, source) DO UPDATE SET definitions = adjectives.definitions || EXCLUDED.definitions;
+-- name: UpsertAdjectives :exec
+-- One row per lemma: ingest pools the entries sharing one first, since an
+-- upsert can't hit the same row twice. Sourced columns are replaced and
+-- derived ones reset for the later ingest passes. Curated columns
+-- (active, vote_count) are never written.
+INSERT INTO adjectives (lemma, definitions, source)
+SELECT run.lemma, run.definitions::jsonb, @source::text
+FROM (
+    SELECT unnest(@lemmas::text[]) AS lemma,
+           unnest(@definitions::text[]) AS definitions
+) run
+ON CONFLICT (lemma, source) DO UPDATE SET
+    definitions = EXCLUDED.definitions,
+    frequency   = NULL;
 
--- name: TruncateAdjectives :exec
-TRUNCATE adjectives RESTART IDENTITY CASCADE;
+-- name: DeleteStaleAdjectives :exec
+-- An anti-join, not <> ALL, which would compare every row with every lemma.
+DELETE FROM adjectives
+WHERE source = @source::text
+  AND NOT EXISTS (
+    SELECT 1 FROM (SELECT unnest(@lemmas::text[]) AS lemma) run
+    WHERE run.lemma = adjectives.lemma
+  );
 
 -- name: CountAdjectives :one
 SELECT COUNT(*) FROM adjectives;

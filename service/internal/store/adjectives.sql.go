@@ -20,6 +20,26 @@ func (q *Queries) CountAdjectives(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const deleteStaleAdjectives = `-- name: DeleteStaleAdjectives :exec
+DELETE FROM adjectives
+WHERE source = $1::text
+  AND NOT EXISTS (
+    SELECT 1 FROM (SELECT unnest($2::text[]) AS lemma) run
+    WHERE run.lemma = adjectives.lemma
+  )
+`
+
+type DeleteStaleAdjectivesParams struct {
+	Source string   `db:"source" json:"source"`
+	Lemmas []string `db:"lemmas" json:"lemmas"`
+}
+
+// An anti-join, not <> ALL, which would compare every row with every lemma.
+func (q *Queries) DeleteStaleAdjectives(ctx context.Context, arg DeleteStaleAdjectivesParams) error {
+	_, err := q.db.Exec(ctx, deleteStaleAdjectives, arg.Source, arg.Lemmas)
+	return err
+}
+
 const getAdjectiveByLemma = `-- name: GetAdjectiveByLemma :one
 SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, definitions FROM adjectives
 WHERE lemma = $1
@@ -87,30 +107,6 @@ func (q *Queries) GetRandomAdjective(ctx context.Context, commonness float64) (A
 	return i, err
 }
 
-const insertAdjective = `-- name: InsertAdjective :exec
-INSERT INTO adjectives (lemma, inflections, definitions, source)
-VALUES ($1, $2, $3, $4)
-ON CONFLICT (lemma, source) DO UPDATE SET definitions = adjectives.definitions || EXCLUDED.definitions
-`
-
-type InsertAdjectiveParams struct {
-	Lemma       string `db:"lemma" json:"lemma"`
-	Inflections []byte `db:"inflections" json:"inflections"`
-	Definitions []byte `db:"definitions" json:"definitions"`
-	Source      string `db:"source" json:"source"`
-}
-
-// OEWN entries that share a lemma pool their definitions.
-func (q *Queries) InsertAdjective(ctx context.Context, arg InsertAdjectiveParams) error {
-	_, err := q.db.Exec(ctx, insertAdjective,
-		arg.Lemma,
-		arg.Inflections,
-		arg.Definitions,
-		arg.Source,
-	)
-	return err
-}
-
 const lookupAdjective = `-- name: LookupAdjective :one
 SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, definitions FROM adjectives
 WHERE active AND lemma = $1
@@ -159,11 +155,29 @@ func (q *Queries) SetAdjectiveFrequencies(ctx context.Context, arg SetAdjectiveF
 	return result.RowsAffected(), nil
 }
 
-const truncateAdjectives = `-- name: TruncateAdjectives :exec
-TRUNCATE adjectives RESTART IDENTITY CASCADE
+const upsertAdjectives = `-- name: UpsertAdjectives :exec
+INSERT INTO adjectives (lemma, definitions, source)
+SELECT run.lemma, run.definitions::jsonb, $1::text
+FROM (
+    SELECT unnest($2::text[]) AS lemma,
+           unnest($3::text[]) AS definitions
+) run
+ON CONFLICT (lemma, source) DO UPDATE SET
+    definitions = EXCLUDED.definitions,
+    frequency   = NULL
 `
 
-func (q *Queries) TruncateAdjectives(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, truncateAdjectives)
+type UpsertAdjectivesParams struct {
+	Source      string   `db:"source" json:"source"`
+	Lemmas      []string `db:"lemmas" json:"lemmas"`
+	Definitions []string `db:"definitions" json:"definitions"`
+}
+
+// One row per lemma: ingest pools the entries sharing one first, since an
+// upsert can't hit the same row twice. Sourced columns are replaced and
+// derived ones reset for the later ingest passes. Curated columns
+// (active, vote_count) are never written.
+func (q *Queries) UpsertAdjectives(ctx context.Context, arg UpsertAdjectivesParams) error {
+	_, err := q.db.Exec(ctx, upsertAdjectives, arg.Source, arg.Lemmas, arg.Definitions)
 	return err
 }

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/jameynakama/randsense/internal/lexicon/oewn"
 	"github.com/jameynakama/randsense/internal/store"
 )
@@ -215,7 +217,7 @@ func TestIngest(t *testing.T) {
 }
 
 // TestIngestMergesDefinitions checks that OEWN entries sharing a lemma end
-// up in one row with every entry's glosses.
+// up in one row with every entry's glosses, once, however often ingest runs.
 func TestIngestMergesDefinitions(t *testing.T) {
 	truncateLexicon(t)
 	ctx := context.Background()
@@ -234,13 +236,18 @@ func TestIngestMergesDefinitions(t *testing.T) {
 </LexicalResource>`
 	glosses := map[string]string{"oewn-1-a": "having desirable qualities", "oewn-2-s": "morally admirable"}
 
-	if _, err := oewn.Ingest(ctx, testPool, strings.NewReader(xml), glosses); err != nil {
-		t.Fatalf("Ingest: %v", err)
+	for range 2 {
+		if _, err := oewn.Ingest(ctx, testPool, strings.NewReader(xml), glosses); err != nil {
+			t.Fatalf("Ingest: %v", err)
+		}
 	}
 
 	q := store.New(testPool)
 	if n, err := q.CountAdjectives(ctx); err != nil || n != 1 {
 		t.Fatalf("CountAdjectives: got %d, %v; want 1", n, err)
+	}
+	if n, err := q.CountNouns(ctx); err != nil || n != 0 {
+		t.Fatalf("CountNouns: got %d, %v; want 0", n, err)
 	}
 	adj, err := q.GetAdjectiveByLemma(ctx, "good")
 	if err != nil {
@@ -310,4 +317,141 @@ func ingestSample(t *testing.T) oewn.Stats {
 		t.Fatalf("Ingest: %v", err)
 	}
 	return stats
+}
+
+// lexiconSnapshot is every content-word row's id and sourced columns, as
+// JSON. update_time is left out, since a re-run touches every row.
+func lexiconSnapshot(t *testing.T) string {
+	t.Helper()
+	var s string
+	err := testPool.QueryRow(context.Background(), `
+		SELECT json_build_array(
+			(SELECT json_agg(json_build_array(id, lemma, inflections, definitions, plural_guess) ORDER BY id) FROM nouns),
+			(SELECT json_agg(json_build_array(id, lemma, frames, definitions) ORDER BY id) FROM verbs),
+			(SELECT json_agg(json_build_array(id, lemma, definitions) ORDER BY id) FROM adjectives),
+			(SELECT json_agg(json_build_array(id, lemma, definitions) ORDER BY id) FROM adverbs)
+		)::text`).Scan(&s)
+	if err != nil {
+		t.Fatalf("snapshot: %v", err)
+	}
+	return s
+}
+
+// TestIngestTwiceIsIdentical checks that a re-run keeps ids and rewrites
+// sourced columns to the same values.
+func TestIngestTwiceIsIdentical(t *testing.T) {
+	truncateLexicon(t)
+	first := ingestSample(t)
+	before := lexiconSnapshot(t)
+
+	second := ingestSample(t)
+	if after := lexiconSnapshot(t); after != before {
+		t.Errorf("re-run changed rows:\nbefore %s\nafter  %s", before, after)
+	}
+	if first != second {
+		t.Errorf("stats: first %+v, second %+v", first, second)
+	}
+}
+
+// TestIngestKeepsCuration checks that a re-run never writes curated columns.
+func TestIngestKeepsCuration(t *testing.T) {
+	truncateLexicon(t)
+	ingestSample(t)
+	ctx := context.Background()
+
+	_, err := testPool.Exec(ctx, `
+		UPDATE nouns SET active = FALSE, vote_count = 3, plural_override = FALSE WHERE lemma = 'Rastas';
+		UPDATE verbs SET active = FALSE, vote_count = 2 WHERE lemma = 'devour';
+	`)
+	if err != nil {
+		t.Fatalf("curate: %v", err)
+	}
+
+	ingestSample(t)
+
+	q := store.New(testPool)
+	noun, err := q.GetNounByLemma(ctx, "Rastas")
+	if err != nil {
+		t.Fatalf("GetNounByLemma(Rastas): %v", err)
+	}
+	if noun.Active || noun.VoteCount != 3 || noun.PluralOverride != (pgtype.Bool{Bool: false, Valid: true}) || noun.Plural {
+		t.Errorf("Rastas: active %t, vote_count %d, plural_override %+v, plural %t",
+			noun.Active, noun.VoteCount, noun.PluralOverride, noun.Plural)
+	}
+	verb, err := q.GetVerbByLemma(ctx, "devour")
+	if err != nil {
+		t.Fatalf("GetVerbByLemma(devour): %v", err)
+	}
+	if verb.Active || verb.VoteCount != 2 {
+		t.Errorf("devour: active %t, vote_count %d", verb.Active, verb.VoteCount)
+	}
+}
+
+// TestIngestRefreshesSourcedColumns checks that a re-run rewrites what the
+// sources own and resets what the later ingest passes fill.
+func TestIngestRefreshesSourcedColumns(t *testing.T) {
+	truncateLexicon(t)
+	ingestSample(t)
+	want := lexiconSnapshot(t)
+	ctx := context.Background()
+
+	_, err := testPool.Exec(ctx, `
+		UPDATE nouns SET definitions = '["hand edit"]', inflections = '{"plural":"x"}', plural_guess = FALSE, frequency = 9
+			WHERE lemma = 'Rastas';
+		UPDATE verbs SET frames = '["bogus"]', separable = TRUE, frequency = 9 WHERE lemma = 'devour';
+		UPDATE adjectives SET definitions = '["hand edit"]', frequency = 9;
+		UPDATE adverbs SET definitions = '["hand edit"]', frequency = 9;
+	`)
+	if err != nil {
+		t.Fatalf("hand edit: %v", err)
+	}
+
+	ingestSample(t)
+
+	if got := lexiconSnapshot(t); got != want {
+		t.Errorf("sourced columns not restored:\nwant %s\ngot  %s", want, got)
+	}
+	var stale int
+	err = testPool.QueryRow(ctx, `
+		SELECT (SELECT count(*) FROM nouns WHERE frequency IS NOT NULL)
+		     + (SELECT count(*) FROM verbs WHERE frequency IS NOT NULL OR separable)
+		     + (SELECT count(*) FROM adjectives WHERE frequency IS NOT NULL)
+		     + (SELECT count(*) FROM adverbs WHERE frequency IS NOT NULL)`).Scan(&stale)
+	if err != nil {
+		t.Fatalf("count stale: %v", err)
+	}
+	if stale != 0 {
+		t.Errorf("rows keeping a previous run's frequency or separable flag: %d", stale)
+	}
+}
+
+// TestIngestDeletesStaleRows checks that an OEWN row the run lacks is
+// deleted, and a row from another source is not.
+func TestIngestDeletesStaleRows(t *testing.T) {
+	truncateLexicon(t)
+	ctx := context.Background()
+	// One statement per Exec: pgx rejects several statements with parameters.
+	for _, stmt := range []string{
+		"INSERT INTO nouns (lemma, source) VALUES ('flumpet', $1), ('flumpet', 'other')",
+		"INSERT INTO verbs (lemma, source) VALUES ('flump', $1)",
+	} {
+		if _, err := testPool.Exec(ctx, stmt, oewn.SourceName); err != nil {
+			t.Fatalf("seed: %v", err)
+		}
+	}
+
+	ingestSample(t)
+
+	var oewnRows, otherRows int
+	err := testPool.QueryRow(ctx, `
+		SELECT (SELECT count(*) FROM nouns WHERE lemma = 'flumpet' AND source = $1)
+		     + (SELECT count(*) FROM verbs WHERE lemma = 'flump'),
+		       (SELECT count(*) FROM nouns WHERE lemma = 'flumpet' AND source = 'other')`,
+		oewn.SourceName).Scan(&oewnRows, &otherRows)
+	if err != nil {
+		t.Fatalf("count: %v", err)
+	}
+	if oewnRows != 0 || otherRows != 1 {
+		t.Errorf("stale oewn rows %d (want 0), other-source rows %d (want 1)", oewnRows, otherRows)
+	}
 }
