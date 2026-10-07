@@ -27,6 +27,11 @@ considered ugly". The direction in `CLAUDE.md` still holds: frames constrain syn
     and a slot holds only one qualifier.
   - `VP → Be Verb:transitive`, with the participle keyed off a `Be` sibling, adds a one-off
     rule to agreement instead of following the symbol pattern.
+- **Copulas stay out of passive slots.** OEWN tags "be" and its idioms ("be known as")
+  transitive, which gives "the goose was been". A copula has no passive, so this is syntax, not
+  a semantic restriction: the verb queries take a `passive` flag that excludes `be` and `be ...`
+  lemmas, and a locked copula in a passive slot doesn't fit. Marking them `mislabeled` was
+  rejected because the active reads fine ("the goose is a philosophy").
 - **`Agent` is its own phrase, not a `PP` rule.** A `PP → Preposition:by NP` rule would put a
   fixed "by" into every prepositional phrase slot.
 

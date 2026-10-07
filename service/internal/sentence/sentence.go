@@ -247,7 +247,7 @@ func (gen *generator) fill(n *grammar.Node, subject bool) error {
 		var singular *grammar.Node
 		for _, c := range n.Children {
 			if c.POS() == grammar.Determiner && c.Locked {
-				if err := gen.fillLeaf(c, false, false, false); err != nil {
+				if err := gen.fillLeaf(c, false, false, false, false); err != nil {
 					return err
 				}
 				if gen.leaves[c].number == "singular" {
@@ -257,7 +257,7 @@ func (gen *generator) fill(n *grammar.Node, subject bool) error {
 		}
 		for _, c := range n.Children {
 			if c.POS() == grammar.Noun {
-				if err := gen.fillLeaf(c, false, singular != nil, false); err != nil {
+				if err := gen.fillLeaf(c, false, singular != nil, false, false); err != nil {
 					return err
 				}
 				pluralNoun = pluralNoun || gen.leaves[c].pluralLemma
@@ -273,7 +273,7 @@ func (gen *generator) fill(n *grammar.Node, subject bool) error {
 			continue
 		}
 		if len(c.Children) == 0 {
-			if err := gen.fillLeaf(c, pluralNoun, false, subject); err != nil {
+			if err := gen.fillLeaf(c, pluralNoun, false, subject, n.Symbol == passivePhrase); err != nil {
 				return err
 			}
 			continue
@@ -302,8 +302,8 @@ func verbPhraseFollows(siblings []*grammar.Node) bool {
 
 // fillLeaf gives n a word, its locked lemma's if it's locked.
 // singularNoun restricts a noun to lemmas that aren't plural.
-func (gen *generator) fillLeaf(n *grammar.Node, pluralNoun, singularNoun, subject bool) error {
-	lemma, info, err := gen.chooseWord(n, pluralNoun, singularNoun, subject)
+func (gen *generator) fillLeaf(n *grammar.Node, pluralNoun, singularNoun, subject, passive bool) error {
+	lemma, info, err := gen.chooseWord(n, pluralNoun, singularNoun, subject, passive)
 	if errors.Is(err, pgx.ErrNoRows) {
 		if n.Locked {
 			err = ErrLockMismatch
@@ -324,8 +324,8 @@ func (gen *generator) fillLeaf(n *grammar.Node, pluralNoun, singularNoun, subjec
 // words ("to", "with", a comma) ignore a lock. pluralNoun restricts a
 // determiner to ones that can go with a plural noun; singularNoun restricts
 // a noun to lemmas that aren't plural; subject makes a pronoun nominative
-// rather than accusative.
-func (gen *generator) chooseWord(n *grammar.Node, pluralNoun, singularNoun, subject bool) (string, leafInfo, error) {
+// rather than accusative; passive keeps copulas out of a verb slot.
+func (gen *generator) chooseWord(n *grammar.Node, pluralNoun, singularNoun, subject, passive bool) (string, leafInfo, error) {
 	ctx, q := gen.ctx, gen.q
 	switch n.POS() {
 	case grammar.Noun:
@@ -357,9 +357,9 @@ func (gen *generator) chooseWord(n *grammar.Node, pluralNoun, singularNoun, subj
 		var err error
 		switch frame := n.Qualifier(); {
 		case n.Locked:
-			w, err = q.LookupVerb(ctx, store.LookupVerbParams{Lemma: n.Lemma, Frame: frame})
+			w, err = q.LookupVerb(ctx, store.LookupVerbParams{Lemma: n.Lemma, Frame: frame, Passive: passive})
 		case frame != "":
-			w, err = q.GetRandomVerbWithFrame(ctx, store.GetRandomVerbWithFrameParams{Frame: frame, Commonness: gen.commonness})
+			w, err = q.GetRandomVerbWithFrame(ctx, store.GetRandomVerbWithFrameParams{Frame: frame, Commonness: gen.commonness, Passive: passive})
 			if errors.Is(err, pgx.ErrNoRows) {
 				err = fmt.Errorf("%w: %w", errEmptyFrame, err)
 			}

@@ -48,6 +48,8 @@ type Querier interface {
 	// For a locked singular determiner, which can't go with "Rastas".
 	GetRandomSingularNoun(ctx context.Context, commonness float64) (Noun, error)
 	GetRandomVerb(ctx context.Context, commonness float64) (Verb, error)
+	// A copula has no passive, so a passive slot never gets "be" or its idioms
+	// ("be known as").
 	GetRandomVerbWithFrame(ctx context.Context, arg GetRandomVerbWithFrameParams) (Verb, error)
 	GetSentence(ctx context.Context, id string) (Sentence, error)
 	GetVerbByLemma(ctx context.Context, lemma string) (Verb, error)
@@ -81,6 +83,7 @@ type Querier interface {
 	// "you" is singular and plural, so either can come back.
 	LookupPronoun(ctx context.Context, arg LookupPronounParams) (Pronoun, error)
 	// A locked word: the floor doesn't apply. An empty frame matches any verb.
+	// A copula never fits a passive slot.
 	LookupVerb(ctx context.Context, arg LookupVerbParams) (Verb, error)
 	// A lemma is plural if it ends in -s and its singular (minus -s, or minus
 	// -es) is also a lemma ("Rastas"/"Rasta", "eyeglasses"/"eyeglass"). Short

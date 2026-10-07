@@ -514,6 +514,63 @@ func TestRealizeSentenceNamesTheLeafNoWordFits(t *testing.T) {
 	}
 }
 
+const passiveGrammar = `
+[[rule]]
+symbol = "S"
+expansion = ["NP", "VP"]
+
+[[rule]]
+symbol = "NP"
+expansion = ["Determiner", "Noun"]
+
+[[rule]]
+symbol = "VP"
+expansion = ["Be", "PassVP"]
+
+[[rule]]
+symbol = "PassVP"
+expansion = ["Verb:transitive"]
+`
+
+func TestRealizeSentenceKeepsCopulasOutOfPassives(t *testing.T) {
+	seedWords(t)
+	mustExec(t, `INSERT INTO verbs (lemma, frames, definitions, source, frequency) VALUES
+		('be', '["transitive"]', '[]', 'test', 6.76),
+		('be known as', '["transitive"]', '[]', 'test', 1.5)`)
+	srv := newServer(t, api.RouterConfig{Grammar: loadGrammar(t, passiveGrammar)})
+	defer srv.Close()
+	passive := func(verb string) string {
+		return `{"symbol": "S", "children": [
+			{"symbol": "NP", "children": [{"symbol": "Determiner"}, {"symbol": "Noun"}]},
+			{"symbol": "VP", "children": [{"symbol": "Be"}, {"symbol": "PassVP", "children": [` + verb + `]}]}
+		]}`
+	}
+
+	t.Run("a random verb is never a copula", func(t *testing.T) {
+		for range 20 {
+			resp := postTree(t, srv, "", passive(`{"symbol": "Verb:transitive"}`))
+			var body struct {
+				Text string `json:"text"`
+			}
+			decode(t, resp, http.StatusOK, &body)
+			resp.Body.Close()
+			if body.Text != "This goose is devoured." && body.Text != "This goose was devoured." {
+				t.Fatalf("text: got %q, want This goose is/was devoured", body.Text)
+			}
+		}
+	})
+
+	t.Run("a locked copula does not fit", func(t *testing.T) {
+		resp := postTree(t, srv, "", passive(`{"symbol": "Verb:transitive", "lemma": "be", "locked": true}`))
+		defer resp.Body.Close()
+		var body leafProblem
+		decode(t, resp, http.StatusUnprocessableEntity, &body)
+		if body.Leaf != 3 || !strings.Contains(body.Error, "locked") {
+			t.Errorf("body: got %+v, want leaf 3 and an error about the locked word", body)
+		}
+	})
+}
+
 func TestRealizeSentenceKeepsLockedLemmas(t *testing.T) {
 	seedWords(t)
 	seedRareNoun(t)

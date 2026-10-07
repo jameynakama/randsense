@@ -39,9 +39,12 @@ ORDER BY random()
 LIMIT 1;
 
 -- name: GetRandomVerbWithFrame :one
+-- A copula has no passive, so a passive slot never gets "be" or its idioms
+-- ("be known as").
 SELECT * FROM verbs
 WHERE active AND frames ? @frame::text
   AND coalesce(frequency, 0) >= @commonness::float8
+  AND NOT (@passive::bool AND (lemma = 'be' OR lemma LIKE 'be %'))
 ORDER BY random()
 LIMIT 1;
 
@@ -57,8 +60,10 @@ WHERE lemma = ANY(@lemmas::text[]);
 
 -- name: LookupVerb :one
 -- A locked word: the floor doesn't apply. An empty frame matches any verb.
+-- A copula never fits a passive slot.
 SELECT * FROM verbs
 WHERE active AND lemma = @lemma AND (@frame::text = '' OR frames ? @frame::text)
+  AND NOT (@passive::bool AND (lemma = 'be' OR lemma LIKE 'be %'))
 ORDER BY id
 LIMIT 1;
 

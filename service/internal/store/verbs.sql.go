@@ -73,6 +73,7 @@ const getRandomVerbWithFrame = `-- name: GetRandomVerbWithFrame :one
 SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable, definitions FROM verbs
 WHERE active AND frames ? $1::text
   AND coalesce(frequency, 0) >= $2::float8
+  AND NOT ($3::bool AND (lemma = 'be' OR lemma LIKE 'be %'))
 ORDER BY random()
 LIMIT 1
 `
@@ -80,10 +81,13 @@ LIMIT 1
 type GetRandomVerbWithFrameParams struct {
 	Frame      string  `db:"frame" json:"frame"`
 	Commonness float64 `db:"commonness" json:"commonness"`
+	Passive    bool    `db:"passive" json:"passive"`
 }
 
+// A copula has no passive, so a passive slot never gets "be" or its idioms
+// ("be known as").
 func (q *Queries) GetRandomVerbWithFrame(ctx context.Context, arg GetRandomVerbWithFrameParams) (Verb, error) {
-	row := q.db.QueryRow(ctx, getRandomVerbWithFrame, arg.Frame, arg.Commonness)
+	row := q.db.QueryRow(ctx, getRandomVerbWithFrame, arg.Frame, arg.Commonness, arg.Passive)
 	var i Verb
 	err := row.Scan(
 		&i.ID,
@@ -149,18 +153,21 @@ func (q *Queries) GetVerbDefinitions(ctx context.Context, lemma string) ([]byte,
 const lookupVerb = `-- name: LookupVerb :one
 SELECT id, lemma, inflections, frames, source, source_id, register, frequency, active, vote_count, create_time, update_time, separable, definitions FROM verbs
 WHERE active AND lemma = $1 AND ($2::text = '' OR frames ? $2::text)
+  AND NOT ($3::bool AND (lemma = 'be' OR lemma LIKE 'be %'))
 ORDER BY id
 LIMIT 1
 `
 
 type LookupVerbParams struct {
-	Lemma string `db:"lemma" json:"lemma"`
-	Frame string `db:"frame" json:"frame"`
+	Lemma   string `db:"lemma" json:"lemma"`
+	Frame   string `db:"frame" json:"frame"`
+	Passive bool   `db:"passive" json:"passive"`
 }
 
 // A locked word: the floor doesn't apply. An empty frame matches any verb.
+// A copula never fits a passive slot.
 func (q *Queries) LookupVerb(ctx context.Context, arg LookupVerbParams) (Verb, error) {
-	row := q.db.QueryRow(ctx, lookupVerb, arg.Lemma, arg.Frame)
+	row := q.db.QueryRow(ctx, lookupVerb, arg.Lemma, arg.Frame, arg.Passive)
 	var i Verb
 	err := row.Scan(
 		&i.ID,
