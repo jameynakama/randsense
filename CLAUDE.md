@@ -21,7 +21,8 @@ Don't reopen these without new evidence.
 - **Curation never edits source data.** OEWN, SUBTLEX-US and the SPECIALIST extraction stay as
   shipped. Hand curation lives in its own discoverable places, so the compiled lexicon can tell
   sourced from curated: `verb_morphology_curated.toml`, `separable_verbs.toml`,
-  `closed_class.toml`, and `mislabeled` in `oewn/frames.go`.
+  `closed_class.toml`, `mislabeled` in `oewn/frames.go`, and `irregularHeads` in
+  `morph/morph.go`.
 - **Re-extraction.** If more morphology is needed, re-extract from SPECIALIST; the extraction
   script was throwaway.
 - **No ProperNoun slot.** OEWN has dropped nearly all named entities, so capitalized nouns are

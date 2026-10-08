@@ -235,6 +235,18 @@ func TestPluralize(t *testing.T) {
 		{"crown jewel", "", "crown jewels"},
 		{"talk of the town", "", "talks of the town"},
 		{"jack in the box", "", "jacks in the box"},
+		{"schoolchild", "", "schoolchildren"},
+		{"flower child", "", "flower children"},
+		{"man-child", "", "man-children"},
+		{"sweet tooth", "", "sweet teeth"},
+		{"cloven foot", "", "cloven feet"},
+		{"snow goose", "", "snow geese"},
+		{"field mouse", "", "field mice"},
+		{"head louse", "", "head lice"},
+		{"child of God", "", "children of God"},
+		{"clubfoot", "", "clubfoots"},
+		{"blouse", "", "blouses"},
+		{"mongoose", "", "mongooses"},
 	}
 
 	for _, tc := range tests {

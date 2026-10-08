@@ -41,6 +41,20 @@ var particles = []string{
 	"through", "to", "together", "up", "upon", "with",
 }
 
+// irregularHeads are hand-curated plurals for a compound noun's head word
+// when OEWN gives the compound none ("sweet teeth", "man-children"). Taking
+// the head word's own OEWN plural instead would spread its odd ones ("tv
+// camerae"). Only "child" also ends closed compounds ("schoolchildren"):
+// other heads hide inside unrelated words ("blouse", "mongoose").
+var irregularHeads = map[string]string{
+	"child": "children",
+	"foot":  "feet",
+	"goose": "geese",
+	"louse": "lice",
+	"mouse": "mice",
+	"tooth": "teeth",
+}
+
 type irregular struct {
 	Base              string `toml:"base"`
 	Third             string `toml:"third"`
@@ -226,8 +240,8 @@ func (v *Verbs) regularPast(w string) string {
 }
 
 // Pluralize returns a noun's plural: irregular when given (OEWN supplies these),
-// otherwise by spelling rule on the head word, which is the last word or the
-// one before the first particle ("talks of the town").
+// otherwise from irregularHeads or by spelling rule on the head word, which is
+// the last word or the one before the first particle ("talks of the town").
 func Pluralize(lemma, irregular string) string {
 	if irregular != "" {
 		return irregular
@@ -240,8 +254,22 @@ func Pluralize(lemma, irregular string) string {
 			break
 		}
 	}
-	words[head] = addS(words[head])
+	words[head] = pluralizeHead(words[head])
 	return strings.Join(words, " ")
+}
+
+func pluralizeHead(w string) string {
+	prefix, last := "", w
+	if i := strings.LastIndex(w, "-"); i >= 0 {
+		prefix, last = w[:i+1], w[i+1:]
+	}
+	if p, ok := irregularHeads[last]; ok {
+		return prefix + p
+	}
+	if strings.HasSuffix(w, "child") {
+		return w + "ren"
+	}
+	return addS(w)
 }
 
 // Prefixes whose sound overrides the first letter: a vowel letter that
