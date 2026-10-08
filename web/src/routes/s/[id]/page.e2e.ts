@@ -86,6 +86,35 @@ test('keeps keyboard focus out from under the open word card', async ({ page }) 
 	}
 });
 
+test('draws the word card over the diagram on phones', async ({ page }) => {
+	await page.setViewportSize({ width: 320, height: 640 });
+	const s = await newSentence(page.request);
+	await page.goto(`/s/${s.id}`);
+	await page.getByRole('button', { name: 'Show diagram' }).click();
+	await page.getByRole('group', { name: s.text }).getByRole('button').first().click();
+	const card = page.getByRole('region');
+	await expect(card).toBeVisible();
+
+	// Scroll the diagram under the card, then hit-test each diagram label
+	// and word the card covers: the card must be what's on top.
+	const { covered, onTop } = await card.evaluate((sheet) => {
+		const diagram = document.querySelector('[aria-label="Sentence diagram"]')!;
+		window.scrollBy(0, diagram.getBoundingClientRect().top - sheet.getBoundingClientRect().top);
+		const c = sheet.getBoundingClientRect();
+		const items = [...diagram.querySelectorAll('.label, .word')]
+			.map((e) => e.getBoundingClientRect())
+			.map((r) => ({ x: r.x + r.width / 2, y: r.y + r.height / 2 }))
+			.filter((p) => p.x > c.left && p.x < c.right && p.y > c.top && p.y < c.bottom);
+		return {
+			covered: items.length,
+			onTop: items.filter((p) => sheet.contains(document.elementFromPoint(p.x, p.y))).length
+		};
+	});
+
+	expect(covered).toBeGreaterThan(0);
+	expect(onTop).toBe(covered);
+});
+
 test('flags a word by keyboard alone', async ({ page }) => {
 	const s = await newSentence(page.request);
 	await page.goto(`/s/${s.id}`);
