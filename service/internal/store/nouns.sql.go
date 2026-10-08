@@ -41,7 +41,7 @@ func (q *Queries) DeleteStaleNouns(ctx context.Context, arg DeleteStaleNounsPara
 }
 
 const getNounByLemma = `-- name: GetNounByLemma :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural_guess, definitions, plural_override, plural FROM nouns
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural_guess, definitions, plural_override, plural, regular_plural FROM nouns
 WHERE lemma = $1
 `
 
@@ -64,6 +64,7 @@ func (q *Queries) GetNounByLemma(ctx context.Context, lemma string) (Noun, error
 		&i.Definitions,
 		&i.PluralOverride,
 		&i.Plural,
+		&i.RegularPlural,
 	)
 	return i, err
 }
@@ -84,7 +85,7 @@ func (q *Queries) GetNounDefinitions(ctx context.Context, lemma string) ([]byte,
 }
 
 const getRandomNoun = `-- name: GetRandomNoun :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural_guess, definitions, plural_override, plural FROM nouns
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural_guess, definitions, plural_override, plural, regular_plural FROM nouns
 WHERE active AND coalesce(frequency, 0) >= $1::float8
 ORDER BY random()
 LIMIT 1
@@ -109,12 +110,13 @@ func (q *Queries) GetRandomNoun(ctx context.Context, commonness float64) (Noun, 
 		&i.Definitions,
 		&i.PluralOverride,
 		&i.Plural,
+		&i.RegularPlural,
 	)
 	return i, err
 }
 
 const getRandomSingularNoun = `-- name: GetRandomSingularNoun :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural_guess, definitions, plural_override, plural FROM nouns
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural_guess, definitions, plural_override, plural, regular_plural FROM nouns
 WHERE active AND NOT plural AND coalesce(frequency, 0) >= $1::float8
 ORDER BY random()
 LIMIT 1
@@ -140,12 +142,45 @@ func (q *Queries) GetRandomSingularNoun(ctx context.Context, commonness float64)
 		&i.Definitions,
 		&i.PluralOverride,
 		&i.Plural,
+		&i.RegularPlural,
 	)
 	return i, err
 }
 
+const listNounPlurals = `-- name: ListNounPlurals :many
+SELECT lemma, (inflections->>'plural')::text AS plural FROM nouns
+WHERE inflections ? 'plural' AND lemma = lower(lemma)
+`
+
+type ListNounPluralsRow struct {
+	Lemma  string `db:"lemma" json:"lemma"`
+	Plural string `db:"plural" json:"plural"`
+}
+
+// OEWN's plurals, for checking against SUBTLEX. Its words are lowercase, so
+// only lowercase lemmas are listed.
+func (q *Queries) ListNounPlurals(ctx context.Context) ([]ListNounPluralsRow, error) {
+	rows, err := q.db.Query(ctx, listNounPlurals)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListNounPluralsRow
+	for rows.Next() {
+		var i ListNounPluralsRow
+		if err := rows.Scan(&i.Lemma, &i.Plural); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lookupNoun = `-- name: LookupNoun :one
-SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural_guess, definitions, plural_override, plural FROM nouns
+SELECT id, lemma, inflections, source, source_id, register, frequency, active, vote_count, create_time, update_time, plural_guess, definitions, plural_override, plural, regular_plural FROM nouns
 WHERE active AND lemma = $1
 ORDER BY id
 LIMIT 1
@@ -171,6 +206,7 @@ func (q *Queries) LookupNoun(ctx context.Context, lemma string) (Noun, error) {
 		&i.Definitions,
 		&i.PluralOverride,
 		&i.Plural,
+		&i.RegularPlural,
 	)
 	return i, err
 }
@@ -240,6 +276,19 @@ func (q *Queries) SetProperNounFrequencies(ctx context.Context, arg SetProperNou
 	return result.RowsAffected(), nil
 }
 
+const setRegularPlurals = `-- name: SetRegularPlurals :execrows
+UPDATE nouns SET regular_plural = TRUE
+WHERE lemma = ANY($1::text[])
+`
+
+func (q *Queries) SetRegularPlurals(ctx context.Context, lemmas []string) (int64, error) {
+	result, err := q.db.Exec(ctx, setRegularPlurals, lemmas)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const upsertNouns = `-- name: UpsertNouns :exec
 INSERT INTO nouns (lemma, inflections, definitions, source)
 SELECT run.lemma, run.inflections::jsonb, run.definitions::jsonb, $1::text
@@ -251,8 +300,9 @@ FROM (
 ON CONFLICT (lemma, source) DO UPDATE SET
     inflections  = EXCLUDED.inflections,
     definitions  = EXCLUDED.definitions,
-    frequency    = NULL,
-    plural_guess = FALSE
+    frequency      = NULL,
+    plural_guess   = FALSE,
+    regular_plural = FALSE
 `
 
 type UpsertNounsParams struct {

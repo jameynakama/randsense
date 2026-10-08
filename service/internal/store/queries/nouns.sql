@@ -13,8 +13,9 @@ FROM (
 ON CONFLICT (lemma, source) DO UPDATE SET
     inflections  = EXCLUDED.inflections,
     definitions  = EXCLUDED.definitions,
-    frequency    = NULL,
-    plural_guess = FALSE;
+    frequency      = NULL,
+    plural_guess   = FALSE,
+    regular_plural = FALSE;
 
 -- name: DeleteStaleNouns :exec
 -- An anti-join, not <> ALL, which would compare every row with every lemma.
@@ -57,6 +58,16 @@ WHERE p.lemma ~ 's$'
 UPDATE nouns SET frequency = round(f.zipf::numeric, 2)
 FROM (SELECT unnest(@words::text[]) AS word, unnest(@zipfs::float8[]) AS zipf) f
 WHERE nouns.lemma = f.word;
+
+-- name: ListNounPlurals :many
+-- OEWN's plurals, for checking against SUBTLEX. Its words are lowercase, so
+-- only lowercase lemmas are listed.
+SELECT lemma, (inflections->>'plural')::text AS plural FROM nouns
+WHERE inflections ? 'plural' AND lemma = lower(lemma);
+
+-- name: SetRegularPlurals :execrows
+UPDATE nouns SET regular_plural = TRUE
+WHERE lemma = ANY(@lemmas::text[]);
 
 -- name: SetProperNounFrequencies :execrows
 -- Words are lowercase, so a capitalized lemma ("America") matches its

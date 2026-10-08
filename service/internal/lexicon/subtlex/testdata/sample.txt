@@ -9,3 +9,8 @@ john	Noun	180
 goose	Noun	400
 baby	Noun	25918
 devour	Verb	54
+camera	Noun	2902
+cameras	Noun	912
+geese	Noun	80
+gooses	Noun	3
+alas	Noun	4

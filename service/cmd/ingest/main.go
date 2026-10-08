@@ -105,8 +105,8 @@ func main() {
 		log.Fatalf("subtlex: %v", err)
 	}
 
-	log.Printf("done: frequencies for nouns=%d verbs=%d adjectives=%d adverbs=%d",
-		sstats.Nouns, sstats.Verbs, sstats.Adjectives, sstats.Adverbs)
+	log.Printf("done: frequencies for nouns=%d verbs=%d adjectives=%d adverbs=%d, regular plurals=%d",
+		sstats.Nouns, sstats.Verbs, sstats.Adjectives, sstats.Adverbs, sstats.RegularPlurals)
 
 	cf, err := os.Open(closedClassPath)
 	if err != nil {

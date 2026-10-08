@@ -398,7 +398,7 @@ func TestIngestRefreshesSourcedColumns(t *testing.T) {
 	_, err := testPool.Exec(ctx, `
 		UPDATE nouns SET definitions = '["hand edit"]', inflections = '{"plural":"x"}', plural_guess = FALSE, frequency = 9
 			WHERE lemma = 'Rastas';
-		UPDATE nouns SET plural_guess = TRUE WHERE lemma = 'goose';
+		UPDATE nouns SET plural_guess = TRUE, regular_plural = TRUE WHERE lemma = 'goose';
 		UPDATE verbs SET frames = '["bogus"]', separable = TRUE, frequency = 9 WHERE lemma = 'devour';
 		UPDATE adjectives SET definitions = '["hand edit"]', frequency = 9;
 		UPDATE adverbs SET definitions = '["hand edit"]', frequency = 9;
@@ -414,7 +414,7 @@ func TestIngestRefreshesSourcedColumns(t *testing.T) {
 	}
 	var stale int
 	err = testPool.QueryRow(ctx, `
-		SELECT (SELECT count(*) FROM nouns WHERE frequency IS NOT NULL)
+		SELECT (SELECT count(*) FROM nouns WHERE frequency IS NOT NULL OR regular_plural)
 		     + (SELECT count(*) FROM verbs WHERE frequency IS NOT NULL OR separable)
 		     + (SELECT count(*) FROM adjectives WHERE frequency IS NOT NULL)
 		     + (SELECT count(*) FROM adverbs WHERE frequency IS NOT NULL)`).Scan(&stale)
@@ -422,7 +422,7 @@ func TestIngestRefreshesSourcedColumns(t *testing.T) {
 		t.Fatalf("count stale: %v", err)
 	}
 	if stale != 0 {
-		t.Errorf("rows keeping a previous run's frequency or separable flag: %d", stale)
+		t.Errorf("rows keeping a previous run's frequency, regular plural or separable flag: %d", stale)
 	}
 }
 

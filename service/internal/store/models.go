@@ -80,6 +80,7 @@ type Noun struct {
 	Definitions    []byte             `db:"definitions" json:"definitions"`
 	PluralOverride pgtype.Bool        `db:"plural_override" json:"plural_override"`
 	Plural         bool               `db:"plural" json:"plural"`
+	RegularPlural  bool               `db:"regular_plural" json:"regular_plural"`
 }
 
 type Preposition struct {

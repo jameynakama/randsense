@@ -513,6 +513,16 @@ func TestGenerateRejectsMalformedNounInflections(t *testing.T) {
 	}
 }
 
+func TestGenerateUsesRegularPluralOverOEWNsWhenFlagged(t *testing.T) {
+	seen := texts(t, simpleGrammar, func() *fakeQuerier {
+		q := newFake(store.Determiner{Lemma: "these", Number: "plural"})
+		q.noun = &store.Noun{Lemma: "camera", Inflections: []byte(`{"plural":"camerae"}`), RegularPlural: true}
+		return q
+	}, 20)
+
+	assertExactly(t, seen, "These cameras devour.", "These cameras devoured.")
+}
+
 func TestGenerateKeepsPluralLemmaPluralWithFittingDeterminer(t *testing.T) {
 	var q *fakeQuerier
 	seen := texts(t, simpleGrammar, func() *fakeQuerier {

@@ -23,9 +23,13 @@ func seedLexicon(t *testing.T) {
 	}
 	// "In" (indium) must not pick up the frequency of "in", and "john" (the
 	// toilet) must not pick up the frequency of the name.
-	nouns := []string{"goose", "America", "john", "In", "hot dog"}
+	// OEWN's plural for "camera" is the rare "camerae"; "geese" and "alae"
+	// stay, the second because SUBTLEX barely has "alas" as a noun.
+	nouns := []string{"goose", "America", "john", "In", "hot dog", "camera", "ala"}
+	inflections := append(repeat("{}", 5), `{"plural":"camerae"}`, `{"plural":"alae"}`)
+	inflections[0] = `{"plural":"geese"}`
 	if err := q.UpsertNouns(ctx, store.UpsertNounsParams{
-		Lemmas: nouns, Inflections: repeat("{}", len(nouns)), Definitions: repeat("[]", len(nouns)), Source: "test",
+		Lemmas: nouns, Inflections: inflections, Definitions: repeat("[]", len(nouns)), Source: "test",
 	}); err != nil {
 		t.Fatalf("UpsertNouns: %v", err)
 	}
@@ -72,7 +76,7 @@ func TestApply(t *testing.T) {
 		t.Fatalf("Apply: %v", err)
 	}
 
-	want := subtlex.Stats{Nouns: 3, Verbs: 1, Adjectives: 1, Adverbs: 1}
+	want := subtlex.Stats{Nouns: 4, Verbs: 1, Adjectives: 1, Adverbs: 1, RegularPlurals: 1}
 	if stats != want {
 		t.Errorf("stats: got %+v, want %+v", stats, want)
 	}
@@ -101,6 +105,29 @@ func TestApply(t *testing.T) {
 	} {
 		if got := frequency(t, tc.table, tc.lemma); got != nil {
 			t.Errorf("%s: got %v, want NULL", tc.lemma, *got)
+		}
+	}
+}
+
+func TestApplyPrefersAFarCommonerRegularPlural(t *testing.T) {
+	seedLexicon(t)
+	f, err := os.Open(filepath.Join("testdata", "sample.txt"))
+	if err != nil {
+		t.Fatalf("open fixture: %v", err)
+	}
+	defer f.Close()
+
+	if _, err := subtlex.Apply(context.Background(), testPool, f); err != nil {
+		t.Fatalf("Apply: %v", err)
+	}
+
+	for lemma, want := range map[string]bool{"camera": true, "goose": false, "ala": false} {
+		var got bool
+		if err := testPool.QueryRow(context.Background(), "SELECT regular_plural FROM nouns WHERE lemma = $1", lemma).Scan(&got); err != nil {
+			t.Fatalf("%s: %v", lemma, err)
+		}
+		if got != want {
+			t.Errorf("%s: regular_plural %t, want %t", lemma, got, want)
 		}
 	}
 }

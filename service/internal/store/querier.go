@@ -65,6 +65,9 @@ type Querier interface {
 	ListDeterminers(ctx context.Context) ([]Determiner, error)
 	ListFlaggedWords(ctx context.Context, arg ListFlaggedWordsParams) ([]ListFlaggedWordsRow, error)
 	ListFlags(ctx context.Context, arg ListFlagsParams) ([]ListFlagsRow, error)
+	// OEWN's plurals, for checking against SUBTLEX. Its words are lowercase, so
+	// only lowercase lemmas are listed.
+	ListNounPlurals(ctx context.Context) ([]ListNounPluralsRow, error)
 	ListPrepositions(ctx context.Context) ([]Preposition, error)
 	ListPronouns(ctx context.Context) ([]Pronoun, error)
 	ListSentences(ctx context.Context, arg ListSentencesParams) ([]Sentence, error)
@@ -101,6 +104,7 @@ type Querier interface {
 	// lowercase form. Only name frequencies go here, so the element "In" doesn't
 	// pick up the preposition's.
 	SetProperNounFrequencies(ctx context.Context, arg SetProperNounFrequenciesParams) (int64, error)
+	SetRegularPlurals(ctx context.Context, lemmas []string) (int64, error)
 	SetSeparableVerbs(ctx context.Context, lemmas []string) (int64, error)
 	// Words are lowercase, so only lowercase lemmas match.
 	SetVerbFrequencies(ctx context.Context, arg SetVerbFrequenciesParams) (int64, error)

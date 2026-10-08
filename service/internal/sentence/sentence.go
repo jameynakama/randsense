@@ -348,6 +348,10 @@ func (gen *generator) chooseWord(n *grammar.Node, pluralNoun, singularNoun, subj
 		if err := json.Unmarshal(w.Inflections, &infl); err != nil {
 			return "", leafInfo{}, fmt.Errorf("noun %q inflections: %w", w.Lemma, err)
 		}
+		// SUBTLEX shows OEWN's plural is a rare variant ("camerae").
+		if w.RegularPlural {
+			infl.Plural = ""
+		}
 		return w.Lemma, leafInfo{
 			plural: infl.Plural, pluralLemma: w.Plural,
 			features: grammar.Features{Frequency: frequency(w.Frequency)},

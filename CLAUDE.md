@@ -40,6 +40,11 @@ Don't reopen these without new evidence.
   spellings pass in rare roles (verb "baby", noun "meet"). When a frame has no verbs at the floor,
   `Generate` expands a fresh tree. Capping the floor per frame was rejected because it would
   quietly break the floor's guarantee.
+- **OEWN plurals come from exception lists.** A noun's `<Form>` can be a rare variant
+  ("camerae", "brethren"), so SUBTLEX-US decides: when the regular plural is far more common,
+  ingest sets `nouns.regular_plural` and the spelling rules win (thresholds in
+  `subtlex/apply.go`). Compounds OEWN gives no plural take their head's from `irregularHeads` in
+  `morph/morph.go`, not the head's OEWN plural, which would spread the variants ("tv camerae").
 - **Mislabeled OEWN frames.** OEWN gives many lemmas frames they can't take ("hoped singing",
   "broke even ugly"). Exclude those lemma-frame pairs using `mislabeled` in `oewn/frames.go`; each
   lemma keeps its other frames. A frame code with too many mislabeled lemmas stays unmapped: the
